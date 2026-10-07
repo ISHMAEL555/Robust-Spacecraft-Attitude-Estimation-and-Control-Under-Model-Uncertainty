@@ -1,0 +1,52 @@
+# Nominal experiment configuration
+# E0: Nominal - verify implementation correctness and consistency
+
+simulation:
+  duration: 1000.0  # seconds
+  dt: 0.01  # seconds (100 Hz)
+  seed: 42
+
+spacecraft:
+  inertia:
+    - [100.0, 0.0, 0.0]
+    - [0.0, 80.0, 0.0]
+    - [0.0, 0.0, 60.0]
+  initial_attitude: [0.0, 0.0, 0.0, 1.0]  # quaternion [x, y, z, w]
+  initial_omega: [0.01, 0.005, 0.002]  # rad/s
+  disturbance_torque: [0.0, 0.0, 0.0]  # N*m
+
+gyroscope:
+  sigma_v: 1.0e-4  # rad/s/sqrt(Hz) - angle random walk
+  sigma_u: 1.0e-6  # rad/s^2/sqrt(Hz) - bias random walk
+  sigma_b0: 1.0e-3  # rad/s - initial bias std
+  rate: 100.0  # Hz
+  initial_bias: [0.001, -0.002, 0.0005]  # rad/s
+
+star_tracker:
+  sigma_theta: 4.848e-5  # rad (10 arcsec)
+  rate: 1.0  # Hz
+  outlier_prob: 0.0
+  outage_prob: 0.0
+
+filter:
+  variant: "gyro_driven"  # "gyro_driven" or "model_aided"
+  P0_attitude: 1.0e-4  # rad^2
+  P0_bias: 1.0e-6  # (rad/s)^2
+  Q_scale: 1.0
+  R_scale: 1.0
+
+controller:
+  K_q: 1.0
+  K_omega: 10.0
+  max_torque: 0.1
+  control_type: "quaternion_feedback"
+
+reaction_wheels:
+  max_torque: 0.1  # N*m per wheel
+  max_momentum: 10.0  # N*m*s per wheel
+  num_wheels: 3
+
+analysis:
+  monte_carlo_runs: 100
+  nees_confidence: 0.95
+  nis_confidence: 0.95

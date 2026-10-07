@@ -1,10 +1,40 @@
+Metadata-Version: 2.4
+Name: spacecraft-estimation-control
+Version: 0.1.0
+Summary: Robust Spacecraft Attitude Estimation and Control Under Model Uncertainty
+Author-email: Kowluri Ishmael <ishmael@example.com>
+License: MIT
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Physics
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: scipy>=1.10.0
+Requires-Dist: matplotlib>=3.7.0
+Requires-Dist: pyyaml>=6.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+
 # Spacecraft Attitude Estimation Robustness Under Model Uncertainty
 
 **MEKF statistical consistency and its coupling to closed-loop pointing performance, under spacecraft-model and sensor mismatch.**
 
-![Status](https://img.shields.io/badge/status-architecture%20%26%20formulation-orange) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Domain](https://img.shields.io/badge/domain-spacecraft%20GNC-lightgrey)
+![Status](https://img.shields.io/badge/status-architecture%20%26%20formulation-orange)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Domain](https://img.shields.io/badge/domain-spacecraft%20GNC-lightgrey)
 
-------------------------------------------------------------------------
+---
 
 ## Research Question
 
@@ -16,20 +46,20 @@ $$\text{Model / Sensor Uncertainty} \;\rightarrow\; \text{Consistency Limit} \;\
 
 supported by NEES/NIS statistics, Monte Carlo distributions, covariance behaviour, and closed-loop metrics.
 
-------------------------------------------------------------------------
+---
 
 ## Why This Problem
 
 A filter can have a small RMSE and still be unfit for flight. Downstream consumers (the controller, fault detection, mode-transition logic) act on the **reported covariance** as much as on the state estimate. An optimistic covariance leads to over-trusted estimates, wrongly accepted outliers and mis-sized margins. A pessimistic one wastes performance. This project separates two properties that are often conflated:
 
 | Property | Question | Metric |
-|------------------------|------------------------|------------------------|
+|---|---|---|
 | **Accuracy** | Is the estimate close to truth? | RMSE, bias, convergence time |
 | **Consistency** | Does the covariance describe the actual error? | NEES, NIS, $3\sigma$ containment |
 
 and then asks when degraded accuracy or consistency actually becomes **control-limiting**.
 
-------------------------------------------------------------------------
+---
 
 ## Scope
 
@@ -37,11 +67,11 @@ and then asks when degraded accuracy or consistency actually becomes **control-l
 
 **Out of scope (deliberately):** orbital and relative navigation, rendezvous/docking, GNSS, camera/LiDAR navigation, UKF/particle filters, MPC, reinforcement learning, full FDIR, detailed wheel hardware characterisation, full orbital-environment modelling. These are valid topics. They are excluded because they would dilute a single, deep investigation.
 
-------------------------------------------------------------------------
+---
 
 ## System Architecture
 
-``` mermaid
+```mermaid
 flowchart LR
     TS["True Spacecraft<br/>Nonlinear rigid body"] --> GY["Gyroscope<br/>bias + noise"]
     TS --> ST["Star Tracker<br/>absolute attitude"]
@@ -55,7 +85,7 @@ flowchart LR
 
 The architecture is intentionally minimal so that estimator behaviour can be isolated and attributed.
 
-------------------------------------------------------------------------
+---
 
 ## Models
 
@@ -88,12 +118,12 @@ Absolute attitude measurement $q_{ST} = \delta q_{ST} \otimes q$, with $\delta q
 
 Reaction-wheel torque is modelled as $\boldsymbol{\tau}_{rw} \approx -\dot{\mathbf{h}}_{rw}$ with torque and momentum limits. The model is kept simple on purpose to keep attention on estimator-to-control coupling.
 
-------------------------------------------------------------------------
+---
 
 ## Estimator: Multiplicative Extended Kalman Filter
 
 | Item | Definition |
-|------------------------------------|------------------------------------|
+|---|---|
 | Nominal state | $\hat{x}_{nom} = [\hat{q},\, \hat{\mathbf{b}}_g]$ |
 | Error state | $\delta x = [\delta\boldsymbol{\theta},\, \delta\mathbf{b}_g]^T \in \mathbb{R}^6$ |
 | Error dynamics | $\delta\dot{x} = F\delta x + Gw$ |
@@ -113,7 +143,7 @@ The role of the inertia matrix depends on how the filter is propagated, so the s
 
 Comparing A and B isolates *where* inertia uncertainty hurts: the estimator, the controller, or both.
 
-------------------------------------------------------------------------
+---
 
 ## Consistency Evaluation
 
@@ -128,17 +158,17 @@ Additional measures: attitude and bias RMSE, covariance growth, $3\sigma$ contai
 Interpretation:
 
 | Observation | Typical meaning |
-|------------------------------------|------------------------------------|
+|---|---|
 | NEES above upper bound | Optimistic covariance (under-modelled noise, unmodelled dynamics) |
 | NEES below lower bound | Conservative covariance (over-tuned $Q$ or $R$) |
 | NIS and NEES disagree | Error is hidden from the measurement path: suspect process model or unobservable directions |
 
-------------------------------------------------------------------------
+---
 
 ## Experiment Matrix
 
 | ID | Experiment | Independent variable | Primary question | Key outputs |
-|---------------|---------------|---------------|---------------|---------------|
+|---|---|---|---|---|
 | E0 | Nominal | None | Is the implementation correct and consistent? | NEES/NIS inside bounds |
 | E1 | Inertia mismatch | $\Delta I$ (magnitude and structure) | How sensitive is consistency to model error? | NEES vs. $\lVert\Delta I\rVert/\lVert I\rVert$, A vs. B |
 | E2 | Process-noise mismatch | $Q_{model}/Q_{true}$ | Sensitivity to optimistic/conservative $Q$ | NEES, convergence time |
@@ -150,7 +180,7 @@ Interpretation:
 
 Each experiment is defined by a configuration file with a fixed seed, so every figure is reproducible from a single command.
 
-------------------------------------------------------------------------
+---
 
 ## Closed-Loop Study
 
@@ -161,14 +191,14 @@ $$\boldsymbol{\tau}_c = -K_q\,\boldsymbol{q}_{e,v} - K_\omega\,\hat{\boldsymbol{
 Three feedback configurations separate controller limits from estimator limits:
 
 | Configuration | Feedback state | Purpose |
-|------------------------|------------------------|------------------------|
+|---|---|---|
 | Truth-state | $q_{true},\,\boldsymbol{\omega}_{true}$ | Ideal controller reference |
 | Estimated-state | $\hat{q},\,\hat{\boldsymbol{\omega}}$ | Flight-like baseline |
 | Degraded estimate | MEKF under injected mismatch | Quantify estimation-induced loss |
 
 Metrics: pointing error (RMS and peak), settling time, peak torque, control effort ($\int\lVert\tau\rVert^2dt$), recovery time. The central test is whether an estimator that passes an estimation-only review still meets pointing requirements once placed in the loop, and the reverse.
 
-------------------------------------------------------------------------
+---
 
 ## Sensor Degradation Cases
 
@@ -184,13 +214,13 @@ The study maps $\text{outage duration} \rightarrow \text{covariance growth} \rig
 
 A single anomalous measurement is injected and gated by the NIS statistic against a $\chi^2_3$ threshold. The comparison between accepting and rejecting the outlier covers state, covariance and closed-loop pointing. This is a **measurement-consistency study, not a full FDIR design.**
 
-------------------------------------------------------------------------
+---
 
 ## Verification & Validation
 
 Verification proceeds bottom-up so that software defects are separated from genuine GNC behaviour:
 
-``` text
+```text
 Quaternion algebra → Rigid-body dynamics → Sensor models → MEKF propagation
 → MEKF update → Consistency metrics → Controller → Closed loop → Monte Carlo
 ```
@@ -208,14 +238,14 @@ Planned checks include:
 
 Unit tests live in `tests/unit/`, system-level tests in `tests/integration/`.
 
-------------------------------------------------------------------------
+---
 
 ## Results
 
 > *Not yet available. The project is in the architecture and formulation phase. This section will be populated with:*
 
 | Result | Content |
-|------------------------------------|------------------------------------|
+|---|---|
 | R1 | Nominal NEES/NIS with confidence bounds |
 | R2 | Consistency-limit curves for $\Delta I$, $Q$ and $R$ mismatch |
 | R3 | Outage covariance growth vs. analytical prediction |
@@ -223,11 +253,11 @@ Unit tests live in `tests/unit/`, system-level tests in `tests/integration/`.
 | R5 | Pointing error vs. estimator degradation level |
 | R6 | Summary table: mismatch level at which consistency fails and at which pointing requirements fail |
 
-------------------------------------------------------------------------
+---
 
 ## Repository Structure
 
-``` text
+```text
 spacecraft-estimation-control/
 ├── src/
 │   ├── dynamics/        # rigid_body.py, quaternion.py
@@ -254,13 +284,13 @@ Python · NumPy · SciPy · Matplotlib · pytest · Git/GitHub. MATLAB/Simulink 
 
 *Planned interface once implementation lands:*
 
-``` bash
+```bash
 pip install -e .
 pytest tests/
 python scripts/run_experiment.py --config config/nominal.yaml
 ```
 
-------------------------------------------------------------------------
+---
 
 ## Assumptions & Limitations
 
@@ -289,13 +319,13 @@ python scripts/run_experiment.py --config config/nominal.yaml
 
 ## References
 
-1.  Lefferts, Markley, Shuster, "Kalman Filtering for Spacecraft Attitude Estimation," *J. Guidance, Control, and Dynamics*, 1982.
-2.  Markley, Crassidis, *Fundamentals of Spacecraft Attitude Determination and Control*, Springer, 2014.
-3.  Trawny, Roumeliotis, "Indirect Kalman Filter for 3D Attitude Estimation," UMN Tech. Report, 2005.
-4.  Solà, "Quaternion Kinematics for the Error-State Kalman Filter," 2017.
-5.  Bar-Shalom, Li, Kirubarajan, *Estimation with Applications to Tracking and Navigation*, Wiley, 2001 (NEES/NIS).
+1. Lefferts, Markley, Shuster, "Kalman Filtering for Spacecraft Attitude Estimation," *J. Guidance, Control, and Dynamics*, 1982.
+2. Markley, Crassidis, *Fundamentals of Spacecraft Attitude Determination and Control*, Springer, 2014.
+3. Trawny, Roumeliotis, "Indirect Kalman Filter for 3D Attitude Estimation," UMN Tech. Report, 2005.
+4. Solà, "Quaternion Kinematics for the Error-State Kalman Filter," 2017.
+5. Bar-Shalom, Li, Kirubarajan, *Estimation with Applications to Tracking and Navigation*, Wiley, 2001 (NEES/NIS).
 
-------------------------------------------------------------------------
+---
 
 ## Author
 

@@ -1,0 +1,52 @@
+# Monte Carlo Experiment Configuration
+# E7: Statistical repeatability
+
+simulation:
+  duration: 1000.0
+  dt: 0.01
+  seed: 42
+
+spacecraft:
+  inertia:
+    - [100.0, 0.0, 0.0]
+    - [0.0, 80.0, 0.0]
+    - [0.0, 0.0, 60.0]
+  initial_attitude: [0.0, 0.0, 0.0, 1.0]
+  initial_omega: [0.01, 0.005, 0.002]
+  disturbance_torque: [0.0, 0.0, 0.0]
+
+gyroscope:
+  sigma_v: 1.0e-4
+  sigma_u: 1.0e-6
+  sigma_b0: 1.0e-3
+  rate: 100.0
+  initial_bias: [0.001, -0.002, 0.0005]
+
+star_tracker:
+  sigma_theta: 4.848e-5  # 10 arcsec
+  rate: 1.0
+  outlier_prob: 0.0
+  outage_prob: 0.0
+
+filter:
+  variant: "gyro_driven"
+  P0_attitude: 1.0e-4
+  P0_bias: 1.0e-6
+  Q_scale: 1.0
+  R_scale: 1.0
+
+controller:
+  K_q: 1.0
+  K_omega: 10.0
+  max_torque: 0.1
+  control_type: "quaternion_feedback"
+
+reaction_wheels:
+  max_torque: 0.1
+  max_momentum: 10.0
+  num_wheels: 3
+
+analysis:
+  monte_carlo_runs: 100
+  nees_confidence: 0.95
+  nis_confidence: 0.95
