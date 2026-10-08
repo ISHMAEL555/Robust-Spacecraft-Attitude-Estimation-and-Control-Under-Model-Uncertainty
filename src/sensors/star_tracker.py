@@ -35,6 +35,8 @@ class StarTrackerParams:
     outage_prob: float = 0.0
     # Outage duration (number of measurements)
     outage_duration: int = 10
+    # Optional one-shot outage start time (seconds from simulation start)
+    outage_start_time: Optional[float] = None
     
     @property
     def dt(self) -> float:
@@ -65,8 +67,10 @@ class StarTracker:
         self.params = params
         self.dt = 1.0 / params.rate
         self.time_since_update = 0.0
+        self.elapsed_time = 0.0
         self.in_outage = False
         self.outage_counter = 0
+        self.scheduled_outage_started = False
         
         if seed is not None:
             np.random.seed(seed)
@@ -83,6 +87,7 @@ class StarTracker:
             (q_measured, valid) where q_measured is None if no measurement (outage)
             and valid indicates if measurement is valid (not outlier/outage)
         """
+        self.elapsed_time += dt
         self.time_since_update += dt
         
         # Check if it's time for an update
@@ -98,6 +103,18 @@ class StarTracker:
                 return None, False
             else:
                 self.in_outage = False
+
+        if (
+            self.params.outage_start_time is not None
+            and not self.scheduled_outage_started
+            and self.elapsed_time >= self.params.outage_start_time
+        ):
+            if self.params.outage_duration < 1:
+                raise ValueError("outage_duration must be at least one measurement")
+            self.scheduled_outage_started = True
+            self.in_outage = True
+            self.outage_counter = self.params.outage_duration - 1
+            return None, False
         
         # Check for new outage
         if self.params.outage_prob > 0 and np.random.rand() < self.params.outage_prob:

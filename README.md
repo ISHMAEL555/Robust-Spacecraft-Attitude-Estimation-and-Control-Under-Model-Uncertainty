@@ -94,8 +94,8 @@ Reaction-wheel torque is modelled as $\boldsymbol{\tau}_{rw} \approx -\dot{\math
 
 | Item | Definition |
 |------------------------------------|------------------------------------|
-| Nominal state | $\hat{x}_{nom} = [\hat{q},\, \hat{\mathbf{b}}_g]$ |
-| Error state | $\delta x = [\delta\boldsymbol{\theta},\, \delta\mathbf{b}_g]^T \in \mathbb{R}^6$ |
+| Nominal state | Variant A: $[\hat{q},\, \hat{\mathbf{b}}_g]$; Variant B: $[\hat{q},\,\hat{\boldsymbol{\omega}},\,\hat{\mathbf{b}}_g]$ |
+| Error state | Variant A: $[\delta\boldsymbol{\theta},\, \delta\mathbf{b}_g]^T \in \mathbb{R}^6$; Variant B: $[\delta\boldsymbol{\theta},\,\delta\boldsymbol{\omega},\,\delta\mathbf{b}_g]^T \in \mathbb{R}^9$ |
 | Error dynamics | $\delta\dot{x} = F\delta x + Gw$ |
 | Covariance propagation | $\dot{P} = FP + PF^T + GQG^T$, discretised from the continuous model (van Loan) |
 | Measurement | $z_k = H_k\delta x_k + v_k$, innovation $\nu_k = z_k - h(\hat{x}_k^-)$ |
@@ -109,7 +109,7 @@ Reaction-wheel torque is modelled as $\boldsymbol{\tau}_{rw} \approx -\dot{\math
 The role of the inertia matrix depends on how the filter is propagated, so the study makes this explicit:
 
 - **Variant A (gyro-driven, baseline):** the measured rate drives kinematic propagation. The filter does not depend on $I$; inertia error then acts through the controller and feedforward terms only.
-- **Variant B (model-aided):** angular rate is part of the filter state and propagated with Euler's equations using $I_{model}$ and the commanded torque. Inertia mismatch enters the estimator directly through process-model error.
+- **Variant B (model-aided):** the nine-dimensional error state is $[\delta\boldsymbol{\theta},\delta\boldsymbol{\omega},\delta\mathbf{b}_g]$. Rate is initialized from the gyro, propagated with Euler's equations using $I_{model}$ and applied wheel torque, then corrected by gyro measurements; star-tracker updates correct attitude and correlated states. Inertia mismatch enters the estimator directly through process-model error, and NEES uses nine degrees of freedom.
 
 Comparing A and B isolates *where* inertia uncertainty hurts: the estimator, the controller, or both.
 
@@ -117,11 +117,11 @@ Comparing A and B isolates *where* inertia uncertainty hurts: the estimator, the
 
 ## Consistency Evaluation
 
-For the six-dimensional estimation error $e = [\delta\boldsymbol{\theta},\; \mathbf{b}_{g,true}-\hat{\mathbf{b}}_g]^T$:
+For Variant A, the six-dimensional estimation error is $e = [\delta\boldsymbol{\theta},\; \mathbf{b}_{g,true}-\hat{\mathbf{b}}_g]^T$. Variant B additionally includes angular-rate error, giving nine dimensions:
 
 $$\epsilon_{NEES} = e^TP^{-1}e, \qquad \epsilon_{NIS} = \nu^TS^{-1}\nu$$
 
-Over $N$ independent Monte Carlo runs, the time-indexed average satisfies $N\bar{\epsilon}_{NEES} \sim \chi^2_{N n_x}$ with $n_x = 6$ for a consistent filter. NIS uses $n_z = 3$ for the star-tracker attitude measurement. Two-sided $95\%$ bounds are applied in both cases.
+Over $N$ independent Monte Carlo runs, the time-indexed average satisfies $N\bar{\epsilon}_{NEES} \sim \chi^2_{N n_x}$, where $n_x=6$ for Variant A and $n_x=9$ for Variant B. NIS uses $n_z = 3$ for the star-tracker attitude measurement; its bounds at each update epoch use the actual number of available measurements across runs. NIS summaries include every available innovation, including measurements later rejected by the gate, so rejected outliers remain visible in the diagnostic. NEES and NIS reporting confidence levels are configured independently.
 
 Additional measures: attitude and bias RMSE, covariance growth, $3\sigma$ containment, convergence time, innovation whiteness (autocorrelation test).
 
@@ -148,7 +148,7 @@ Interpretation:
 | E6 | Closed loop | Estimator degradation level | When does estimation become control-limiting? | Pointing error, settling time, effort |
 | E7 | Monte Carlo | Initial conditions and parameters | Are conclusions statistically repeatable? | Distributions, confidence intervals |
 
-Each experiment is defined by a configuration file with a fixed seed, so every figure is reproducible from a single command.
+The experiment configurations define common physical and sensor assumptions. The parameter grids and case labels are defined in `scripts/run_research_campaigns.py`; each Monte Carlo run uses a deterministic seed offset from the case's configured seed. Per-case time histories, a CSV/JSON metric table, and campaign plots are written to the selected output directory.
 
 ------------------------------------------------------------------------
 
@@ -166,7 +166,7 @@ Three feedback configurations separate controller limits from estimator limits:
 | Estimated-state | $\hat{q},\,\hat{\boldsymbol{\omega}}$ | Flight-like baseline |
 | Degraded estimate | MEKF under injected mismatch | Quantify estimation-induced loss |
 
-Metrics: pointing error (RMS and peak), settling time, peak torque, control effort ($\int\lVert\tau\rVert^2dt$), recovery time. The central test is whether an estimator that passes an estimation-only review still meets pointing requirements once placed in the loop, and the reverse.
+Spacecraft pointing error is measured from the **true attitude** to the desired attitude; attitude-estimation error is reported separately. Metrics include pointing RMS/peak, 2%-of-initial-error settling time, commanded and applied peak torque, commanded and applied control effort ($\int\lVert\tau\rVert^2dt$), estimation error, 3-sigma component coverage, and outage recovery where applicable. No mission pointing limit has been specified, so results compare the metrics across cases but do not declare an acceptable/failed flight-performance boundary.
 
 ------------------------------------------------------------------------
 
@@ -178,7 +178,11 @@ With no absolute updates, attitude uncertainty is driven by gyro noise and bias.
 
 $$\sigma_\theta^2(t) \approx \sigma_{\theta,0}^2 + \sigma_v^2\,t + \sigma_{b,0}^2\,t^2 + \tfrac{1}{3}\sigma_u^2\,t^3$$
 
-The study maps $\text{outage duration} \rightarrow \text{covariance growth} \rightarrow \text{pointing degradation} \rightarrow \text{recovery transient}$.
+Here $\sigma_{\theta,0}^2$ and $\sigma_{b,0}^2$ are the filter's posterior
+attitude and bias variances at outage onset, rather than the sensor's initial
+bias parameter.
+
+The campaign injects a deterministic one-shot outage at a configured simulation time and maps $\text{outage duration} \rightarrow \text{covariance growth} \rightarrow \text{pointing degradation} \rightarrow \text{recovery transient}$. The implementation also retains probabilistic outages for stochastic sensor-degradation studies.
 
 ### Star-tracker outlier
 
@@ -217,22 +221,44 @@ Unit tests live in `tests/unit/`, system-level tests in `tests/integration/`.
 The first reproducible 1000 s nominal run (`config/nominal.yaml`, seed 42) completed
 with 100,000 time steps. The run produced a mean NEES of 6.561 and mean NIS of 2.953;
 96.7% of NEES samples and 95.1% of valid NIS samples fell within their raw 95%
-chi-squared bounds (6 and 3 degrees of freedom, respectively). Pointing-error RMS
-was 0.036 deg and the peak was 1.132 deg.
+chi-squared bounds (6 and 3 degrees of freedom, respectively). True spacecraft
+pointing-error RMS was 0.671 deg and peak error was 4.243 deg; the separate
+attitude-estimation RMSE was 0.036 deg. The 0.036 deg figure is estimator accuracy,
+not closed-loop pointing performance.
 
 These are **single-run, time-series diagnostics**, not Monte Carlo confidence
 claims; adjacent samples are correlated. Results and plots are in
 [`reports/nominal_analysis/`](reports/nominal_analysis/), with the raw simulation
 history in [`reports/nominal.npz`](reports/nominal.npz).
 
+The E1-E7 exploratory grid contains 27 cases with 10 runs of 100 s each. It is
+useful for comparing trends, but is not the planned final study of 50-100 runs
+at 500-1000 s per case. The corrected run completed all 27 cases; its per-case
+histories, summary table, and plots are in
+[`reports/research_campaigns/`](reports/research_campaigns/).
+
+Key exploratory findings:
+
+| Finding | Result |
+|------------------------------------|------------------------------------|
+| Matched gyro-driven filter (E1/E7) | Mean NEES 6.007 and NIS 2.973; 95.9% and 97.0% of samples, respectively, were inside the raw 95% bounds |
+| Model-aided inertia sensitivity (E1) | Matched mean NEES/NIS were 10.686/3.033; 10% and 25% inertia mismatch raised mean NEES to $2.26\times10^5$ and $1.17\times10^6$ |
+| Process-noise sensitivity (E2) | Scaling $Q$ by 0.1 and 10 produced mean NEES 45.318 and 0.875, respectively, illustrating severe overconfidence and conservatism |
+| Outage covariance cross-check (E5) | Observed/predicted attitude variance ratios were 1.073, 1.029, and 1.012 for 1-, 10-, and 30-update outages |
+| Outlier gating (E4) | Gating kept mean NEES at 5.460 versus values above $6.2\times10^4$ without gating; NIS summaries include rejected innovations |
+| Closed-loop stress case (E6) | Pointing RMS was about 99 deg across the tested estimator-degradation variants; this is a stress-case result, not a flight-performance acceptance decision |
+
+These 10-run results support trend comparisons, not high-confidence mission
+claims. E6 remains subject to the lack of a specified mission pointing limit.
+
 | Result | Status |
 |------------------------------------|------------------------------------|
-| R1 | Preliminary nominal NEES/NIS for seed 42; Monte Carlo validation pending |
-| R2 | Consistency-limit curves for $\Delta I$, $Q$ and $R$ mismatch — pending |
-| R3 | Outage covariance growth vs. analytical prediction — pending |
-| R4 | Outlier accept/reject comparison — pending |
-| R5 | Pointing error vs. estimator degradation level — pending |
-| R6 | Consistency and pointing-performance limits — pending |
+| R1 | E0 single-seed baseline and 10-run E7 pilot completed; final Monte Carlo power pending |
+| R2 | E1 inertia, E2 process-noise, and E3 measurement-noise exploratory comparisons completed |
+| R3 | E5 outage cases and analytical covariance-growth cross-check completed |
+| R4 | E4 gated/ungated outlier exploratory comparison completed |
+| R5 | E6 closed-loop degradation pilot completed; pointing acceptance threshold is unspecified |
+| R6 | Final statistically powered consistency and pointing-performance limits pending |
 
 | Result | Content |
 |------------------------------------|------------------------------------|
@@ -299,6 +325,18 @@ python scripts/analyze_results.py reports/nominal.npz --all --output-dir reports
 python scripts/run_experiment.py --config config/nominal.yaml
 ```
 
+Run the E1-E7 parameter grids. Omit `--duration` to use each experiment's configured
+duration; use a shorter duration for a smoke test, not for final conclusions:
+
+``` bash
+python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --output-dir reports/research_campaigns
+```
+
+The runner emits one compressed time-history file per case plus `summary.csv`,
+`summary.json`, and one comparison plot per experiment. The configured-duration
+campaign can be run with `--runs 50` and no duration override; E7's 100-run target
+can be run separately with `--campaign E7 --runs 100 --output-dir reports/research_campaigns/E7`.
+
 ------------------------------------------------------------------------
 
 ## Assumptions & Limitations
@@ -314,17 +352,13 @@ python scripts/run_experiment.py --config config/nominal.yaml
 - [x] Freeze quaternion and frame conventions
 - [x] Implement truth dynamics
 - [x] Implement sensor models
-- [x] Derive and implement MEKF (Variants A and B)
+- [x] Derive and implement gyro-driven and nine-state model-aided MEKF variants
 - [x] Verify core estimator behavior with unit and integration tests
-- [ ] Establish statistically consistent nominal NEES/NIS across Monte Carlo runs
-- [ ] Establish nominal consistency
-- [ ] Implement attitude controller
-- [ ] Integrate reaction-wheel model
-- [ ] Model-uncertainty campaign (E1–E3)
-- [ ] Sensor-degradation campaign (E4–E5)
-- [ ] Closed-loop analysis (E6)
-- [ ] Monte Carlo campaign (E7)
-- [ ] Establish consistency and control limits
+- [x] Implement attitude controller and integrate reaction-wheel model
+- [x] Run exploratory E1-E7 campaign pilot (10 runs x 100 s per case)
+- [ ] Run final statistically powered nominal NEES/NIS and E1-E7 campaigns
+- [ ] Establish consistency and control limits at final study duration/run count
+- [ ] Define a mission pointing acceptance threshold before declaring pointing pass/fail
 - [ ] Write-up and report
 
 ## References

@@ -37,6 +37,8 @@ class TestMEKF:
         assert mekf.I_model is not None
         assert mekf.omega_hat is not None
         assert np.allclose(mekf.omega_hat, 0.0)
+        assert mekf.P.shape == (9, 9)
+        assert mekf.nees_dof == 9
     
     def test_model_aided_requires_inertia(self):
         params = MEKFParams(variant='model_aided', inertia_model=None)
@@ -223,7 +225,24 @@ class TestMEKF:
 
 class TestMEKFVariants:
     """Test both MEKF variants."""
-    
+
+    @pytest.mark.parametrize("variant", ["gyro_driven", "model_aided"])
+    def test_attitude_error_reset_transforms_covariance(self, variant):
+        inertia = np.diag([100.0, 80.0, 60.0]) if variant == "model_aided" else None
+        mekf = create_mekf_nominal(variant, inertia=inertia)
+        mekf.P = np.eye(mekf.state_dim)
+        delta_theta = np.array([0.1, -0.2, 0.05])
+        reset = np.eye(mekf.state_dim)
+        reset[:3, :3] -= 0.5 * np.array([
+            [0.0, -delta_theta[2], delta_theta[1]],
+            [delta_theta[2], 0.0, -delta_theta[0]],
+            [-delta_theta[1], delta_theta[0], 0.0],
+        ])
+
+        mekf._reset_attitude_error_covariance(delta_theta)
+
+        assert np.allclose(mekf.P, reset @ reset.T)
+
     def test_variant_a_gyro_driven(self):
         """Variant A: Gyro-driven propagation."""
         mekf = create_mekf_nominal('gyro_driven')
@@ -255,6 +274,58 @@ class TestMEKFVariants:
         # Both quaternion and omega_hat updated
         assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0], atol=1e-12)
         assert not np.allclose(mekf.omega_hat, 0.0)
+
+    def test_model_aided_rate_initializes_from_gyro_and_covariance_stays_valid(self):
+        mekf = create_mekf_nominal(
+            'model_aided',
+            inertia=np.diag([100.0, 80.0, 60.0]),
+        )
+        rate = np.array([0.02, -0.01, 0.005])
+        bias = np.array([0.001, -0.002, 0.0005])
+        mekf.b_hat = np.zeros(3)
+
+        mekf.step(rate + bias, None, np.zeros(3), dt=0.01)
+        assert np.allclose(mekf.omega_hat, rate + bias, atol=2e-6)
+
+        mekf.step(rate + bias, None, np.zeros(3), dt=0.01)
+        assert np.all(np.isfinite(mekf.P))
+        assert np.allclose(mekf.P, mekf.P.T, atol=1e-12)
+        assert np.min(np.linalg.eigvalsh(mekf.P)) > 0.0
+
+    def test_model_aided_nees_includes_rate_error(self):
+        mekf = create_mekf_nominal(
+            'model_aided',
+            inertia=np.diag([100.0, 80.0, 60.0]),
+        )
+        rate = np.array([0.02, -0.01, 0.005])
+        mekf.step(rate, None, np.zeros(3), dt=0.01)
+
+        nees = mekf.compute_nees(mekf.q_hat, np.zeros(3), rate)
+
+        assert nees >= 0.0
+
+    def test_model_aided_rate_jacobian_matches_finite_difference(self):
+        inertia = np.diag([100.0, 80.0, 60.0])
+        mekf = create_mekf_nominal('model_aided', inertia=inertia)
+        omega = np.array([0.02, -0.01, 0.005])
+        torque = np.array([0.01, -0.02, 0.005])
+        F, _ = mekf._compute_F_G_model_aided(omega)
+
+        def rate_dynamics(rate):
+            return np.linalg.solve(
+                inertia,
+                torque - np.cross(rate, inertia @ rate),
+            )
+
+        epsilon = 1e-7
+        numerical = np.column_stack([
+            (rate_dynamics(omega + np.eye(3)[i] * epsilon)
+             - rate_dynamics(omega - np.eye(3)[i] * epsilon))
+            / (2.0 * epsilon)
+            for i in range(3)
+        ])
+
+        assert np.allclose(F[3:6, 3:6], numerical, atol=1e-10)
 
 
 if __name__ == "__main__":

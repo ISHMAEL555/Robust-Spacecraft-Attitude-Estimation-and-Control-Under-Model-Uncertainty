@@ -6,19 +6,36 @@ Time step: 0.010 s
 Steps: 100000
 
 Consistency Statistics:
-  NEES mean: 6.561
+  NEES mean (dof=6): 6.561
+  NIS mean (dof=3): 2.953
   NEES in bounds: 96.7%
-  NIS mean: 2.953
   NIS in bounds: 95.1%
 
 Star-tracker updates: 1000 attempted, 0 rejected
 
 Pointing Error:
-  Mean: 0.008 deg
-  RMS: 0.036 deg
-  Peak: 1.132 deg
-  Mean (arcsec): 30.5
-  RMS (arcsec): 130.8
+  Mean: 0.177 deg
+  RMS: 0.671 deg
+  Peak: 4.243 deg
+  Mean (arcsec): 638.1
+  RMS (arcsec): 2415.2
+
+Performance Metrics:
+  Pointing RMS: 0.6709 deg
+  Peak pointing error: 4.243 deg
+  Final pointing error: 0.01667 deg
+  Commanded control effort: 0.3947 N^2 m^2 s
+  Applied control effort: 0.3573 N^2 m^2 s
+  Peak commanded torque: 0.1 N m
+  Peak applied torque: 0.1 N m
+  Command saturation: 0.295 %
+  Attitude estimation RMSE: 0.03634 deg
+  Angular-rate estimation RMSE: 0.001 rad/s
+  Bias estimation RMSE: 1.398e-05 rad/s
+  Attitude 3-sigma component coverage: 99.74 %
+  Bias 3-sigma component coverage: 99.72 %
+
+Attitude estimation RMSE: 0.03634 deg
 
 Final Covariance (3-sigma):
   Attitude: [27.5 27.5 27.5] arcsec
