@@ -72,11 +72,11 @@ class ReactionWheelAssembly:
         Returns:
             Achieved body torque (N*m) - 3-vector
         """
-        # Pseudo-inverse allocation: tau_wheel = A^+ * tau_cmd
-        # where A is the 3xN axis matrix
+        # Wheel motor torque increases wheel momentum. The spacecraft reaction
+        # torque is equal and opposite: tau_body = -A @ tau_wheel.
         A = self.axes
         A_pinv = np.linalg.pinv(A)
-        tau_wheel_cmd = A_pinv @ tau_cmd
+        tau_wheel_cmd = -A_pinv @ tau_cmd
         
         # Apply torque saturation
         tau_wheel_sat = np.clip(tau_wheel_cmd, -self.params.max_torque, self.params.max_torque)
@@ -88,8 +88,8 @@ class ReactionWheelAssembly:
         # Reduce torque if momentum is saturated
         tau_wheel_final = tau_wheel_sat * momentum_margin
         
-        # Convert back to body torque
-        tau_body = A @ tau_wheel_final
+        # Project wheel momentum rate into body frame with equal-and-opposite sign.
+        tau_body = -A @ tau_wheel_final
         
         # Update wheel states (simplified)
         self.torque = tau_wheel_final
