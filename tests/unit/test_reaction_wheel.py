@@ -77,7 +77,7 @@ class TestReactionWheelAssembly:
         rwa.update_momentum(1.0)
         
         # Momentum should equal torque * dt
-        expected_momentum = np.array([0.05, 0.03, 0.02])
+        expected_momentum = np.array([-0.05, -0.03, -0.02])
         assert np.allclose(rwa.get_momentum(), expected_momentum)
     
     def test_momentum_saturation(self):
@@ -107,6 +107,18 @@ class TestReactionWheelAssembly:
         body_momentum = rwa.get_body_momentum()
         # With orthogonal axes, body-frame wheel momentum equals the wheel-state vector
         assert np.allclose(body_momentum, rwa.get_momentum())
+
+    def test_total_angular_momentum_conservation(self):
+        """Wheel/body exchange must conserve total angular momentum."""
+        params = ReactionWheelParams(num_wheels=3, max_torque=0.1, max_momentum=10.0)
+        rwa = ReactionWheelAssembly(params)
+        tau_cmd = np.array([0.05, -0.03, 0.02])
+        body_momentum_change = np.zeros(3)
+        for _ in range(10):
+            tau_body = rwa.compute_torque(tau_cmd)
+            body_momentum_change += tau_body * 0.1
+            rwa.update_momentum(0.1)
+        assert np.allclose(body_momentum_change + rwa.get_body_momentum(), 0.0, atol=1e-12)
 
     def test_total_angular_momentum_conservation(self):
         """Wheel/body exchange must conserve total angular momentum."""
@@ -168,7 +180,7 @@ class TestAllocationFunctions:
             [0, np.sin(beta), 0, -np.sin(beta)],
             [np.cos(beta), np.cos(beta), np.cos(beta), np.cos(beta)]
         ])
-        tau_body = A @ tau_wheel
+        tau_body = -A @ tau_wheel
         assert np.allclose(tau_body, tau_cmd, atol=1e-10)
     
     def test_allocate_torque_4wheel_pyramid_saturation(self):
