@@ -2,7 +2,7 @@
 
 **MEKF statistical consistency and its coupling to closed-loop pointing performance, under spacecraft-model and sensor mismatch.**
 
-![Status](https://img.shields.io/badge/status-simulation%20core%20implemented-yellow) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Domain](https://img.shields.io/badge/domain-spacecraft%20GNC-lightgrey)
+![Status](https://img.shields.io/badge/status-exploratory%20study%20complete%2C%20final%20validation%20open-yellow) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Domain](https://img.shields.io/badge/domain-spacecraft%20GNC-lightgrey)
 
 ------------------------------------------------------------------------
 
@@ -15,6 +15,24 @@ The deliverable is not a statement that "the MEKF works." It is a quantified eng
 $$\text{Model / Sensor Uncertainty} \;\rightarrow\; \text{Consistency Limit} \;\rightarrow\; \text{Pointing-Performance Limit}$$
 
 supported by NEES/NIS statistics, Monte Carlo distributions, covariance behaviour, and closed-loop metrics.
+
+> **Project status:** the estimator, controller, verification tests, and all 27
+> exploratory E1-E7 cases are implemented and run. The results below are
+> preliminary (10 Monte Carlo runs per case, 100 s for the uniform pilot).
+> Final statistically powered campaigns and some interpretation remain open;
+> this repository does not claim flight qualification or mission acceptance.
+
+### Contents
+
+- [Why this problem](#why-this-problem)
+- [Scope and architecture](#scope)
+- [Models and estimator](#models)
+- [Consistency and experiment matrix](#consistency-evaluation)
+- [Verification](#verification--validation)
+- [Results and status](#results)
+- [Repository layout](#repository-structure)
+- [Getting started](#getting-started)
+- [Assumptions, limitations, and remaining work](#assumptions--limitations)
 
 ------------------------------------------------------------------------
 
@@ -82,7 +100,7 @@ with angle random walk ($\sigma_v$) and bias random walk ($\sigma_u$) parameters
 
 ### Star tracker
 
-Absolute attitude measurement $q_{ST} = \delta q_{ST} \otimes q$, with $\delta q_{ST} \approx [\tfrac{1}{2}\delta\boldsymbol{\theta}_{ST},\,1]^T$. Supports finite update rate, measurement noise, isolated outliers and outages.
+Absolute attitude measurement $q_{ST} = \delta q_{ST} \otimes q$, with $\delta q_{ST} \approx [\tfrac{1}{2}\delta\boldsymbol{\theta}_{ST},\,1]^T$. Supports finite update rate, measurement noise, probabilistic outliers, probabilistic outages, and deterministic one-shot outage schedules.
 
 ### Actuator
 
@@ -184,9 +202,9 @@ bias parameter.
 
 The campaign injects a deterministic one-shot outage at a configured simulation time and maps $\text{outage duration} \rightarrow \text{covariance growth} \rightarrow \text{pointing degradation} \rightarrow \text{recovery transient}$. The implementation also retains probabilistic outages for stochastic sensor-degradation studies.
 
-### Star-tracker outlier
+### Star-tracker outliers
 
-A single anomalous measurement is injected and gated by the NIS statistic against a configurable $\chi^2_3$ threshold. Gating is disabled for the nominal baseline and enabled in `config/sensor_degradation.yaml`; its confidence is configured separately from the NIS reporting confidence. The comparison between accepting and rejecting the outlier covers state, covariance and closed-loop pointing. This is a **measurement-consistency study, not a full FDIR design.**
+Outliers are injected probabilistically for the E4 gated/ungated sweep and evaluated using the NIS statistic against a configurable $\chi^2_3$ threshold. Gating is disabled in the nominal configuration; its confidence is configured separately from the NIS reporting confidence. The comparison covers state, covariance, and closed-loop pointing. This is a **measurement-consistency study, not a full FDIR design.**
 
 ------------------------------------------------------------------------
 
@@ -199,18 +217,20 @@ Quaternion algebra → Rigid-body dynamics → Sensor models → MEKF propagatio
 → MEKF update → Consistency metrics → Controller → Closed loop → Monte Carlo
 ```
 
-Planned checks include:
+The implemented verification coverage includes:
 
-- Quaternion: unit norm, composition/inverse identities, rotation-matrix equivalence
-- Dynamics: angular-momentum and energy conservation in the torque-free case
-- Jacobians: analytic $F$, $H$ against finite differences
-- Covariance: symmetry and positive semi-definiteness after every update; Joseph vs. standard form agreement
-- Reset: consistency of the covariance reset with the multiplicative injection
-- Filter: NEES/NIS consistent on a **matched** simulation (Q, R, model all correct) before any mismatch is introduced
-- Outage: simulated covariance growth against the analytical expression above
-- Optional independent cross-validation of selected dynamics/estimation results in MATLAB/Simulink
+- Quaternion and rigid-body dynamics unit checks
+- Analytic model-aided rate Jacobian against finite differences
+- MEKF state dimension, gyro initialization/update, and covariance-reset regressions
+- Matched-model nominal consistency diagnostics
+- Deterministic star-tracker outage behavior and an analytical covariance-growth cross-check
+- Commanded-versus-applied torque and performance-metric regressions
 
-Unit tests live in `tests/unit/`, system-level tests in `tests/integration/`.
+The recorded full test run after the estimator changes passed **112 tests**.
+Unit tests live in `tests/unit/`; system-level tests live in `tests/integration/`.
+This is software verification of the implemented model, not independent
+hardware validation or flight qualification. Optional independent
+cross-validation in MATLAB/Simulink remains future work.
 
 ------------------------------------------------------------------------
 
@@ -227,47 +247,76 @@ attitude-estimation RMSE was 0.036 deg. The 0.036 deg figure is estimator accura
 not closed-loop pointing performance.
 
 These are **single-run, time-series diagnostics**, not Monte Carlo confidence
-claims; adjacent samples are correlated. Results and plots are in
+claims; adjacent samples are correlated. The first 100 s of this same saved run
+have 2.119 deg pointing RMS, which is consistent with the E7 100 s ensemble
+mean below. The lower full-run RMS reflects the longer averaging window as the
+initial rate transient damps; E0 and E7 should only be compared at matching
+durations. Results and plots are in
 [`reports/nominal_analysis/`](reports/nominal_analysis/), with the raw simulation
 history in [`reports/nominal.npz`](reports/nominal.npz).
 
-The E1-E7 exploratory grid contains 27 cases with 10 runs of 100 s each. It is
-useful for comparing trends, but is not the planned final study of 50-100 runs
-at 500-1000 s per case. The corrected run completed all 27 cases; its per-case
-histories, summary table, and plots are in
+### E1-E7 exploratory campaign
+
+All **27 cases** completed with 10 deterministic-seed runs per case and a
+uniform 100 s duration. This is a trend-finding pilot, not the planned final
+study of 50-100 runs at longer durations. The CSV/JSON summaries, compressed
+case histories, and campaign plots are in
 [`reports/research_campaigns/`](reports/research_campaigns/).
 
-Key exploratory findings:
+| Artifact | Purpose |
+|---|---|
+| [`summary.csv`](reports/research_campaigns/summary.csv) · [`summary.json`](reports/research_campaigns/summary.json) | Per-case metrics and run-level confidence intervals |
+| [`nominal_report.txt`](reports/nominal_analysis/nominal_report.txt) | E0 consistency, pointing, estimator, and actuator summary |
+| [`run_research_campaigns.py`](scripts/run_research_campaigns.py) | Campaign definitions, deterministic seeds, and output generation |
 
-| Finding | Result |
-|------------------------------------|------------------------------------|
-| Matched gyro-driven filter (E1/E7) | Mean NEES 6.007 and NIS 2.973; 95.9% and 97.0% of samples, respectively, were inside the raw 95% bounds |
-| Model-aided inertia sensitivity (E1) | Matched mean NEES/NIS were 10.686/3.033; 10% and 25% inertia mismatch raised mean NEES to $2.26\times10^5$ and $1.17\times10^6$ |
-| Process-noise sensitivity (E2) | Scaling $Q$ by 0.1 and 10 produced mean NEES 45.318 and 0.875, respectively, illustrating severe overconfidence and conservatism |
-| Outage covariance cross-check (E5) | Observed/predicted attitude variance ratios were 1.073, 1.029, and 1.012 for 1-, 10-, and 30-update outages |
-| Outlier gating (E4) | Gating kept mean NEES at 5.460 versus values above $6.2\times10^4$ without gating; NIS summaries include rejected innovations |
-| Closed-loop stress case (E6) | Pointing RMS was about 99 deg across the tested estimator-degradation variants; this is a stress-case result, not a flight-performance acceptance decision |
+| Campaign | What was varied | Representative pilot finding |
+|---|---|---|
+| E1: inertia mismatch | Inertia error; gyro-driven vs. model-aided MEKF | Gyro-driven NEES stayed near 6 through 25% mismatch; model-aided NEES rose from 10.686 matched to $2.26\times10^5$ at 10% and $1.17\times10^6$ at 25% |
+| E2: process noise | $Q$ scale: 0.1, 1, 10 | Mean NEES was 45.318, 6.007, and 0.875, respectively |
+| E3: measurement noise | $R$ scale: 0.1, 1, 10 | Mean NIS was 4.123, 2.973, and 1.147, respectively |
+| E4: outlier/gating | 0.1, 0.5, 1 rad outlier magnitudes at 5% probability; gating on/off | Gating limited mean NEES to 5.460; ungated mean NEES exceeded $6.2\times10^4$. NIS includes rejected innovations and therefore remains a diagnostic of the anomalous measurements |
+| E5: tracker outage | 1, 10, 30 consecutive 1 Hz updates | Observed/predicted attitude-variance ratios were 1.073, 1.029, and 1.012 |
+| E6: closed-loop stress | 60 deg initial attitude error, 0.1 rad/s initial rate; estimator variants | Baseline stress-case pointing RMS was 1.730 rad (99.1 deg); commanded torque was at its limit for 95.3% of samples |
+| E7: nominal repeatability | Matched nominal configuration | Mean NEES 6.007, NIS 2.973; 95.9%/97.0% of raw samples fell inside nominal 95% bounds |
 
-These 10-run results support trend comparisons, not high-confidence mission
-claims. E6 remains subject to the lack of a specified mission pointing limit.
+**How to read the E0/E7 pointing results:** E0 is one 1,000 s run (0.671 deg
+RMS); E7 is a 10-run ensemble at 100 s per run (2.120 deg mean RMS). A
+duration-matched slice of the E0 history gives 2.119 deg RMS over its first
+100 s. The difference is explained by the early rate-damping transient being
+included in the shorter window—not by a contradictory filter result.
 
-| Result | Status |
-|------------------------------------|------------------------------------|
-| R1 | E0 single-seed baseline and 10-run E7 pilot completed; final Monte Carlo power pending |
-| R2 | E1 inertia, E2 process-noise, and E3 measurement-noise exploratory comparisons completed |
-| R3 | E5 outage cases and analytical covariance-growth cross-check completed |
-| R4 | E4 gated/ungated outlier exploratory comparison completed |
-| R5 | E6 closed-loop degradation pilot completed; pointing acceptance threshold is unspecified |
-| R6 | Final statistically powered consistency and pointing-performance limits pending |
+**How to read E6:** this is an intentionally severe, large-initial-error
+closed-loop stress test, not nominal pointing and not an isolated measure of
+estimator quality. The sustained torque saturation and near-180 deg peak
+pointing error show that this configuration does not recover effectively
+within the 100 s pilot. No mission pointing acceptance threshold has been
+specified, so no mission-level pass/fail claim is made.
 
-| Result | Content |
-|------------------------------------|------------------------------------|
-| R1 | Nominal NEES/NIS with confidence bounds |
-| R2 | Consistency-limit curves for $\Delta I$, $Q$ and $R$ mismatch |
-| R3 | Outage covariance growth vs. analytical prediction |
-| R4 | Outlier accept/reject comparison |
-| R5 | Pointing error vs. estimator degradation level |
-| R6 | Summary table: mismatch level at which consistency fails and at which pointing requirements fail |
+| Deliverable | Status |
+|---|---|
+| Estimator variants, metrics, and E1-E7 pilot tooling | Complete |
+| Corrected 27-case exploratory campaign and per-case artifacts | Complete |
+| Nominal seed-42 simulation and analysis artifacts | Complete |
+| E5 analytical outage-growth cross-check | Complete for tested outage durations |
+| Longer, statistically powered campaigns and consistency limits | Pending |
+| Mission pointing acceptance threshold / mission-level claim | Not defined; outside current evidence |
+
+### Campaign plots
+
+The following figures summarize the completed exploratory sweeps. They visualize
+pilot trends; use `summary.csv` and `summary.json` for the recorded metrics.
+
+| E1: inertia | E2: process noise | E3: measurement noise |
+|---|---|---|
+| ![E1 inertia-mismatch campaign summary](reports/research_campaigns/e1_summary.png) | ![E2 process-noise campaign summary](reports/research_campaigns/e2_summary.png) | ![E3 measurement-noise campaign summary](reports/research_campaigns/e3_summary.png) |
+
+| E4: outliers | E5: outages | E6: closed-loop |
+|---|---|---|
+| ![E4 outlier campaign summary](reports/research_campaigns/e4_summary.png) | ![E5 outage campaign summary](reports/research_campaigns/e5_summary.png) | ![E6 closed-loop campaign summary](reports/research_campaigns/e6_summary.png) |
+
+| E7: nominal repeatability | E0: nominal diagnostics |
+|---|---|
+| ![E7 nominal Monte Carlo campaign summary](reports/research_campaigns/e7_summary.png) | ![E0 nominal pointing history](reports/nominal_analysis/nominal_pointing.png) |
 
 ------------------------------------------------------------------------
 
@@ -275,20 +324,27 @@ claims. E6 remains subject to the lack of a specified mission pointing limit.
 
 ``` text
 spacecraft-estimation-control/
-├── src/
-│   ├── dynamics/        # rigid_body.py, quaternion.py
-│   ├── sensors/         # gyro.py, star_tracker.py
-│   ├── estimation/      # mekf.py
-│   ├── control/         # attitude_controller.py
-│   └── actuators/       # reaction_wheel.py
-├── experiments/         # nominal, model_uncertainty, noise_mismatch,
-│                        # sensor_outlier, sensor_outage, closed_loop
-├── analysis/            # consistency, monte_carlo, visualization
-├── tests/               # unit, integration
-├── config/              # per-experiment configuration and seeds
-├── scripts/
-├── docs/                # conventions, derivations
+├── config/                  # YAML simulation and campaign configurations
+├── docs/                    # Frame and quaternion conventions
 ├── reports/
+│   ├── nominal_analysis/    # E0 diagnostic plots and text report
+│   ├── research_campaigns/  # E1-E7 pilot CSV/JSON, plots, and NPZ cases
+│   └── nominal.npz          # E0 seed-42 history
+├── scripts/
+│   ├── analyze_results.py
+│   ├── run_experiment.py
+│   └── run_research_campaigns.py
+├── src/
+│   ├── actuators/           # Reaction-wheel model
+│   ├── control/             # Attitude controller
+│   ├── dynamics/            # Quaternion and rigid-body dynamics
+│   ├── estimation/          # MEKF variants
+│   └── sensors/             # Gyroscope and star tracker
+├── tests/
+│   ├── integration/
+│   └── unit/
+├── pyproject.toml
+├── requirements.txt
 └── README.md
 ```
 
@@ -298,7 +354,7 @@ Python · NumPy · SciPy · Matplotlib · pytest · Git/GitHub. MATLAB/Simulink 
 
 ## Getting Started
 
-Install the package and development dependencies, then run the tests:
+Install the package and development dependencies, then run the test suite:
 
 ``` bash
 python -m pip install -e ".[dev]"
@@ -317,12 +373,10 @@ Run the configured Monte Carlo campaign with a smaller run count for a quick che
 python scripts/run_experiment.py --config config/nominal.yaml --monte-carlo --runs 5 --output reports/nominal_mc.npz
 ```
 
-Generate a text report. Add `--all` to save diagnostic plots as well:
+Generate the text report and diagnostic plots:
 
 ``` bash
-python scripts/analyze_results.py reports/nominal.npz --output-dir reports/nominal_analysis
 python scripts/analyze_results.py reports/nominal.npz --all --output-dir reports/nominal_analysis
-python scripts/run_experiment.py --config config/nominal.yaml
 ```
 
 Run the E1-E7 parameter grids. Omit `--duration` to use each experiment's configured
@@ -333,33 +387,50 @@ python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100
 ```
 
 The runner emits one compressed time-history file per case plus `summary.csv`,
-`summary.json`, and one comparison plot per experiment. The configured-duration
-campaign can be run with `--runs 50` and no duration override; E7's 100-run target
-can be run separately with `--campaign E7 --runs 100 --output-dir reports/research_campaigns/E7`.
+`summary.json`, and one comparison plot per campaign. For a longer campaign,
+omit `--duration` to use the configured duration for each experiment. The
+campaigns can be run individually with `--campaign E1`, `--campaign E2`, etc.
+The current pilot artifacts should be preserved separately when starting a
+new run (choose a new `--output-dir`).
 
 ------------------------------------------------------------------------
 
 ## Assumptions & Limitations
 
-- Rigid body; no flexible modes or fuel slosh
-- Reaction-wheel model without friction, jitter or detailed hardware dynamics
-- Disturbance torque modelled as bounded/stochastic, not from a full environment model
-- Single-sensor attitude update (one star tracker); no multi-head blending
-- Conclusions apply to the stated sensor class and parameter ranges, and the analysis reports the ranges explicitly
+- Rigid-body spacecraft: no flexible modes, slosh, or structural coupling
+- Simplified reaction-wheel assembly: no friction, jitter, detailed wheel geometry,
+  or hardware faults beyond modeled torque/momentum limits
+- No orbit propagation or full environmental disturbance model; nominal
+  configurations use zero disturbance torque
+- Single star tracker; no multiple-head blending, horizon sensors, GNSS, or
+  relative-navigation sensors
+- Outlier gating is a measurement-consistency demonstration, not a complete
+  fault-detection, isolation, and recovery (FDIR) design
+- No mission pointing requirement is defined; results are reported without
+  claiming mission acceptance or flight readiness
+- Conclusions are limited to the implemented model and tested parameter ranges
 
 ## Roadmap
 
-- [x] Freeze quaternion and frame conventions
-- [x] Implement truth dynamics
-- [x] Implement sensor models
-- [x] Derive and implement gyro-driven and nine-state model-aided MEKF variants
-- [x] Verify core estimator behavior with unit and integration tests
-- [x] Implement attitude controller and integrate reaction-wheel model
-- [x] Run exploratory E1-E7 campaign pilot (10 runs x 100 s per case)
-- [ ] Run final statistically powered nominal NEES/NIS and E1-E7 campaigns
-- [ ] Establish consistency and control limits at final study duration/run count
-- [ ] Define a mission pointing acceptance threshold before declaring pointing pass/fail
-- [ ] Write-up and report
+- [x] Define and document quaternion/frame conventions
+- [x] Implement rigid-body truth dynamics, gyro/star-tracker models, controller,
+  and reaction-wheel actuator
+- [x] Implement gyro-driven 6-state and model-aided 9-state MEKF variants
+- [x] Add estimator, covariance-reset, Jacobian, sensor-outage, and
+  experiment-metric regression tests
+- [x] Separate true pointing from attitude-estimation error; report commanded
+  and applied torque/effort
+- [x] Generate E0 nominal outputs and complete the 27-case, 10-run x 100 s E1-E7 pilot
+- [x] Compare E5 outage covariance growth with the analytical approximation
+- [ ] Investigate model-aided consistency loss under inertia mismatch and the
+  actuator-saturated E6 recovery behavior
+- [ ] Run longer, statistically stronger campaigns and establish consistency
+  boundaries for the tested uncertainty ranges
+- [ ] Prepare a final results report and document remaining model validation work
+
+The absence of a mission pointing threshold is intentional in this study
+phase: the current model has no mission-level pointing requirement from which
+to derive a defensible pass/fail limit.
 
 ## References
 
