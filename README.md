@@ -3,7 +3,7 @@
 **A simulation study of MEKF consistency and closed-loop pointing under spacecraft-model and sensor uncertainty.**
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-112%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-updated%20on%20cleanup%20branch-yellow)
 ![Study](https://img.shields.io/badge/study-exploratory%20results-yellow)
 
 > **Status:** The simulation, two MEKF variants, verification tests, and all
@@ -36,8 +36,7 @@ accuracy**, **covariance consistency**, **true pointing performance**, and
 
 ## Performance assessment
 
-The tables below are drawn from the checked-in E0 report and E1-E7 campaign
-summary. E0 is one 1,000 s seed-42 trajectory. E7 and the degradation cases
+The tables below describe the previously generated pilot results. They must be regenerated after the actuator-sign correction in this branch before being treated as current campaign evidence. E0 is one 1,000 s seed-42 trajectory. E7 and the degradation cases
 are 10-run, 100 s pilots. E7's 95% intervals are run-level Student-t
 intervals; with only ten runs they are descriptive, not qualification
 evidence. Source files: [E0 analysis report](reports/nominal_analysis/nominal_report.txt)
@@ -120,12 +119,11 @@ and decreasing coverage with duration, but the campaign has not yet
 established a formal maximum tolerated outage or an independently validated
 recovery-time requirement.
 
-**Important NIS qualification:** campaign NIS summaries include innovations
-from measurements that the gate later rejects. Therefore the very large
-gated-case NIS in the table is the expected pre-gate outlier diagnostic; it
-must not be read as the NIS of accepted measurements. An accepted-only
-consistency statistic should be added before using gated NIS to claim
-post-rejection consistency.
+**NIS qualification:** campaign NIS summaries historically included innovations
+from measurements that the gate later rejects. The cleanup branch now computes
+an explicit accepted-only NIS mean and accepted-only in-bound fraction in
+addition to the all-measurement diagnostic. Regenerate the campaign before
+using those new metrics as quantitative evidence.
 
 ### Senior-engineering assessment
 
@@ -280,7 +278,8 @@ tests/unit/              Unit and regression tests
 **Current model boundaries**
 
 - Rigid body only; no flexible modes, fuel slosh, or structural coupling.
-- Simplified wheel model; no detailed hardware dynamics, friction, or jitter.
+- Simplified wheel allocation/actuator-limit model; no detailed hardware dynamics, friction, or jitter.
+- Wheel convention is explicit: $H_w=A h_w$ and $\\tau_{sc}=-A\\dot{h}_w$; a regression test checks angular-momentum exchange.
 - No orbit propagation or full environmental disturbance model; nominal cases
   use zero disturbance torque.
 - One star tracker; no multi-head blending, GNSS, or relative navigation.
@@ -290,12 +289,13 @@ tests/unit/              Unit and regression tests
 
 **Next engineering steps**
 
-1. Investigate model-aided consistency loss under inertia mismatch.
-2. Diagnose E6's actuator-saturated recovery behavior and separate controller
+1. Regenerate E0-E7 results after the reaction-wheel sign correction and accepted-only NIS analysis.
+2. Investigate model-aided consistency loss under inertia mismatch.
+3. Diagnose E6's actuator-saturated recovery behavior and separate controller
    limits from estimator effects.
-3. Run longer campaigns with justified run counts, uncertainty sweeps, and
+4. Run longer campaigns with justified run counts, uncertainty sweeps, and
    run-level confidence intervals.
-4. Establish consistency boundaries and document independent validation and
+5. Establish consistency boundaries and document independent validation and
    residual model risks.
 
 ## References
