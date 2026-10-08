@@ -73,6 +73,23 @@ class TestRigidBody:
         
         expected_omega_dot = np.linalg.inv(I) @ tau
         assert np.allclose(omega_dot, expected_omega_dot)
+
+    def test_wheel_momentum_gyroscopic_term_changes_acceleration(self):
+        inertia = np.diag([100.0, 80.0, 60.0])
+        omega = np.array([0.1, 0.2, -0.1])
+        wheel_momentum = np.array([0.0, 0.0, 2.0])
+        body = RigidBody(inertia, np.array([0.0, 0.0, 0.0, 1.0]), omega)
+
+        _, omega_dot = body.dynamics(np.zeros(3), wheel_momentum)
+
+        assert np.allclose(
+            omega_dot,
+            -np.linalg.solve(
+                inertia,
+                np.cross(omega, inertia @ omega)
+                + np.cross(omega, wheel_momentum),
+            ),
+        )
     
     def test_step_rk4(self):
         I = np.diag([100.0, 80.0, 60.0])

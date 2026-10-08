@@ -1,8 +1,8 @@
 """
 Rigid body dynamics for spacecraft attitude simulation.
 
-Truth model: nonlinear rigid body dynamics with reaction wheel torque and disturbances.
-I * omega_dot + omega x (I * omega) = tau_rw + tau_d
+Truth model:
+I * omega_dot + omega x (I * omega + h_w) = tau_rw + tau_d
 q_dot = 0.5 * Omega(omega) * q
 """
 
@@ -48,7 +48,9 @@ class RigidBody:
         eigvals = np.linalg.eigvals(self.I)
         assert np.all(eigvals > 0), "Inertia must be positive definite"
     
-    def dynamics(self, tau_rw: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def dynamics(
+        self, tau_rw: np.ndarray, wheel_momentum: Optional[np.ndarray] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute state derivatives.
         
@@ -59,16 +61,23 @@ class RigidBody:
             q_dot: Quaternion derivative
             omega_dot: Angular acceleration
         """
-        # Euler's equation: I * omega_dot + omega x (I * omega) = tau_rw + tau_d
+        h_w = np.zeros(3) if wheel_momentum is None else np.asarray(wheel_momentum, dtype=float)
         omega_cross_Iomega = np.cross(self.omega, self.I @ self.omega)
-        omega_dot = self.I_inv @ (tau_rw + self.tau_d - omega_cross_Iomega)
+        omega_dot = self.I_inv @ (
+            tau_rw + self.tau_d - omega_cross_Iomega - np.cross(self.omega, h_w)
+        )
         
         # Quaternion kinematics
         q_dot = quat_derivative(self.q, self.omega)
         
         return q_dot, omega_dot
     
-    def step(self, tau_rw: np.ndarray, dt: float) -> Tuple[np.ndarray, np.ndarray]:
+    def step(
+        self,
+        tau_rw: np.ndarray,
+        dt: float,
+        wheel_momentum: Optional[np.ndarray] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Integrate dynamics using RK4.
         
@@ -82,7 +91,7 @@ class RigidBody:
         # RK4 integration
         def f(state, tau):
             q, omega = state[:4], state[4:]
-            q_dot, omega_dot = self._derivatives(q, omega, tau)
+            q_dot, omega_dot = self._derivatives(q, omega, tau, wheel_momentum)
             return np.concatenate([q_dot, omega_dot])
         
         state = np.concatenate([self.q, self.omega])
@@ -99,10 +108,19 @@ class RigidBody:
         
         return self.q.copy(), self.omega.copy()
     
-    def _derivatives(self, q: np.ndarray, omega: np.ndarray, tau_rw: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _derivatives(
+        self,
+        q: np.ndarray,
+        omega: np.ndarray,
+        tau_rw: np.ndarray,
+        wheel_momentum: Optional[np.ndarray] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Compute derivatives for given state."""
+        h_w = np.zeros(3) if wheel_momentum is None else np.asarray(wheel_momentum, dtype=float)
         omega_cross_Iomega = np.cross(omega, self.I @ omega)
-        omega_dot = self.I_inv @ (tau_rw + self.tau_d - omega_cross_Iomega)
+        omega_dot = self.I_inv @ (
+            tau_rw + self.tau_d - omega_cross_Iomega - np.cross(omega, h_w)
+        )
         q_dot = quat_derivative(q, omega)
         return q_dot, omega_dot
     

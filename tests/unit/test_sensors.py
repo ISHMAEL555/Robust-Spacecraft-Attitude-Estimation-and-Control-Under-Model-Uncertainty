@@ -4,6 +4,7 @@ Unit tests for sensor models.
 
 import numpy as np
 import pytest
+from scipy.spatial.transform import Rotation
 from src.sensors.gyro import (
     Gyroscope, GyroParams, gyro_noise_covariance, 
     gyro_bias_process_noise, continuous_to_discrete_gyro_noise
@@ -49,6 +50,23 @@ class TestGyroscope:
         # Noise std should be sigma_v / sqrt(dt)
         expected_std = params.sigma_v / np.sqrt(params.dt)
         assert np.all(np.abs(diff) < 5 * expected_std)  # 5-sigma bound
+
+    def test_measurement_applies_sensor_misalignment(self):
+        rotation = Rotation.from_euler("z", 90.0, degrees=True).as_matrix()
+        params = GyroParams(
+            sigma_v=0.0,
+            sigma_u=0.0,
+            sigma_b0=0.0,
+            rate=100.0,
+            misalignment=rotation,
+        )
+        gyro = Gyroscope(params, initial_bias=np.zeros(3), seed=7)
+
+        assert np.allclose(
+            gyro.measure(np.array([1.0, 0.0, 0.0])),
+            [0.0, 1.0, 0.0],
+            atol=1e-12,
+        )
     
     def test_bias_random_walk(self):
         params = GyroParams(sigma_v=1e-4, sigma_u=1e-6, rate=100.0)

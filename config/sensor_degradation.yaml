@@ -50,11 +50,13 @@ reaction_wheels:
   max_torque: 0.1
   max_momentum: 10.0
   num_wheels: 3
+  gyroscopic_coupling: false
 
 analysis:
   monte_carlo_runs: 50
   nees_confidence: 0.95
   nis_confidence: 0.95
+  steady_state_window_s: [60.0, 100.0]
 
 # Experiment-specific parameters (override in command line)
 # outlier_prob: 0.01  # 1% outlier probability

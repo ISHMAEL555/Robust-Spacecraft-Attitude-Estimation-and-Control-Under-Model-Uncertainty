@@ -1,0 +1,4 @@
+experiment,predicted,measured,tolerance,pass,miss_explanation
+"E0 periodic Riccati covariance (100.00000000000001 s run), 60–100 s window",relative Frobenius error ≤ 10%,2.5548525563566566,≤ 10%,False,Nonzero-rate/nonlinear implementation departs from the zero-rate linear reference.
+"E0 Riccati marginal variances (100.00000000000001 s run), 60–100 s window",each attitude/bias marginal variance within 15%,"[2.557463170337811, 2.5574632138990525, 2.5574632222871747, 0.5627208288048233, 0.5627223905076156, 0.5627226870944018]",absolute relative error ≤ 15% for every marginal,False,At least one state marginal differs by more than 15%; the bias covariance may not yet be at steady state.
+E0 ensemble consistency,run-level 95% CI contains NEES=6 and ANIS=3,"([5.790489718579726, 6.552843602227732], [2.954590504326454, 3.0872550053815484])",Both confidence intervals contain their DOF,True,

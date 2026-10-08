@@ -40,16 +40,20 @@ controller:
   K_omega: 20.0
   max_torque: 0.1
   control_type: "quaternion_feedback"
+  quaternion_sign_hysteresis: false
+  quaternion_sign_hysteresis_threshold: 0.001
 
 reaction_wheels:
   max_torque: 0.1
   max_momentum: 10.0
   num_wheels: 3
+  gyroscopic_coupling: false
 
 analysis:
   monte_carlo_runs: 50
   nees_confidence: 0.95
   nis_confidence: 0.95
+  steady_state_window_s: [60.0, 100.0]
 
 # Experiment-specific parameters (override in command line)
 # Q_scale: 10.0  # Degraded estimator

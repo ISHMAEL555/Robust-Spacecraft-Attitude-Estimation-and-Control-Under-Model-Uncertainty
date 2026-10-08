@@ -41,6 +41,9 @@ class MEKFParams:
     nis_gate_enabled: bool = False
     # Inertia matrix (for model-aided variant)
     inertia_model: Optional[np.ndarray] = None
+    # Relative Frobenius bound on unmodeled inertia and its correlation time.
+    model_error_relative_bound: float = 0.0
+    model_error_correlation_time: float = 1.0
 
 
 class MEKF:
@@ -90,15 +93,14 @@ class MEKF:
         self.q_hat = np.array([0.0, 0.0, 0.0, 1.0])  # Estimated quaternion (I->B)
         self.b_hat = np.zeros(3)                      # Estimated gyro bias
         self.P = np.eye(self.state_dim)               # Error covariance
+        self.model_error_mean = np.zeros(self.state_dim)
+        self.last_transition = np.eye(self.state_dim)
+        self.last_gyro_update_matrix = np.eye(self.state_dim)
+        self.last_attitude_update_matrix = np.eye(self.state_dim)
         
         # Initialize covariance
         self.P[:3, :3] *= params.P0_attitude
         self.P[self.bias_slice, self.bias_slice] *= params.P0_bias
-        
-        # Process noise
-        self.Q = self._build_process_noise()
-        # Measurement noise
-        self.R = self._build_measurement_noise()
         
         # For model-aided variant
         if self.variant == 'model_aided':
@@ -109,6 +111,16 @@ class MEKF:
             self.omega_hat = np.zeros(3)  # Estimated angular velocity
             self._omega_initialized = False
             self._initialize_model_aided_covariance()
+
+        if params.model_error_relative_bound < 0.0:
+            raise ValueError("model_error_relative_bound must be non-negative")
+        if params.model_error_correlation_time <= 0.0:
+            raise ValueError("model_error_correlation_time must be positive")
+
+        # Process noise
+        self.Q = self._build_process_noise()
+        # Measurement noise
+        self.R = self._build_measurement_noise()
         
         # History for analysis
         self.history = {
@@ -207,7 +219,11 @@ class MEKF:
         
         return F, G
     
-    def _compute_F_G_model_aided(self, omega_hat: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _compute_F_G_model_aided(
+        self,
+        omega_hat: np.ndarray,
+        wheel_momentum: Optional[np.ndarray] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute F and G for model-aided variant (Variant B).
         
@@ -232,14 +248,31 @@ class MEKF:
             [inertia_rate[2], 0.0, -inertia_rate[0]],
             [-inertia_rate[1], inertia_rate[0], 0.0],
         ])
-        F[3:6, 3:6] = self.I_model_inv @ (
-            inertia_rate_skew - omega_skew @ self.I_model
+        wheel_h = (
+            np.zeros(3)
+            if wheel_momentum is None
+            else np.asarray(wheel_momentum, dtype=float)
         )
+        wheel_h_skew = np.array([
+            [0.0, -wheel_h[2], wheel_h[1]],
+            [wheel_h[2], 0.0, -wheel_h[0]],
+            [-wheel_h[1], wheel_h[0], 0.0],
+        ])
+        F[3:6, 3:6] = self.I_model_inv @ (
+            inertia_rate_skew + wheel_h_skew - omega_skew @ self.I_model
+        )
+        G[3:6, 3:6] = self.I_model_inv
         G[6:9, 6:9] = np.eye(3)
         
         return F, G
     
-    def propagate(self, omega_m: np.ndarray, tau_cmd: Optional[np.ndarray] = None, dt: Optional[float] = None):
+    def propagate(
+        self,
+        omega_m: np.ndarray,
+        tau_cmd: Optional[np.ndarray] = None,
+        dt: Optional[float] = None,
+        wheel_momentum: Optional[np.ndarray] = None,
+    ):
         """
         Propagate filter state and covariance.
         
@@ -256,7 +289,7 @@ class MEKF:
         else:
             if tau_cmd is None:
                 raise ValueError("Model-aided variant requires tau_cmd")
-            self._propagate_model_aided(omega_m, tau_cmd, dt)
+            self._propagate_model_aided(omega_m, tau_cmd, dt, wheel_momentum)
     
     def _propagate_gyro_driven(self, omega_m: np.ndarray, dt: float):
         """Variant A: Gyro-driven propagation."""
@@ -278,7 +311,13 @@ class MEKF:
         if np.any(eigvals < 0):
             self.P += np.eye(6) * 1e-12
     
-    def _propagate_model_aided(self, omega_m: np.ndarray, tau_cmd: np.ndarray, dt: float):
+    def _propagate_model_aided(
+        self,
+        omega_m: np.ndarray,
+        tau_cmd: np.ndarray,
+        dt: float,
+        wheel_momentum: Optional[np.ndarray] = None,
+    ):
         """Variant B: Model-aided propagation."""
         if not self._omega_initialized:
             self.omega_hat = omega_m - self.b_hat
@@ -286,8 +325,15 @@ class MEKF:
 
         # Propagate estimated angular velocity using Euler's equations
         # I * omega_dot + omega x (I * omega) = applied body torque.
+        wheel_h = (
+            np.zeros(3)
+            if wheel_momentum is None
+            else np.asarray(wheel_momentum, dtype=float)
+        )
         omega_cross_Iomega = np.cross(self.omega_hat, self.I_model @ self.omega_hat)
-        omega_dot = self.I_model_inv @ (tau_cmd - omega_cross_Iomega)
+        omega_dot = self.I_model_inv @ (
+            tau_cmd - omega_cross_Iomega - np.cross(self.omega_hat, wheel_h)
+        )
         self.omega_hat += omega_dot * dt
         
         # Nominal quaternion propagation with estimated omega
@@ -295,8 +341,22 @@ class MEKF:
         self.q_hat = normalize(self.q_hat + q_dot * dt)
         
         # Error state transition (using estimated omega)
-        F, G = self._compute_F_G_model_aided(self.omega_hat)
-        Phi, Qd = self._van_loan_discretization(F, G, self.Q, dt)
+        F, G = self._compute_F_G_model_aided(self.omega_hat, wheel_h)
+        Qc = self.Q.copy()
+        if self.params.model_error_relative_bound > 0.0:
+            inertia_norm = np.linalg.norm(self.I_model, ord='fro')
+            torque_bound = self.params.model_error_relative_bound * inertia_norm * (
+                np.linalg.norm(omega_dot) + np.linalg.norm(self.omega_hat) ** 2
+            )
+            Qc[3:6, 3:6] = (
+                np.eye(3)
+                * torque_bound**2
+                * self.params.model_error_correlation_time
+                / 3.0
+                * self.params.Q_scale
+            )
+        Phi, Qd = self._van_loan_discretization(F, G, Qc, dt)
+        self.last_transition = Phi
         
         # Covariance propagation
         self.P = Phi @ self.P @ Phi.T + Qd
@@ -312,6 +372,7 @@ class MEKF:
         Returns:
             (innovation, innovation_covariance, NIS)
         """
+        self.last_attitude_update_matrix = np.eye(self.state_dim)
         # Innovation: delta_q = q_meas ⊗ q_hat^*
         delta_q = error_quat(q_meas, self.q_hat)
         innovation = error_quat_to_vec(delta_q)  # 3-vector
@@ -348,7 +409,8 @@ class MEKF:
         I_KH = np.eye(self.state_dim) - K @ H
         self.P = I_KH @ self.P @ I_KH.T + K @ self.R @ K.T
         self.P = (self.P + self.P.T) / 2
-        self._reset_attitude_error_covariance(delta_theta)
+        reset = self._reset_attitude_error_covariance(delta_theta)
+        self.last_attitude_update_matrix = reset @ I_KH
         
         return innovation, S, NIS
 
@@ -370,9 +432,10 @@ class MEKF:
         I_KH = np.eye(9) - K @ H
         self.P = I_KH @ self.P @ I_KH.T + K @ R_gyro @ K.T
         self.P = (self.P + self.P.T) / 2
-        self._reset_attitude_error_covariance(delta_x[:3])
+        reset = self._reset_attitude_error_covariance(delta_x[:3])
+        self.last_gyro_update_matrix = reset @ I_KH
 
-    def _reset_attitude_error_covariance(self, delta_theta: np.ndarray) -> None:
+    def _reset_attitude_error_covariance(self, delta_theta: np.ndarray) -> np.ndarray:
         reset = np.eye(self.state_dim)
         reset[:3, :3] -= 0.5 * np.array([
             [0.0, -delta_theta[2], delta_theta[1]],
@@ -381,10 +444,13 @@ class MEKF:
         ])
         self.P = reset @ self.P @ reset.T
         self.P = (self.P + self.P.T) / 2
+        return reset
     
     def step(self, omega_m: np.ndarray, q_meas: Optional[np.ndarray], 
              tau_cmd: Optional[np.ndarray] = None, dt: Optional[float] = None,
-             time: float = 0.0) -> dict:
+             time: float = 0.0,
+             wheel_momentum: Optional[np.ndarray] = None,
+             model_error_torque: Optional[np.ndarray] = None) -> dict:
         """
         Complete filter step: propagate and optionally update.
         
@@ -403,10 +469,19 @@ class MEKF:
         )
 
         # Propagate
-        self.propagate(omega_m, tau_cmd, dt)
+        self.propagate(omega_m, tau_cmd, dt, wheel_momentum)
+        self.model_error_mean = self.last_transition @ self.model_error_mean
+        if self.variant == 'model_aided' and was_omega_initialized:
+            if model_error_torque is not None:
+                self.model_error_mean[3:6] -= (
+                    self.I_model_inv @ np.asarray(model_error_torque, dtype=float) * dt
+                )
 
         if self.variant == 'model_aided' and was_omega_initialized:
             self.update_gyro(omega_m)
+            self.model_error_mean = (
+                self.last_gyro_update_matrix @ self.model_error_mean
+            )
         
         # Update if measurement available
         innovation = None
@@ -417,6 +492,10 @@ class MEKF:
         
         if q_meas is not None:
             innovation, S, NIS = self.update(q_meas)
+            if self.last_measurement_accepted:
+                self.model_error_mean = (
+                    self.last_attitude_update_matrix @ self.model_error_mean
+                )
         
         # Compute NEES if true state available (for analysis)
         # This would be computed externally with true state
@@ -439,7 +518,8 @@ class MEKF:
             'S': S,
             'NIS': NIS,
             'NEES': NEES,
-            'measurement_accepted': self.last_measurement_accepted
+            'measurement_accepted': self.last_measurement_accepted,
+            'model_error_mean': self.model_error_mean.copy(),
         }
     
     def compute_nees(
@@ -503,6 +583,7 @@ class MEKF:
         if self.variant == 'model_aided':
             self.omega_hat = np.zeros(3)
             self._omega_initialized = False
+        self.model_error_mean = np.zeros(self.state_dim)
         self.history = {k: [] for k in self.history}
 
 

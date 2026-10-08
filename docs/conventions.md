@@ -1,170 +1,110 @@
-"""
-Conventions and derivations for the spacecraft attitude estimation project.
-"""
+# Conventions and model equations
 
-# Quaternion Conventions
-# ======================
-# 
-# This document defines the quaternion conventions used throughout the project.
-# 
-# Representation:
-# - Quaternion: q = [x, y, z, w] (scalar-last, JPL convention)
-# - Scalar part: w = q[3]
-# - Vector part: v = q[:3]
-# 
-# Rotation:
-# - q maps vectors from inertial frame I to body frame B
-# - v_B = q * v_I * q^*  (quaternion multiplication)
-# - Equivalently: v_B = R(q) @ v_I where R(q) is the rotation matrix
-# 
-# Composition:
-# - q_total = q2 ⊗ q1 means apply q1 first, then q2
-# - For frame transformations: q_IB = q_IC ⊗ q_CB
-# 
-# Error Quaternion:
-# - Multiplicative error: q_true = δq ⊗ q_est
-# - Body-frame error: δq represents rotation from estimated to true body frame
-# - For small errors: δq ≈ [½ δθ, 1]^T where δθ is the 3-vector error
-# 
-# Frames:
-# - I: Inertial frame (ECI, J2000, etc.)
-# - B: Body frame (spacecraft body-fixed)
-# - q_I_B: Quaternion from I to B
-# 
-# Angular Velocity:
-# - ω: Body angular velocity expressed in body frame
-# - Kinematics: q̇ = ½ Ω(ω) q
-# - Ω(ω) = [  0  -ωx -ωy -ωz
-#             ωx   0  ωz -ωy
-#             ωy -ωz   0  ωx
-#             ωz  ωy -ωx  0 ]
-# 
-# Error State:
-# - δx = [δθ, δb_g]^T ∈ ℝ⁶
-# - δθ: Attitude error vector (rad)
-# - δb_g: Gyro bias error (rad/s)
-# 
-# MEKF Variants:
-# ==============
-# 
-# Variant A (Gyro-driven):
-# - Propagation uses measured ω_m - b̂_g
-# - Filter does not depend on inertia matrix I
-# - Inertia mismatch affects only controller and feedforward
-# 
-# Variant B (Model-aided):
-# - Propagation uses Euler's equations with I_model and τ_cmd
-# - ω̂ is part of filter state (propagated)
-# - Inertia mismatch directly affects estimator
-# 
-# Sensor Models:
-# ==============
-# 
-# Gyroscope:
-# ω_m = ω_true + b_g + n_g
-# ḃ_g = n_b
-# 
-# n_g ~ N(0, σ_v² I)  - Angle Random Walk (ARW)
-# n_b ~ N(0, σ_u² I)  - Bias Random Walk (BRW)
-# 
-# Discrete-time covariances (sample time Δt):
-# R_gyro = σ_v² / Δt · I₃
-# Q_bias = σ_u² Δt · I₃
-#
-# The MEKF Van Loan discretization takes continuous-time spectral densities,
-# so its Q_c blocks are σ_v² I₃ and σ_u² I₃. The expressions above are the
-# corresponding sampled/discrete covariances and must not be passed as Q_c.
-# 
-# Star Tracker:
-# q_ST = δq_ST ⊗ q_true
-# δq_ST ≈ [½ δθ_ST, 1]^T
-# δθ_ST ~ N(0, R_ST)
-# 
-# R_ST = σ_θ² · I₃
-# 
-# Reaction Wheel:
-# τ_rw = -ḣ_rw
-# |τ_rw| ≤ τ_max
-# |h_rw| ≤ h_max
-# 
-# Control Law:
-# ============
-# 
-# Quaternion Feedback:
-# τ_c = -K_q q_e,v - K_ω ω_e
-# 
-# q_e = q_des^* ⊗ q_current (error from current to desired)
-# q_e,v = vector part of q_e
-# ω_e = ω_current - ω_des
-# 
-# With Feedforward:
-# τ_c = -K_q q_e,v - K_ω ω_e + ω × (I ω) + τ_dist
-# 
-# Consistency Metrics:
-# ====================
-# 
-# NEES (Normalized Estimation Error Squared):
-# ε_NEES = e^T P⁻¹ e
-# e = [δθ, b_true - b̂]^T
-# For consistent filter: N·ε̄_NEES ~ χ²_{N·n_x}, n_x = 6
-# 
-# NIS (Normalized Innovation Squared):
-# ε_NIS = ν^T S⁻¹ ν
-# ν = innovation
-# S = innovation covariance
-# For consistent filter: N·ε̄_NIS ~ χ²_{N·n_z}, n_z = 3
-# 
-# 95% Confidence Bounds:
-# NEES: [χ²_{0.025, 6N}/(6N), χ²_{0.975, 6N}/(6N)]
-# NIS:  [χ²_{0.025, 3N}/(3N), χ²_{0.975, 3N}/(3N)]
-# 
-# Outage Covariance Growth:
-# =========================
-# 
-# During star tracker outage, attitude covariance grows as:
-# σ_θ²(t) ≈ σ_θ₀² + σ_v² t + σ_b₀² t² + ⅓ σ_u² t³
-# 
-# Where:
-# - σ_θ₀²: Initial attitude variance
-# - σ_v²: Gyro ARW coefficient
-# - σ_b₀²: Initial bias variance
-# - σ_u²: Gyro BRW coefficient
-# 
-# Experiment Matrix:
-# ==================
-# 
-# E0: Nominal - Verify implementation correctness
-# E1: Inertia mismatch - ΔI magnitude and structure
-# E2: Process noise mismatch - Q_model/Q_true
-# E3: Measurement noise mismatch - R_model/R_true
-# E4: Outlier - Injected innovation magnitude
-# E5: Outage - Outage duration
-# E6: Closed loop - Estimator degradation level
-# E7: Monte Carlo - Statistical repeatability
-# 
-# File Structure:
-# ===============
-# 
-# src/
-#   dynamics/
-#     quaternion.py      - Quaternion algebra
-#     rigid_body.py      - Rigid body dynamics
-#   sensors/
-#     gyro.py           - Gyroscope model
-#     star_tracker.py   - Star tracker model
-#   estimation/
-#     mekf.py           - MEKF implementation
-#   control/
-#     attitude_controller.py - Attitude controller
-#   actuators/
-#     reaction_wheel.py - Reaction wheel model
-# 
-# experiments/          - Experiment configurations
-# analysis/             - Analysis and visualization
-# tests/
-#   unit/               - Unit tests
-#   integration/        - Integration tests
-# config/               - Configuration files
-# scripts/              - Run scripts
-# docs/                 - Documentation
-# reports/              - Generated reports
+This note records the frame, quaternion, estimator, sensor, and reporting
+conventions used by the simulator. Vectors are column vectors unless stated.
+
+## Frames and quaternions
+
+- A quaternion is scalar-last, `q = [q_x, q_y, q_z, q_w]`, and uses the
+  Hamilton product.
+- `q_IB` maps inertial-frame coordinates into body-frame coordinates:
+  `v_B = R(q_IB) v_I`.
+- Composition is ordered by application: `q_AC = q_BC ⊗ q_AB`.
+- Quaternion kinematics are `q_dot = 0.5 Ω(ω_B) q`, where `ω_B` is body rate.
+- The MEKF right-multiplicative error is represented by
+  `q_true = δq ⊗ q_hat`; locally `δq ≈ [δθ/2, 1]`.
+- A physical rotation is unchanged by `q` versus `-q`. The controller selects
+  the nonnegative-scalar representative by default; optional sign hysteresis
+  is a separate, disabled-by-default test feature near 180 degrees.
+
+## Truth dynamics and actuators
+
+For body inertia `I`, body rate `ω`, wheel momentum `h_w`, applied wheel
+torque `τ_rw`, and external disturbance `τ_d`, the optional momentum-coupled
+truth equation is
+
+```text
+I ω_dot + ω × (I ω + h_w) = τ_rw + τ_d.
+```
+
+The wheel gyroscopic term is disabled by default for compatibility with the
+pilot model. The wheel actuator applies torque and momentum limits;
+`τ_rw = -h_dot_w` under the reaction-wheel sign convention.
+
+The regulation controller commands bounded body torque from quaternion-vector
+and rate feedback. The implementation does not automatically cancel a
+disturbance; disturbance compensation is an optional feedforward interface.
+Commanded and applied torques and their squared-integral efforts are reported
+separately.
+
+## Sensors and sampled noise
+
+The gyro reports
+
+```text
+ω_m = ω_true + b_g + n_g,       b_dot_g = n_b.
+```
+
+`sigma_v` and `sigma_u` are continuous-time white-noise spectral-density
+amplitudes for gyro angle/rate noise and bias random walk, respectively.
+Van Loan discretization consumes the continuous spectral densities
+`Q_c = diag(sigma_v² I_3, sigma_u² I_3)`; the discrete sample covariances are
+not interchangeable with `Q_c`. Optional fixed sensor-axis misalignment is
+configurable and disabled by default.
+
+The star tracker returns a multiplicative attitude observation with
+three-axis small-angle covariance `R = sigma_theta² I_3`. Sensor rate,
+outage schedule/probability, and outlier probability are configuration
+parameters.
+
+## Estimator variants and consistency statistics
+
+**Gyro-driven MEKF (6 error states):** attitude and gyro bias are estimated;
+gyro measurements drive attitude propagation. Inertia is not part of its
+propagation model.
+
+**Model-aided MEKF (9 error states):** attitude, body rate, and gyro bias are
+estimated. Rate propagation uses Euler's equation, modeled inertia, and
+applied wheel torque. A configured relative inertia-error bound may add
+conservative rate process noise; a zero bound reproduces the unbounded
+model-aided variant. This bound is a modeling assumption, not an estimate of
+the actual inertia error.
+
+For attitude/bias/rate error `e` and reported covariance `P`, NEES is
+`eᵀ P⁻¹ e`; its degrees of freedom are 6 for gyro-driven and 9 for
+model-aided estimation. For tracker innovation `ν` and innovation covariance
+`S`, NIS is `νᵀ S⁻¹ ν` with 3 degrees of freedom. Accepted-only ANIS uses
+updates that are available, valid, and accepted by the gate. Pre-gate NIS and
+rejected-update counts are reported separately. Ensemble confidence bounds
+use the declared run count and chi-squared degrees of freedom; adjacent time
+samples within one run are correlated and are not independent trials.
+
+For an inertia perturbation `δI = I_truth - I_model`, the local torque-equivalent
+model discrepancy used in the analysis is
+
+```text
+δτ = δI ω_dot + ω × (δI ω).
+```
+
+It is linearized around the saved truth trajectory. The approximation is
+expected to degrade with large attitude/rate errors, saturation, or
+time-varying mismatch statistics.
+
+During a tracker outage, a scalar small-error reference for one attitude axis
+is
+
+```text
+var(δθ(t)) ≈ var(δθ_0) + sigma_v² t
+             + var(δb_0) t² + (sigma_u² / 3) t³.
+```
+
+It is a local approximation, not a recovery-time guarantee.
+
+## Experiment and evaluation policy
+
+Prediction tolerances, fixed evaluation windows, and experiment definitions
+are registered in [`predictions.md`](predictions.md). Unless a case explicitly
+requires a longer window, steady-state comparisons use 60–100 seconds and
+omit the first ten tracker updates for innovation consistency. Outage,
+large-angle, and saturation cases retain their full transient traces and are
+not pooled with local steady-state results.

@@ -94,6 +94,24 @@ class TestAttitudeController:
         
         # Should be saturated
         assert np.linalg.norm(tau) <= 0.1 + 1e-10
+
+    @pytest.mark.parametrize("angle_deg", [170.0, 179.0])
+    def test_sign_hysteresis_preserves_double_cover_equivalence(self, angle_deg):
+        angle = np.radians(angle_deg)
+        q = np.array([np.sin(angle / 2.0), 0.0, 0.0, np.cos(angle / 2.0)])
+        torques = []
+        for represented_q in (q, -q):
+            controller = AttitudeController(
+                ControllerParams(
+                    K_q=2.0,
+                    K_omega=20.0,
+                    max_torque=0.2,
+                    quaternion_sign_hysteresis=True,
+                )
+            )
+            torques.append(controller.compute_control(represented_q, np.zeros(3)))
+
+        assert np.allclose(torques[0], torques[1])
     
     def test_compute_control_with_feedforward(self):
         params = ControllerParams(K_q=1.0, K_omega=10.0, max_torque=0.1)

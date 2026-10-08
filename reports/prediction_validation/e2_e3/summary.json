@@ -1,0 +1,2666 @@
+[
+  {
+    "campaign": "E2",
+    "case": "Q_scale_0.1",
+    "runs": 1,
+    "duration_s": 100.00000000000001,
+    "NEES_dof": 6,
+    "NIS_dof": 3,
+    "NEES_mean": 43.14252458066346,
+    "NEES_in_bounds_pct": 0.0,
+    "NIS_mean": 10.882002099349291,
+    "NIS_pre_gate_mean": 10.882002099349291,
+    "NIS_in_bounds_pct": 57.49999999999999,
+    "star_tracker_updates": 100,
+    "rejected_measurements": 0,
+    "predicted_NEES_mean_steady": null,
+    "prediction_NEES_relative_error": null,
+    "prediction_NEES_pass": null,
+    "model_error_covariance_relative_error": null,
+    "prediction_error_covariance_pass": null,
+    "riccati_relative_frobenius_error": null,
+    "riccati_marginal_relative_error": null,
+    "riccati_relative_frobenius_error_late": null,
+    "riccati_marginal_relative_error_late": null,
+    "predicted_equilibrium_pointing_rad": null,
+    "measured_equilibrium_pointing_rad": null,
+    "equilibrium_relative_error": null,
+    "equilibrium_prediction_pass": null,
+    "lyapunov_pointing_bound_rad": null,
+    "lyapunov_measured_peak_pointing_rad": null,
+    "lyapunov_bound_pass": null,
+    "run_nees_mean": 43.14252458066346,
+    "run_nees_mean_ci95": [
+      null,
+      null
+    ],
+    "run_nis_mean": 10.882002099349291,
+    "run_nis_mean_ci95": [
+      null,
+      null
+    ],
+    "Q_scale": 0.1,
+    "R_scale": 1.0,
+    "tracker_rate_hz": 1.0,
+    "pointing_rms_rad_mean": 0.0031212167216381386,
+    "pointing_rms_rad_std": 0.0,
+    "pointing_rms_rad_ci95_lower": null,
+    "pointing_rms_rad_ci95_upper": null,
+    "pointing_rms_rad_n": 1,
+    "pointing_rms_rad_p05": 0.0031212167216381386,
+    "pointing_rms_rad_p50": 0.0031212167216381386,
+    "pointing_rms_rad_p95": 0.0031212167216381386,
+    "pointing_rms_rad_p05_bootstrap_ci95": [
+      0.0031212167216381386,
+      0.0031212167216381386
+    ],
+    "pointing_rms_rad_p50_bootstrap_ci95": [
+      0.0031212167216381386,
+      0.0031212167216381386
+    ],
+    "pointing_rms_rad_p95_bootstrap_ci95": [
+      0.0031212167216381386,
+      0.0031212167216381386
+    ],
+    "pointing_peak_rad_mean": 0.004034483609234974,
+    "pointing_peak_rad_std": 0.0,
+    "pointing_peak_rad_ci95_lower": null,
+    "pointing_peak_rad_ci95_upper": null,
+    "pointing_peak_rad_n": 1,
+    "pointing_peak_rad_p05": 0.004034483609234974,
+    "pointing_peak_rad_p50": 0.004034483609234974,
+    "pointing_peak_rad_p95": 0.004034483609234974,
+    "pointing_peak_rad_p05_bootstrap_ci95": [
+      0.004034483609234974,
+      0.004034483609234974
+    ],
+    "pointing_peak_rad_p50_bootstrap_ci95": [
+      0.004034483609234974,
+      0.004034483609234974
+    ],
+    "pointing_peak_rad_p95_bootstrap_ci95": [
+      0.004034483609234974,
+      0.004034483609234974
+    ],
+    "pointing_final_rad_mean": 0.0022008210769096826,
+    "pointing_final_rad_std": 0.0,
+    "pointing_final_rad_ci95_lower": null,
+    "pointing_final_rad_ci95_upper": null,
+    "pointing_final_rad_n": 1,
+    "pointing_final_rad_p05": 0.0022008210769096826,
+    "pointing_final_rad_p50": 0.0022008210769096826,
+    "pointing_final_rad_p95": 0.0022008210769096826,
+    "pointing_final_rad_p05_bootstrap_ci95": [
+      0.0022008210769096826,
+      0.0022008210769096826
+    ],
+    "pointing_final_rad_p50_bootstrap_ci95": [
+      0.0022008210769096826,
+      0.0022008210769096826
+    ],
+    "pointing_final_rad_p95_bootstrap_ci95": [
+      0.0022008210769096826,
+      0.0022008210769096826
+    ],
+    "control_effort_nm2_s_mean": 0.012364433276100702,
+    "control_effort_nm2_s_std": 0.0,
+    "control_effort_nm2_s_ci95_lower": null,
+    "control_effort_nm2_s_ci95_upper": null,
+    "control_effort_nm2_s_n": 1,
+    "control_effort_nm2_s_p05": 0.012364433276100702,
+    "control_effort_nm2_s_p50": 0.012364433276100702,
+    "control_effort_nm2_s_p95": 0.012364433276100702,
+    "control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.012364433276100702,
+      0.012364433276100702
+    ],
+    "control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.012364433276100702,
+      0.012364433276100702
+    ],
+    "control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.012364433276100702,
+      0.012364433276100702
+    ],
+    "achieved_control_effort_nm2_s_mean": 0.01109623666212234,
+    "achieved_control_effort_nm2_s_std": 0.0,
+    "achieved_control_effort_nm2_s_ci95_lower": null,
+    "achieved_control_effort_nm2_s_ci95_upper": null,
+    "achieved_control_effort_nm2_s_n": 1,
+    "achieved_control_effort_nm2_s_p05": 0.01109623666212234,
+    "achieved_control_effort_nm2_s_p50": 0.01109623666212234,
+    "achieved_control_effort_nm2_s_p95": 0.01109623666212234,
+    "achieved_control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.01109623666212234,
+      0.01109623666212234
+    ],
+    "achieved_control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.01109623666212234,
+      0.01109623666212234
+    ],
+    "achieved_control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.01109623666212234,
+      0.01109623666212234
+    ],
+    "peak_commanded_torque_nm_mean": 0.046252459810763286,
+    "peak_commanded_torque_nm_std": 0.0,
+    "peak_commanded_torque_nm_ci95_lower": null,
+    "peak_commanded_torque_nm_ci95_upper": null,
+    "peak_commanded_torque_nm_n": 1,
+    "peak_commanded_torque_nm_p05": 0.046252459810763286,
+    "peak_commanded_torque_nm_p50": 0.046252459810763286,
+    "peak_commanded_torque_nm_p95": 0.046252459810763286,
+    "peak_commanded_torque_nm_p05_bootstrap_ci95": [
+      0.046252459810763286,
+      0.046252459810763286
+    ],
+    "peak_commanded_torque_nm_p50_bootstrap_ci95": [
+      0.046252459810763286,
+      0.046252459810763286
+    ],
+    "peak_commanded_torque_nm_p95_bootstrap_ci95": [
+      0.046252459810763286,
+      0.046252459810763286
+    ],
+    "peak_achieved_torque_nm_mean": 0.04262282069335114,
+    "peak_achieved_torque_nm_std": 0.0,
+    "peak_achieved_torque_nm_ci95_lower": null,
+    "peak_achieved_torque_nm_ci95_upper": null,
+    "peak_achieved_torque_nm_n": 1,
+    "peak_achieved_torque_nm_p05": 0.04262282069335114,
+    "peak_achieved_torque_nm_p50": 0.04262282069335114,
+    "peak_achieved_torque_nm_p95": 0.04262282069335114,
+    "peak_achieved_torque_nm_p05_bootstrap_ci95": [
+      0.04262282069335114,
+      0.04262282069335114
+    ],
+    "peak_achieved_torque_nm_p50_bootstrap_ci95": [
+      0.04262282069335114,
+      0.04262282069335114
+    ],
+    "peak_achieved_torque_nm_p95_bootstrap_ci95": [
+      0.04262282069335114,
+      0.04262282069335114
+    ],
+    "command_torque_saturation_fraction_mean": 0.0,
+    "command_torque_saturation_fraction_std": 0.0,
+    "command_torque_saturation_fraction_ci95_lower": null,
+    "command_torque_saturation_fraction_ci95_upper": null,
+    "command_torque_saturation_fraction_n": 1,
+    "command_torque_saturation_fraction_p05": 0.0,
+    "command_torque_saturation_fraction_p50": 0.0,
+    "command_torque_saturation_fraction_p95": 0.0,
+    "command_torque_saturation_fraction_p05_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p50_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p95_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "wheel_gyroscopic_torque_rms_nm_mean": 6.422771397676608e-05,
+    "wheel_gyroscopic_torque_rms_nm_std": 0.0,
+    "wheel_gyroscopic_torque_rms_nm_ci95_lower": null,
+    "wheel_gyroscopic_torque_rms_nm_ci95_upper": null,
+    "wheel_gyroscopic_torque_rms_nm_n": 1,
+    "wheel_gyroscopic_torque_rms_nm_p05": 6.422771397676608e-05,
+    "wheel_gyroscopic_torque_rms_nm_p50": 6.422771397676608e-05,
+    "wheel_gyroscopic_torque_rms_nm_p95": 6.422771397676608e-05,
+    "wheel_gyroscopic_torque_rms_nm_p05_bootstrap_ci95": [
+      6.422771397676608e-05,
+      6.422771397676608e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p50_bootstrap_ci95": [
+      6.422771397676608e-05,
+      6.422771397676608e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p95_bootstrap_ci95": [
+      6.422771397676608e-05,
+      6.422771397676608e-05
+    ],
+    "attitude_estimation_rmse_rad_mean": 0.00017509791832810565,
+    "attitude_estimation_rmse_rad_std": 0.0,
+    "attitude_estimation_rmse_rad_ci95_lower": null,
+    "attitude_estimation_rmse_rad_ci95_upper": null,
+    "attitude_estimation_rmse_rad_n": 1,
+    "attitude_estimation_rmse_rad_p05": 0.00017509791832810565,
+    "attitude_estimation_rmse_rad_p50": 0.00017509791832810565,
+    "attitude_estimation_rmse_rad_p95": 0.00017509791832810565,
+    "attitude_estimation_rmse_rad_p05_bootstrap_ci95": [
+      0.00017509791832810565,
+      0.00017509791832810565
+    ],
+    "attitude_estimation_rmse_rad_p50_bootstrap_ci95": [
+      0.00017509791832810565,
+      0.00017509791832810565
+    ],
+    "attitude_estimation_rmse_rad_p95_bootstrap_ci95": [
+      0.00017509791832810565,
+      0.00017509791832810565
+    ],
+    "attitude_estimation_error_peak_rad_mean": 0.000438094031727629,
+    "attitude_estimation_error_peak_rad_std": 0.0,
+    "attitude_estimation_error_peak_rad_ci95_lower": null,
+    "attitude_estimation_error_peak_rad_ci95_upper": null,
+    "attitude_estimation_error_peak_rad_n": 1,
+    "attitude_estimation_error_peak_rad_p05": 0.000438094031727629,
+    "attitude_estimation_error_peak_rad_p50": 0.000438094031727629,
+    "attitude_estimation_error_peak_rad_p95": 0.000438094031727629,
+    "attitude_estimation_error_peak_rad_p05_bootstrap_ci95": [
+      0.000438094031727629,
+      0.000438094031727629
+    ],
+    "attitude_estimation_error_peak_rad_p50_bootstrap_ci95": [
+      0.000438094031727629,
+      0.000438094031727629
+    ],
+    "attitude_estimation_error_peak_rad_p95_bootstrap_ci95": [
+      0.000438094031727629,
+      0.000438094031727629
+    ],
+    "angular_rate_estimation_rmse_rad_s_mean": 0.00099682921444413,
+    "angular_rate_estimation_rmse_rad_s_std": 0.0,
+    "angular_rate_estimation_rmse_rad_s_ci95_lower": null,
+    "angular_rate_estimation_rmse_rad_s_ci95_upper": null,
+    "angular_rate_estimation_rmse_rad_s_n": 1,
+    "angular_rate_estimation_rmse_rad_s_p05": 0.00099682921444413,
+    "angular_rate_estimation_rmse_rad_s_p50": 0.00099682921444413,
+    "angular_rate_estimation_rmse_rad_s_p95": 0.00099682921444413,
+    "angular_rate_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      0.00099682921444413,
+      0.00099682921444413
+    ],
+    "angular_rate_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      0.00099682921444413,
+      0.00099682921444413
+    ],
+    "angular_rate_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      0.00099682921444413,
+      0.00099682921444413
+    ],
+    "angular_rate_estimation_error_peak_rad_s_mean": 0.0044082891417489035,
+    "angular_rate_estimation_error_peak_rad_s_std": 0.0,
+    "angular_rate_estimation_error_peak_rad_s_ci95_lower": null,
+    "angular_rate_estimation_error_peak_rad_s_ci95_upper": null,
+    "angular_rate_estimation_error_peak_rad_s_n": 1,
+    "angular_rate_estimation_error_peak_rad_s_p05": 0.0044082891417489035,
+    "angular_rate_estimation_error_peak_rad_s_p50": 0.0044082891417489035,
+    "angular_rate_estimation_error_peak_rad_s_p95": 0.0044082891417489035,
+    "angular_rate_estimation_error_peak_rad_s_p05_bootstrap_ci95": [
+      0.0044082891417489035,
+      0.0044082891417489035
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p50_bootstrap_ci95": [
+      0.0044082891417489035,
+      0.0044082891417489035
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p95_bootstrap_ci95": [
+      0.0044082891417489035,
+      0.0044082891417489035
+    ],
+    "bias_estimation_rmse_rad_s_mean": 1.1347889974209815e-05,
+    "bias_estimation_rmse_rad_s_std": 0.0,
+    "bias_estimation_rmse_rad_s_ci95_lower": null,
+    "bias_estimation_rmse_rad_s_ci95_upper": null,
+    "bias_estimation_rmse_rad_s_n": 1,
+    "bias_estimation_rmse_rad_s_p05": 1.1347889974209815e-05,
+    "bias_estimation_rmse_rad_s_p50": 1.1347889974209815e-05,
+    "bias_estimation_rmse_rad_s_p95": 1.1347889974209815e-05,
+    "bias_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      1.1347889974209815e-05,
+      1.1347889974209815e-05
+    ],
+    "bias_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      1.1347889974209815e-05,
+      1.1347889974209815e-05
+    ],
+    "bias_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      1.1347889974209815e-05,
+      1.1347889974209815e-05
+    ],
+    "attitude_3sigma_component_coverage_mean": 0.77225,
+    "attitude_3sigma_component_coverage_std": 0.0,
+    "attitude_3sigma_component_coverage_ci95_lower": null,
+    "attitude_3sigma_component_coverage_ci95_upper": null,
+    "attitude_3sigma_component_coverage_n": 1,
+    "attitude_3sigma_component_coverage_p05": 0.77225,
+    "attitude_3sigma_component_coverage_p50": 0.77225,
+    "attitude_3sigma_component_coverage_p95": 0.77225,
+    "attitude_3sigma_component_coverage_p05_bootstrap_ci95": [
+      0.77225,
+      0.77225
+    ],
+    "attitude_3sigma_component_coverage_p50_bootstrap_ci95": [
+      0.77225,
+      0.77225
+    ],
+    "attitude_3sigma_component_coverage_p95_bootstrap_ci95": [
+      0.77225,
+      0.77225
+    ],
+    "bias_3sigma_component_coverage_mean": 0.60575,
+    "bias_3sigma_component_coverage_std": 0.0,
+    "bias_3sigma_component_coverage_ci95_lower": null,
+    "bias_3sigma_component_coverage_ci95_upper": null,
+    "bias_3sigma_component_coverage_n": 1,
+    "bias_3sigma_component_coverage_p05": 0.60575,
+    "bias_3sigma_component_coverage_p50": 0.60575,
+    "bias_3sigma_component_coverage_p95": 0.60575,
+    "bias_3sigma_component_coverage_p05_bootstrap_ci95": [
+      0.60575,
+      0.60575
+    ],
+    "bias_3sigma_component_coverage_p50_bootstrap_ci95": [
+      0.60575,
+      0.60575
+    ],
+    "bias_3sigma_component_coverage_p95_bootstrap_ci95": [
+      0.60575,
+      0.60575
+    ],
+    "innovation_lag1_autocorrelation_rms_mean": 0.3052566294718179,
+    "innovation_lag1_autocorrelation_rms_std": 0.0,
+    "innovation_lag1_autocorrelation_rms_ci95_lower": null,
+    "innovation_lag1_autocorrelation_rms_ci95_upper": null,
+    "innovation_lag1_autocorrelation_rms_n": 1,
+    "innovation_lag1_autocorrelation_rms_p05": 0.3052566294718179,
+    "innovation_lag1_autocorrelation_rms_p50": 0.3052566294718179,
+    "innovation_lag1_autocorrelation_rms_p95": 0.3052566294718179,
+    "innovation_lag1_autocorrelation_rms_p05_bootstrap_ci95": [
+      0.3052566294718179,
+      0.3052566294718179
+    ],
+    "innovation_lag1_autocorrelation_rms_p50_bootstrap_ci95": [
+      0.3052566294718179,
+      0.3052566294718179
+    ],
+    "innovation_lag1_autocorrelation_rms_p95_bootstrap_ci95": [
+      0.3052566294718179,
+      0.3052566294718179
+    ],
+    "pointing_rms_rad_full_mean": 0.03698644378634924,
+    "pointing_rms_rad_full_std": 0.0,
+    "pointing_rms_rad_full_ci95_lower": null,
+    "pointing_rms_rad_full_ci95_upper": null,
+    "pointing_rms_rad_full_n": 1,
+    "pointing_rms_rad_full_p05": 0.03698644378634924,
+    "pointing_rms_rad_full_p50": 0.03698644378634924,
+    "pointing_rms_rad_full_p95": 0.03698644378634924,
+    "pointing_rms_rad_full_p05_bootstrap_ci95": [
+      0.03698644378634924,
+      0.03698644378634924
+    ],
+    "pointing_rms_rad_full_p50_bootstrap_ci95": [
+      0.03698644378634924,
+      0.03698644378634924
+    ],
+    "pointing_rms_rad_full_p95_bootstrap_ci95": [
+      0.03698644378634924,
+      0.03698644378634924
+    ],
+    "pointing_peak_rad_full_mean": 0.07404834838142896,
+    "pointing_peak_rad_full_std": 0.0,
+    "pointing_peak_rad_full_ci95_lower": null,
+    "pointing_peak_rad_full_ci95_upper": null,
+    "pointing_peak_rad_full_n": 1,
+    "pointing_peak_rad_full_p05": 0.07404834838142896,
+    "pointing_peak_rad_full_p50": 0.07404834838142896,
+    "pointing_peak_rad_full_p95": 0.07404834838142896,
+    "pointing_peak_rad_full_p05_bootstrap_ci95": [
+      0.07404834838142896,
+      0.07404834838142896
+    ],
+    "pointing_peak_rad_full_p50_bootstrap_ci95": [
+      0.07404834838142896,
+      0.07404834838142896
+    ],
+    "pointing_peak_rad_full_p95_bootstrap_ci95": [
+      0.07404834838142896,
+      0.07404834838142896
+    ],
+    "pointing_final_rad_full_mean": 0.0022008210769096826,
+    "pointing_final_rad_full_std": 0.0,
+    "pointing_final_rad_full_ci95_lower": null,
+    "pointing_final_rad_full_ci95_upper": null,
+    "pointing_final_rad_full_n": 1,
+    "pointing_final_rad_full_p05": 0.0022008210769096826,
+    "pointing_final_rad_full_p50": 0.0022008210769096826,
+    "pointing_final_rad_full_p95": 0.0022008210769096826,
+    "pointing_final_rad_full_p05_bootstrap_ci95": [
+      0.0022008210769096826,
+      0.0022008210769096826
+    ],
+    "pointing_final_rad_full_p50_bootstrap_ci95": [
+      0.0022008210769096826,
+      0.0022008210769096826
+    ],
+    "pointing_final_rad_full_p95_bootstrap_ci95": [
+      0.0022008210769096826,
+      0.0022008210769096826
+    ]
+  },
+  {
+    "campaign": "E2",
+    "case": "Q_scale_1",
+    "runs": 1,
+    "duration_s": 100.00000000000001,
+    "NEES_dof": 6,
+    "NIS_dof": 3,
+    "NEES_mean": 5.9020022201126014,
+    "NEES_in_bounds_pct": 99.9,
+    "NIS_mean": 3.109930071879407,
+    "NIS_pre_gate_mean": 3.109930071879407,
+    "NIS_in_bounds_pct": 97.5,
+    "star_tracker_updates": 100,
+    "rejected_measurements": 0,
+    "predicted_NEES_mean_steady": null,
+    "prediction_NEES_relative_error": null,
+    "prediction_NEES_pass": null,
+    "model_error_covariance_relative_error": null,
+    "prediction_error_covariance_pass": null,
+    "riccati_relative_frobenius_error": null,
+    "riccati_marginal_relative_error": null,
+    "riccati_relative_frobenius_error_late": null,
+    "riccati_marginal_relative_error_late": null,
+    "predicted_equilibrium_pointing_rad": null,
+    "measured_equilibrium_pointing_rad": null,
+    "equilibrium_relative_error": null,
+    "equilibrium_prediction_pass": null,
+    "lyapunov_pointing_bound_rad": null,
+    "lyapunov_measured_peak_pointing_rad": null,
+    "lyapunov_bound_pass": null,
+    "run_nees_mean": 5.9020022201126014,
+    "run_nees_mean_ci95": [
+      null,
+      null
+    ],
+    "run_nis_mean": 3.109930071879407,
+    "run_nis_mean_ci95": [
+      null,
+      null
+    ],
+    "Q_scale": 1.0,
+    "R_scale": 1.0,
+    "tracker_rate_hz": 1.0,
+    "pointing_rms_rad_mean": 0.0031223561814196694,
+    "pointing_rms_rad_std": 0.0,
+    "pointing_rms_rad_ci95_lower": null,
+    "pointing_rms_rad_ci95_upper": null,
+    "pointing_rms_rad_n": 1,
+    "pointing_rms_rad_p05": 0.0031223561814196694,
+    "pointing_rms_rad_p50": 0.0031223561814196694,
+    "pointing_rms_rad_p95": 0.0031223561814196694,
+    "pointing_rms_rad_p05_bootstrap_ci95": [
+      0.0031223561814196694,
+      0.0031223561814196694
+    ],
+    "pointing_rms_rad_p50_bootstrap_ci95": [
+      0.0031223561814196694,
+      0.0031223561814196694
+    ],
+    "pointing_rms_rad_p95_bootstrap_ci95": [
+      0.0031223561814196694,
+      0.0031223561814196694
+    ],
+    "pointing_peak_rad_mean": 0.004039709902774164,
+    "pointing_peak_rad_std": 0.0,
+    "pointing_peak_rad_ci95_lower": null,
+    "pointing_peak_rad_ci95_upper": null,
+    "pointing_peak_rad_n": 1,
+    "pointing_peak_rad_p05": 0.004039709902774164,
+    "pointing_peak_rad_p50": 0.004039709902774164,
+    "pointing_peak_rad_p95": 0.004039709902774164,
+    "pointing_peak_rad_p05_bootstrap_ci95": [
+      0.004039709902774164,
+      0.004039709902774164
+    ],
+    "pointing_peak_rad_p50_bootstrap_ci95": [
+      0.004039709902774164,
+      0.004039709902774164
+    ],
+    "pointing_peak_rad_p95_bootstrap_ci95": [
+      0.004039709902774164,
+      0.004039709902774164
+    ],
+    "pointing_final_rad_mean": 0.0021910055439973044,
+    "pointing_final_rad_std": 0.0,
+    "pointing_final_rad_ci95_lower": null,
+    "pointing_final_rad_ci95_upper": null,
+    "pointing_final_rad_n": 1,
+    "pointing_final_rad_p05": 0.0021910055439973044,
+    "pointing_final_rad_p50": 0.0021910055439973044,
+    "pointing_final_rad_p95": 0.0021910055439973044,
+    "pointing_final_rad_p05_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "pointing_final_rad_p50_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "pointing_final_rad_p95_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "control_effort_nm2_s_mean": 0.012364989736184917,
+    "control_effort_nm2_s_std": 0.0,
+    "control_effort_nm2_s_ci95_lower": null,
+    "control_effort_nm2_s_ci95_upper": null,
+    "control_effort_nm2_s_n": 1,
+    "control_effort_nm2_s_p05": 0.012364989736184917,
+    "control_effort_nm2_s_p50": 0.012364989736184917,
+    "control_effort_nm2_s_p95": 0.012364989736184917,
+    "control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.012364989736184917,
+      0.012364989736184917
+    ],
+    "control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.012364989736184917,
+      0.012364989736184917
+    ],
+    "control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.012364989736184917,
+      0.012364989736184917
+    ],
+    "achieved_control_effort_nm2_s_mean": 0.011096702207754211,
+    "achieved_control_effort_nm2_s_std": 0.0,
+    "achieved_control_effort_nm2_s_ci95_lower": null,
+    "achieved_control_effort_nm2_s_ci95_upper": null,
+    "achieved_control_effort_nm2_s_n": 1,
+    "achieved_control_effort_nm2_s_p05": 0.011096702207754211,
+    "achieved_control_effort_nm2_s_p50": 0.011096702207754211,
+    "achieved_control_effort_nm2_s_p95": 0.011096702207754211,
+    "achieved_control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.011096702207754211,
+      0.011096702207754211
+    ],
+    "achieved_control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.011096702207754211,
+      0.011096702207754211
+    ],
+    "achieved_control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.011096702207754211,
+      0.011096702207754211
+    ],
+    "peak_commanded_torque_nm_mean": 0.04623259124756798,
+    "peak_commanded_torque_nm_std": 0.0,
+    "peak_commanded_torque_nm_ci95_lower": null,
+    "peak_commanded_torque_nm_ci95_upper": null,
+    "peak_commanded_torque_nm_n": 1,
+    "peak_commanded_torque_nm_p05": 0.04623259124756798,
+    "peak_commanded_torque_nm_p50": 0.04623259124756798,
+    "peak_commanded_torque_nm_p95": 0.04623259124756798,
+    "peak_commanded_torque_nm_p05_bootstrap_ci95": [
+      0.04623259124756798,
+      0.04623259124756798
+    ],
+    "peak_commanded_torque_nm_p50_bootstrap_ci95": [
+      0.04623259124756798,
+      0.04623259124756798
+    ],
+    "peak_commanded_torque_nm_p95_bootstrap_ci95": [
+      0.04623259124756798,
+      0.04623259124756798
+    ],
+    "peak_achieved_torque_nm_mean": 0.04260540218742894,
+    "peak_achieved_torque_nm_std": 0.0,
+    "peak_achieved_torque_nm_ci95_lower": null,
+    "peak_achieved_torque_nm_ci95_upper": null,
+    "peak_achieved_torque_nm_n": 1,
+    "peak_achieved_torque_nm_p05": 0.04260540218742894,
+    "peak_achieved_torque_nm_p50": 0.04260540218742894,
+    "peak_achieved_torque_nm_p95": 0.04260540218742894,
+    "peak_achieved_torque_nm_p05_bootstrap_ci95": [
+      0.04260540218742894,
+      0.04260540218742894
+    ],
+    "peak_achieved_torque_nm_p50_bootstrap_ci95": [
+      0.04260540218742894,
+      0.04260540218742894
+    ],
+    "peak_achieved_torque_nm_p95_bootstrap_ci95": [
+      0.04260540218742894,
+      0.04260540218742894
+    ],
+    "command_torque_saturation_fraction_mean": 0.0,
+    "command_torque_saturation_fraction_std": 0.0,
+    "command_torque_saturation_fraction_ci95_lower": null,
+    "command_torque_saturation_fraction_ci95_upper": null,
+    "command_torque_saturation_fraction_n": 1,
+    "command_torque_saturation_fraction_p05": 0.0,
+    "command_torque_saturation_fraction_p50": 0.0,
+    "command_torque_saturation_fraction_p95": 0.0,
+    "command_torque_saturation_fraction_p05_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p50_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p95_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "wheel_gyroscopic_torque_rms_nm_mean": 6.393305801542837e-05,
+    "wheel_gyroscopic_torque_rms_nm_std": 0.0,
+    "wheel_gyroscopic_torque_rms_nm_ci95_lower": null,
+    "wheel_gyroscopic_torque_rms_nm_ci95_upper": null,
+    "wheel_gyroscopic_torque_rms_nm_n": 1,
+    "wheel_gyroscopic_torque_rms_nm_p05": 6.393305801542837e-05,
+    "wheel_gyroscopic_torque_rms_nm_p50": 6.393305801542837e-05,
+    "wheel_gyroscopic_torque_rms_nm_p95": 6.393305801542837e-05,
+    "wheel_gyroscopic_torque_rms_nm_p05_bootstrap_ci95": [
+      6.393305801542837e-05,
+      6.393305801542837e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p50_bootstrap_ci95": [
+      6.393305801542837e-05,
+      6.393305801542837e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p95_bootstrap_ci95": [
+      6.393305801542837e-05,
+      6.393305801542837e-05
+    ],
+    "attitude_estimation_rmse_rad_mean": 0.00015563352454060197,
+    "attitude_estimation_rmse_rad_std": 0.0,
+    "attitude_estimation_rmse_rad_ci95_lower": null,
+    "attitude_estimation_rmse_rad_ci95_upper": null,
+    "attitude_estimation_rmse_rad_n": 1,
+    "attitude_estimation_rmse_rad_p05": 0.00015563352454060197,
+    "attitude_estimation_rmse_rad_p50": 0.00015563352454060197,
+    "attitude_estimation_rmse_rad_p95": 0.00015563352454060197,
+    "attitude_estimation_rmse_rad_p05_bootstrap_ci95": [
+      0.00015563352454060197,
+      0.00015563352454060197
+    ],
+    "attitude_estimation_rmse_rad_p50_bootstrap_ci95": [
+      0.00015563352454060197,
+      0.00015563352454060197
+    ],
+    "attitude_estimation_rmse_rad_p95_bootstrap_ci95": [
+      0.00015563352454060197,
+      0.00015563352454060197
+    ],
+    "attitude_estimation_error_peak_rad_mean": 0.0003543365797566364,
+    "attitude_estimation_error_peak_rad_std": 0.0,
+    "attitude_estimation_error_peak_rad_ci95_lower": null,
+    "attitude_estimation_error_peak_rad_ci95_upper": null,
+    "attitude_estimation_error_peak_rad_n": 1,
+    "attitude_estimation_error_peak_rad_p05": 0.0003543365797566364,
+    "attitude_estimation_error_peak_rad_p50": 0.0003543365797566364,
+    "attitude_estimation_error_peak_rad_p95": 0.0003543365797566364,
+    "attitude_estimation_error_peak_rad_p05_bootstrap_ci95": [
+      0.0003543365797566364,
+      0.0003543365797566364
+    ],
+    "attitude_estimation_error_peak_rad_p50_bootstrap_ci95": [
+      0.0003543365797566364,
+      0.0003543365797566364
+    ],
+    "attitude_estimation_error_peak_rad_p95_bootstrap_ci95": [
+      0.0003543365797566364,
+      0.0003543365797566364
+    ],
+    "angular_rate_estimation_rmse_rad_s_mean": 0.0009968338165485295,
+    "angular_rate_estimation_rmse_rad_s_std": 0.0,
+    "angular_rate_estimation_rmse_rad_s_ci95_lower": null,
+    "angular_rate_estimation_rmse_rad_s_ci95_upper": null,
+    "angular_rate_estimation_rmse_rad_s_n": 1,
+    "angular_rate_estimation_rmse_rad_s_p05": 0.0009968338165485295,
+    "angular_rate_estimation_rmse_rad_s_p50": 0.0009968338165485295,
+    "angular_rate_estimation_rmse_rad_s_p95": 0.0009968338165485295,
+    "angular_rate_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      0.0009968338165485295,
+      0.0009968338165485295
+    ],
+    "angular_rate_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      0.0009968338165485295,
+      0.0009968338165485295
+    ],
+    "angular_rate_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      0.0009968338165485295,
+      0.0009968338165485295
+    ],
+    "angular_rate_estimation_error_peak_rad_s_mean": 0.004407377479734623,
+    "angular_rate_estimation_error_peak_rad_s_std": 0.0,
+    "angular_rate_estimation_error_peak_rad_s_ci95_lower": null,
+    "angular_rate_estimation_error_peak_rad_s_ci95_upper": null,
+    "angular_rate_estimation_error_peak_rad_s_n": 1,
+    "angular_rate_estimation_error_peak_rad_s_p05": 0.004407377479734623,
+    "angular_rate_estimation_error_peak_rad_s_p50": 0.004407377479734623,
+    "angular_rate_estimation_error_peak_rad_s_p95": 0.004407377479734623,
+    "angular_rate_estimation_error_peak_rad_s_p05_bootstrap_ci95": [
+      0.004407377479734623,
+      0.004407377479734623
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p50_bootstrap_ci95": [
+      0.004407377479734623,
+      0.004407377479734623
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p95_bootstrap_ci95": [
+      0.004407377479734623,
+      0.004407377479734623
+    ],
+    "bias_estimation_rmse_rad_s_mean": 1.1271397989703792e-05,
+    "bias_estimation_rmse_rad_s_std": 0.0,
+    "bias_estimation_rmse_rad_s_ci95_lower": null,
+    "bias_estimation_rmse_rad_s_ci95_upper": null,
+    "bias_estimation_rmse_rad_s_n": 1,
+    "bias_estimation_rmse_rad_s_p05": 1.1271397989703792e-05,
+    "bias_estimation_rmse_rad_s_p50": 1.1271397989703792e-05,
+    "bias_estimation_rmse_rad_s_p95": 1.1271397989703792e-05,
+    "bias_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      1.1271397989703792e-05,
+      1.1271397989703792e-05
+    ],
+    "bias_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      1.1271397989703792e-05,
+      1.1271397989703792e-05
+    ],
+    "bias_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      1.1271397989703792e-05,
+      1.1271397989703792e-05
+    ],
+    "attitude_3sigma_component_coverage_mean": 0.9994166666666666,
+    "attitude_3sigma_component_coverage_std": 0.0,
+    "attitude_3sigma_component_coverage_ci95_lower": null,
+    "attitude_3sigma_component_coverage_ci95_upper": null,
+    "attitude_3sigma_component_coverage_n": 1,
+    "attitude_3sigma_component_coverage_p05": 0.9994166666666666,
+    "attitude_3sigma_component_coverage_p50": 0.9994166666666666,
+    "attitude_3sigma_component_coverage_p95": 0.9994166666666666,
+    "attitude_3sigma_component_coverage_p05_bootstrap_ci95": [
+      0.9994166666666666,
+      0.9994166666666666
+    ],
+    "attitude_3sigma_component_coverage_p50_bootstrap_ci95": [
+      0.9994166666666666,
+      0.9994166666666666
+    ],
+    "attitude_3sigma_component_coverage_p95_bootstrap_ci95": [
+      0.9994166666666666,
+      0.9994166666666666
+    ],
+    "bias_3sigma_component_coverage_mean": 1.0,
+    "bias_3sigma_component_coverage_std": 0.0,
+    "bias_3sigma_component_coverage_ci95_lower": null,
+    "bias_3sigma_component_coverage_ci95_upper": null,
+    "bias_3sigma_component_coverage_n": 1,
+    "bias_3sigma_component_coverage_p05": 1.0,
+    "bias_3sigma_component_coverage_p50": 1.0,
+    "bias_3sigma_component_coverage_p95": 1.0,
+    "bias_3sigma_component_coverage_p05_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p50_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p95_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "innovation_lag1_autocorrelation_rms_mean": 0.0865659692387438,
+    "innovation_lag1_autocorrelation_rms_std": 0.0,
+    "innovation_lag1_autocorrelation_rms_ci95_lower": null,
+    "innovation_lag1_autocorrelation_rms_ci95_upper": null,
+    "innovation_lag1_autocorrelation_rms_n": 1,
+    "innovation_lag1_autocorrelation_rms_p05": 0.0865659692387438,
+    "innovation_lag1_autocorrelation_rms_p50": 0.0865659692387438,
+    "innovation_lag1_autocorrelation_rms_p95": 0.0865659692387438,
+    "innovation_lag1_autocorrelation_rms_p05_bootstrap_ci95": [
+      0.0865659692387438,
+      0.0865659692387438
+    ],
+    "innovation_lag1_autocorrelation_rms_p50_bootstrap_ci95": [
+      0.0865659692387438,
+      0.0865659692387438
+    ],
+    "innovation_lag1_autocorrelation_rms_p95_bootstrap_ci95": [
+      0.0865659692387438,
+      0.0865659692387438
+    ],
+    "pointing_rms_rad_full_mean": 0.03698043459194663,
+    "pointing_rms_rad_full_std": 0.0,
+    "pointing_rms_rad_full_ci95_lower": null,
+    "pointing_rms_rad_full_ci95_upper": null,
+    "pointing_rms_rad_full_n": 1,
+    "pointing_rms_rad_full_p05": 0.03698043459194663,
+    "pointing_rms_rad_full_p50": 0.03698043459194663,
+    "pointing_rms_rad_full_p95": 0.03698043459194663,
+    "pointing_rms_rad_full_p05_bootstrap_ci95": [
+      0.03698043459194663,
+      0.03698043459194663
+    ],
+    "pointing_rms_rad_full_p50_bootstrap_ci95": [
+      0.03698043459194663,
+      0.03698043459194663
+    ],
+    "pointing_rms_rad_full_p95_bootstrap_ci95": [
+      0.03698043459194663,
+      0.03698043459194663
+    ],
+    "pointing_peak_rad_full_mean": 0.0740526027568373,
+    "pointing_peak_rad_full_std": 0.0,
+    "pointing_peak_rad_full_ci95_lower": null,
+    "pointing_peak_rad_full_ci95_upper": null,
+    "pointing_peak_rad_full_n": 1,
+    "pointing_peak_rad_full_p05": 0.0740526027568373,
+    "pointing_peak_rad_full_p50": 0.0740526027568373,
+    "pointing_peak_rad_full_p95": 0.0740526027568373,
+    "pointing_peak_rad_full_p05_bootstrap_ci95": [
+      0.0740526027568373,
+      0.0740526027568373
+    ],
+    "pointing_peak_rad_full_p50_bootstrap_ci95": [
+      0.0740526027568373,
+      0.0740526027568373
+    ],
+    "pointing_peak_rad_full_p95_bootstrap_ci95": [
+      0.0740526027568373,
+      0.0740526027568373
+    ],
+    "pointing_final_rad_full_mean": 0.0021910055439973044,
+    "pointing_final_rad_full_std": 0.0,
+    "pointing_final_rad_full_ci95_lower": null,
+    "pointing_final_rad_full_ci95_upper": null,
+    "pointing_final_rad_full_n": 1,
+    "pointing_final_rad_full_p05": 0.0021910055439973044,
+    "pointing_final_rad_full_p50": 0.0021910055439973044,
+    "pointing_final_rad_full_p95": 0.0021910055439973044,
+    "pointing_final_rad_full_p05_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "pointing_final_rad_full_p50_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "pointing_final_rad_full_p95_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ]
+  },
+  {
+    "campaign": "E2",
+    "case": "Q_scale_10",
+    "runs": 1,
+    "duration_s": 100.00000000000001,
+    "NEES_dof": 6,
+    "NIS_dof": 3,
+    "NEES_mean": 0.8468024990744677,
+    "NEES_in_bounds_pct": 15.25,
+    "NIS_mean": 0.43633650799038853,
+    "NIS_pre_gate_mean": 0.43633650799038853,
+    "NIS_in_bounds_pct": 75.0,
+    "star_tracker_updates": 100,
+    "rejected_measurements": 0,
+    "predicted_NEES_mean_steady": null,
+    "prediction_NEES_relative_error": null,
+    "prediction_NEES_pass": null,
+    "model_error_covariance_relative_error": null,
+    "prediction_error_covariance_pass": null,
+    "riccati_relative_frobenius_error": null,
+    "riccati_marginal_relative_error": null,
+    "riccati_relative_frobenius_error_late": null,
+    "riccati_marginal_relative_error_late": null,
+    "predicted_equilibrium_pointing_rad": null,
+    "measured_equilibrium_pointing_rad": null,
+    "equilibrium_relative_error": null,
+    "equilibrium_prediction_pass": null,
+    "lyapunov_pointing_bound_rad": null,
+    "lyapunov_measured_peak_pointing_rad": null,
+    "lyapunov_bound_pass": null,
+    "run_nees_mean": 0.8468024990744677,
+    "run_nees_mean_ci95": [
+      null,
+      null
+    ],
+    "run_nis_mean": 0.43633650799038853,
+    "run_nis_mean_ci95": [
+      null,
+      null
+    ],
+    "Q_scale": 10.0,
+    "R_scale": 1.0,
+    "tracker_rate_hz": 1.0,
+    "pointing_rms_rad_mean": 0.00312596491417337,
+    "pointing_rms_rad_std": 0.0,
+    "pointing_rms_rad_ci95_lower": null,
+    "pointing_rms_rad_ci95_upper": null,
+    "pointing_rms_rad_n": 1,
+    "pointing_rms_rad_p05": 0.00312596491417337,
+    "pointing_rms_rad_p50": 0.00312596491417337,
+    "pointing_rms_rad_p95": 0.00312596491417337,
+    "pointing_rms_rad_p05_bootstrap_ci95": [
+      0.00312596491417337,
+      0.00312596491417337
+    ],
+    "pointing_rms_rad_p50_bootstrap_ci95": [
+      0.00312596491417337,
+      0.00312596491417337
+    ],
+    "pointing_rms_rad_p95_bootstrap_ci95": [
+      0.00312596491417337,
+      0.00312596491417337
+    ],
+    "pointing_peak_rad_mean": 0.004044713419071479,
+    "pointing_peak_rad_std": 0.0,
+    "pointing_peak_rad_ci95_lower": null,
+    "pointing_peak_rad_ci95_upper": null,
+    "pointing_peak_rad_n": 1,
+    "pointing_peak_rad_p05": 0.004044713419071479,
+    "pointing_peak_rad_p50": 0.004044713419071479,
+    "pointing_peak_rad_p95": 0.004044713419071479,
+    "pointing_peak_rad_p05_bootstrap_ci95": [
+      0.004044713419071479,
+      0.004044713419071479
+    ],
+    "pointing_peak_rad_p50_bootstrap_ci95": [
+      0.004044713419071479,
+      0.004044713419071479
+    ],
+    "pointing_peak_rad_p95_bootstrap_ci95": [
+      0.004044713419071479,
+      0.004044713419071479
+    ],
+    "pointing_final_rad_mean": 0.0021902781212140513,
+    "pointing_final_rad_std": 0.0,
+    "pointing_final_rad_ci95_lower": null,
+    "pointing_final_rad_ci95_upper": null,
+    "pointing_final_rad_n": 1,
+    "pointing_final_rad_p05": 0.0021902781212140513,
+    "pointing_final_rad_p50": 0.0021902781212140513,
+    "pointing_final_rad_p95": 0.0021902781212140513,
+    "pointing_final_rad_p05_bootstrap_ci95": [
+      0.0021902781212140513,
+      0.0021902781212140513
+    ],
+    "pointing_final_rad_p50_bootstrap_ci95": [
+      0.0021902781212140513,
+      0.0021902781212140513
+    ],
+    "pointing_final_rad_p95_bootstrap_ci95": [
+      0.0021902781212140513,
+      0.0021902781212140513
+    ],
+    "control_effort_nm2_s_mean": 0.012364835857235627,
+    "control_effort_nm2_s_std": 0.0,
+    "control_effort_nm2_s_ci95_lower": null,
+    "control_effort_nm2_s_ci95_upper": null,
+    "control_effort_nm2_s_n": 1,
+    "control_effort_nm2_s_p05": 0.012364835857235627,
+    "control_effort_nm2_s_p50": 0.012364835857235627,
+    "control_effort_nm2_s_p95": 0.012364835857235627,
+    "control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.012364835857235627,
+      0.012364835857235627
+    ],
+    "control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.012364835857235627,
+      0.012364835857235627
+    ],
+    "control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.012364835857235627,
+      0.012364835857235627
+    ],
+    "achieved_control_effort_nm2_s_mean": 0.011096598671095702,
+    "achieved_control_effort_nm2_s_std": 0.0,
+    "achieved_control_effort_nm2_s_ci95_lower": null,
+    "achieved_control_effort_nm2_s_ci95_upper": null,
+    "achieved_control_effort_nm2_s_n": 1,
+    "achieved_control_effort_nm2_s_p05": 0.011096598671095702,
+    "achieved_control_effort_nm2_s_p50": 0.011096598671095702,
+    "achieved_control_effort_nm2_s_p95": 0.011096598671095702,
+    "achieved_control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.011096598671095702,
+      0.011096598671095702
+    ],
+    "achieved_control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.011096598671095702,
+      0.011096598671095702
+    ],
+    "achieved_control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.011096598671095702,
+      0.011096598671095702
+    ],
+    "peak_commanded_torque_nm_mean": 0.04622100415405888,
+    "peak_commanded_torque_nm_std": 0.0,
+    "peak_commanded_torque_nm_ci95_lower": null,
+    "peak_commanded_torque_nm_ci95_upper": null,
+    "peak_commanded_torque_nm_n": 1,
+    "peak_commanded_torque_nm_p05": 0.04622100415405888,
+    "peak_commanded_torque_nm_p50": 0.04622100415405888,
+    "peak_commanded_torque_nm_p95": 0.04622100415405888,
+    "peak_commanded_torque_nm_p05_bootstrap_ci95": [
+      0.04622100415405888,
+      0.04622100415405888
+    ],
+    "peak_commanded_torque_nm_p50_bootstrap_ci95": [
+      0.04622100415405888,
+      0.04622100415405888
+    ],
+    "peak_commanded_torque_nm_p95_bootstrap_ci95": [
+      0.04622100415405888,
+      0.04622100415405888
+    ],
+    "peak_achieved_torque_nm_mean": 0.042595377313595084,
+    "peak_achieved_torque_nm_std": 0.0,
+    "peak_achieved_torque_nm_ci95_lower": null,
+    "peak_achieved_torque_nm_ci95_upper": null,
+    "peak_achieved_torque_nm_n": 1,
+    "peak_achieved_torque_nm_p05": 0.042595377313595084,
+    "peak_achieved_torque_nm_p50": 0.042595377313595084,
+    "peak_achieved_torque_nm_p95": 0.042595377313595084,
+    "peak_achieved_torque_nm_p05_bootstrap_ci95": [
+      0.042595377313595084,
+      0.042595377313595084
+    ],
+    "peak_achieved_torque_nm_p50_bootstrap_ci95": [
+      0.042595377313595084,
+      0.042595377313595084
+    ],
+    "peak_achieved_torque_nm_p95_bootstrap_ci95": [
+      0.042595377313595084,
+      0.042595377313595084
+    ],
+    "command_torque_saturation_fraction_mean": 0.0,
+    "command_torque_saturation_fraction_std": 0.0,
+    "command_torque_saturation_fraction_ci95_lower": null,
+    "command_torque_saturation_fraction_ci95_upper": null,
+    "command_torque_saturation_fraction_n": 1,
+    "command_torque_saturation_fraction_p05": 0.0,
+    "command_torque_saturation_fraction_p50": 0.0,
+    "command_torque_saturation_fraction_p95": 0.0,
+    "command_torque_saturation_fraction_p05_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p50_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p95_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "wheel_gyroscopic_torque_rms_nm_mean": 6.381147982765991e-05,
+    "wheel_gyroscopic_torque_rms_nm_std": 0.0,
+    "wheel_gyroscopic_torque_rms_nm_ci95_lower": null,
+    "wheel_gyroscopic_torque_rms_nm_ci95_upper": null,
+    "wheel_gyroscopic_torque_rms_nm_n": 1,
+    "wheel_gyroscopic_torque_rms_nm_p05": 6.381147982765991e-05,
+    "wheel_gyroscopic_torque_rms_nm_p50": 6.381147982765991e-05,
+    "wheel_gyroscopic_torque_rms_nm_p95": 6.381147982765991e-05,
+    "wheel_gyroscopic_torque_rms_nm_p05_bootstrap_ci95": [
+      6.381147982765991e-05,
+      6.381147982765991e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p50_bootstrap_ci95": [
+      6.381147982765991e-05,
+      6.381147982765991e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p95_bootstrap_ci95": [
+      6.381147982765991e-05,
+      6.381147982765991e-05
+    ],
+    "attitude_estimation_rmse_rad_mean": 0.0001573948748012216,
+    "attitude_estimation_rmse_rad_std": 0.0,
+    "attitude_estimation_rmse_rad_ci95_lower": null,
+    "attitude_estimation_rmse_rad_ci95_upper": null,
+    "attitude_estimation_rmse_rad_n": 1,
+    "attitude_estimation_rmse_rad_p05": 0.0001573948748012216,
+    "attitude_estimation_rmse_rad_p50": 0.0001573948748012216,
+    "attitude_estimation_rmse_rad_p95": 0.0001573948748012216,
+    "attitude_estimation_rmse_rad_p05_bootstrap_ci95": [
+      0.0001573948748012216,
+      0.0001573948748012216
+    ],
+    "attitude_estimation_rmse_rad_p50_bootstrap_ci95": [
+      0.0001573948748012216,
+      0.0001573948748012216
+    ],
+    "attitude_estimation_rmse_rad_p95_bootstrap_ci95": [
+      0.0001573948748012216,
+      0.0001573948748012216
+    ],
+    "attitude_estimation_error_peak_rad_mean": 0.00035020356769320743,
+    "attitude_estimation_error_peak_rad_std": 0.0,
+    "attitude_estimation_error_peak_rad_ci95_lower": null,
+    "attitude_estimation_error_peak_rad_ci95_upper": null,
+    "attitude_estimation_error_peak_rad_n": 1,
+    "attitude_estimation_error_peak_rad_p05": 0.00035020356769320743,
+    "attitude_estimation_error_peak_rad_p50": 0.00035020356769320743,
+    "attitude_estimation_error_peak_rad_p95": 0.00035020356769320743,
+    "attitude_estimation_error_peak_rad_p05_bootstrap_ci95": [
+      0.00035020356769320743,
+      0.00035020356769320743
+    ],
+    "attitude_estimation_error_peak_rad_p50_bootstrap_ci95": [
+      0.00035020356769320743,
+      0.00035020356769320743
+    ],
+    "attitude_estimation_error_peak_rad_p95_bootstrap_ci95": [
+      0.00035020356769320743,
+      0.00035020356769320743
+    ],
+    "angular_rate_estimation_rmse_rad_s_mean": 0.0009968333485801805,
+    "angular_rate_estimation_rmse_rad_s_std": 0.0,
+    "angular_rate_estimation_rmse_rad_s_ci95_lower": null,
+    "angular_rate_estimation_rmse_rad_s_ci95_upper": null,
+    "angular_rate_estimation_rmse_rad_s_n": 1,
+    "angular_rate_estimation_rmse_rad_s_p05": 0.0009968333485801805,
+    "angular_rate_estimation_rmse_rad_s_p50": 0.0009968333485801805,
+    "angular_rate_estimation_rmse_rad_s_p95": 0.0009968333485801805,
+    "angular_rate_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      0.0009968333485801805,
+      0.0009968333485801805
+    ],
+    "angular_rate_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      0.0009968333485801805,
+      0.0009968333485801805
+    ],
+    "angular_rate_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      0.0009968333485801805,
+      0.0009968333485801805
+    ],
+    "angular_rate_estimation_error_peak_rad_s_mean": 0.004406849424741285,
+    "angular_rate_estimation_error_peak_rad_s_std": 0.0,
+    "angular_rate_estimation_error_peak_rad_s_ci95_lower": null,
+    "angular_rate_estimation_error_peak_rad_s_ci95_upper": null,
+    "angular_rate_estimation_error_peak_rad_s_n": 1,
+    "angular_rate_estimation_error_peak_rad_s_p05": 0.004406849424741285,
+    "angular_rate_estimation_error_peak_rad_s_p50": 0.004406849424741285,
+    "angular_rate_estimation_error_peak_rad_s_p95": 0.004406849424741285,
+    "angular_rate_estimation_error_peak_rad_s_p05_bootstrap_ci95": [
+      0.004406849424741285,
+      0.004406849424741285
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p50_bootstrap_ci95": [
+      0.004406849424741285,
+      0.004406849424741285
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p95_bootstrap_ci95": [
+      0.004406849424741285,
+      0.004406849424741285
+    ],
+    "bias_estimation_rmse_rad_s_mean": 1.1304742928888656e-05,
+    "bias_estimation_rmse_rad_s_std": 0.0,
+    "bias_estimation_rmse_rad_s_ci95_lower": null,
+    "bias_estimation_rmse_rad_s_ci95_upper": null,
+    "bias_estimation_rmse_rad_s_n": 1,
+    "bias_estimation_rmse_rad_s_p05": 1.1304742928888656e-05,
+    "bias_estimation_rmse_rad_s_p50": 1.1304742928888656e-05,
+    "bias_estimation_rmse_rad_s_p95": 1.1304742928888656e-05,
+    "bias_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      1.1304742928888656e-05,
+      1.1304742928888656e-05
+    ],
+    "bias_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      1.1304742928888656e-05,
+      1.1304742928888656e-05
+    ],
+    "bias_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      1.1304742928888656e-05,
+      1.1304742928888656e-05
+    ],
+    "attitude_3sigma_component_coverage_mean": 1.0,
+    "attitude_3sigma_component_coverage_std": 0.0,
+    "attitude_3sigma_component_coverage_ci95_lower": null,
+    "attitude_3sigma_component_coverage_ci95_upper": null,
+    "attitude_3sigma_component_coverage_n": 1,
+    "attitude_3sigma_component_coverage_p05": 1.0,
+    "attitude_3sigma_component_coverage_p50": 1.0,
+    "attitude_3sigma_component_coverage_p95": 1.0,
+    "attitude_3sigma_component_coverage_p05_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "attitude_3sigma_component_coverage_p50_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "attitude_3sigma_component_coverage_p95_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_mean": 1.0,
+    "bias_3sigma_component_coverage_std": 0.0,
+    "bias_3sigma_component_coverage_ci95_lower": null,
+    "bias_3sigma_component_coverage_ci95_upper": null,
+    "bias_3sigma_component_coverage_n": 1,
+    "bias_3sigma_component_coverage_p05": 1.0,
+    "bias_3sigma_component_coverage_p50": 1.0,
+    "bias_3sigma_component_coverage_p95": 1.0,
+    "bias_3sigma_component_coverage_p05_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p50_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p95_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "innovation_lag1_autocorrelation_rms_mean": 0.14141780698613154,
+    "innovation_lag1_autocorrelation_rms_std": 0.0,
+    "innovation_lag1_autocorrelation_rms_ci95_lower": null,
+    "innovation_lag1_autocorrelation_rms_ci95_upper": null,
+    "innovation_lag1_autocorrelation_rms_n": 1,
+    "innovation_lag1_autocorrelation_rms_p05": 0.14141780698613154,
+    "innovation_lag1_autocorrelation_rms_p50": 0.14141780698613154,
+    "innovation_lag1_autocorrelation_rms_p95": 0.14141780698613154,
+    "innovation_lag1_autocorrelation_rms_p05_bootstrap_ci95": [
+      0.14141780698613154,
+      0.14141780698613154
+    ],
+    "innovation_lag1_autocorrelation_rms_p50_bootstrap_ci95": [
+      0.14141780698613154,
+      0.14141780698613154
+    ],
+    "innovation_lag1_autocorrelation_rms_p95_bootstrap_ci95": [
+      0.14141780698613154,
+      0.14141780698613154
+    ],
+    "pointing_rms_rad_full_mean": 0.0369668409941746,
+    "pointing_rms_rad_full_std": 0.0,
+    "pointing_rms_rad_full_ci95_lower": null,
+    "pointing_rms_rad_full_ci95_upper": null,
+    "pointing_rms_rad_full_n": 1,
+    "pointing_rms_rad_full_p05": 0.0369668409941746,
+    "pointing_rms_rad_full_p50": 0.0369668409941746,
+    "pointing_rms_rad_full_p95": 0.0369668409941746,
+    "pointing_rms_rad_full_p05_bootstrap_ci95": [
+      0.0369668409941746,
+      0.0369668409941746
+    ],
+    "pointing_rms_rad_full_p50_bootstrap_ci95": [
+      0.0369668409941746,
+      0.0369668409941746
+    ],
+    "pointing_rms_rad_full_p95_bootstrap_ci95": [
+      0.0369668409941746,
+      0.0369668409941746
+    ],
+    "pointing_peak_rad_full_mean": 0.07403429505916315,
+    "pointing_peak_rad_full_std": 0.0,
+    "pointing_peak_rad_full_ci95_lower": null,
+    "pointing_peak_rad_full_ci95_upper": null,
+    "pointing_peak_rad_full_n": 1,
+    "pointing_peak_rad_full_p05": 0.07403429505916315,
+    "pointing_peak_rad_full_p50": 0.07403429505916315,
+    "pointing_peak_rad_full_p95": 0.07403429505916315,
+    "pointing_peak_rad_full_p05_bootstrap_ci95": [
+      0.07403429505916315,
+      0.07403429505916315
+    ],
+    "pointing_peak_rad_full_p50_bootstrap_ci95": [
+      0.07403429505916315,
+      0.07403429505916315
+    ],
+    "pointing_peak_rad_full_p95_bootstrap_ci95": [
+      0.07403429505916315,
+      0.07403429505916315
+    ],
+    "pointing_final_rad_full_mean": 0.0021902781212140513,
+    "pointing_final_rad_full_std": 0.0,
+    "pointing_final_rad_full_ci95_lower": null,
+    "pointing_final_rad_full_ci95_upper": null,
+    "pointing_final_rad_full_n": 1,
+    "pointing_final_rad_full_p05": 0.0021902781212140513,
+    "pointing_final_rad_full_p50": 0.0021902781212140513,
+    "pointing_final_rad_full_p95": 0.0021902781212140513,
+    "pointing_final_rad_full_p05_bootstrap_ci95": [
+      0.0021902781212140513,
+      0.0021902781212140513
+    ],
+    "pointing_final_rad_full_p50_bootstrap_ci95": [
+      0.0021902781212140513,
+      0.0021902781212140513
+    ],
+    "pointing_final_rad_full_p95_bootstrap_ci95": [
+      0.0021902781212140513,
+      0.0021902781212140513
+    ]
+  },
+  {
+    "campaign": "E3",
+    "case": "R_scale_0.1",
+    "runs": 1,
+    "duration_s": 100.00000000000001,
+    "NEES_dof": 6,
+    "NIS_dof": 3,
+    "NEES_mean": 8.427565183709767,
+    "NEES_in_bounds_pct": 90.2,
+    "NIS_mean": 4.363549643601919,
+    "NIS_pre_gate_mean": 4.363549643601919,
+    "NIS_in_bounds_pct": 92.5,
+    "star_tracker_updates": 100,
+    "rejected_measurements": 0,
+    "predicted_NEES_mean_steady": null,
+    "prediction_NEES_relative_error": null,
+    "prediction_NEES_pass": null,
+    "model_error_covariance_relative_error": null,
+    "prediction_error_covariance_pass": null,
+    "riccati_relative_frobenius_error": null,
+    "riccati_marginal_relative_error": null,
+    "riccati_relative_frobenius_error_late": null,
+    "riccati_marginal_relative_error_late": null,
+    "predicted_equilibrium_pointing_rad": null,
+    "measured_equilibrium_pointing_rad": null,
+    "equilibrium_relative_error": null,
+    "equilibrium_prediction_pass": null,
+    "lyapunov_pointing_bound_rad": null,
+    "lyapunov_measured_peak_pointing_rad": null,
+    "lyapunov_bound_pass": null,
+    "run_nees_mean": 8.427565183709767,
+    "run_nees_mean_ci95": [
+      null,
+      null
+    ],
+    "run_nis_mean": 4.363549643601919,
+    "run_nis_mean_ci95": [
+      null,
+      null
+    ],
+    "R_scale": 0.1,
+    "Q_scale": 1.0,
+    "tracker_rate_hz": 1.0,
+    "pointing_rms_rad_mean": 0.0031205158600891617,
+    "pointing_rms_rad_std": 0.0,
+    "pointing_rms_rad_ci95_lower": null,
+    "pointing_rms_rad_ci95_upper": null,
+    "pointing_rms_rad_n": 1,
+    "pointing_rms_rad_p05": 0.0031205158600891617,
+    "pointing_rms_rad_p50": 0.0031205158600891617,
+    "pointing_rms_rad_p95": 0.0031205158600891617,
+    "pointing_rms_rad_p05_bootstrap_ci95": [
+      0.0031205158600891617,
+      0.0031205158600891617
+    ],
+    "pointing_rms_rad_p50_bootstrap_ci95": [
+      0.0031205158600891617,
+      0.0031205158600891617
+    ],
+    "pointing_rms_rad_p95_bootstrap_ci95": [
+      0.0031205158600891617,
+      0.0031205158600891617
+    ],
+    "pointing_peak_rad_mean": 0.0040384078535391525,
+    "pointing_peak_rad_std": 0.0,
+    "pointing_peak_rad_ci95_lower": null,
+    "pointing_peak_rad_ci95_upper": null,
+    "pointing_peak_rad_n": 1,
+    "pointing_peak_rad_p05": 0.0040384078535391525,
+    "pointing_peak_rad_p50": 0.0040384078535391525,
+    "pointing_peak_rad_p95": 0.0040384078535391525,
+    "pointing_peak_rad_p05_bootstrap_ci95": [
+      0.0040384078535391525,
+      0.0040384078535391525
+    ],
+    "pointing_peak_rad_p50_bootstrap_ci95": [
+      0.0040384078535391525,
+      0.0040384078535391525
+    ],
+    "pointing_peak_rad_p95_bootstrap_ci95": [
+      0.0040384078535391525,
+      0.0040384078535391525
+    ],
+    "pointing_final_rad_mean": 0.0021873673551094795,
+    "pointing_final_rad_std": 0.0,
+    "pointing_final_rad_ci95_lower": null,
+    "pointing_final_rad_ci95_upper": null,
+    "pointing_final_rad_n": 1,
+    "pointing_final_rad_p05": 0.0021873673551094795,
+    "pointing_final_rad_p50": 0.0021873673551094795,
+    "pointing_final_rad_p95": 0.0021873673551094795,
+    "pointing_final_rad_p05_bootstrap_ci95": [
+      0.0021873673551094795,
+      0.0021873673551094795
+    ],
+    "pointing_final_rad_p50_bootstrap_ci95": [
+      0.0021873673551094795,
+      0.0021873673551094795
+    ],
+    "pointing_final_rad_p95_bootstrap_ci95": [
+      0.0021873673551094795,
+      0.0021873673551094795
+    ],
+    "control_effort_nm2_s_mean": 0.01236531507581911,
+    "control_effort_nm2_s_std": 0.0,
+    "control_effort_nm2_s_ci95_lower": null,
+    "control_effort_nm2_s_ci95_upper": null,
+    "control_effort_nm2_s_n": 1,
+    "control_effort_nm2_s_p05": 0.01236531507581911,
+    "control_effort_nm2_s_p50": 0.01236531507581911,
+    "control_effort_nm2_s_p95": 0.01236531507581911,
+    "control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.01236531507581911,
+      0.01236531507581911
+    ],
+    "control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.01236531507581911,
+      0.01236531507581911
+    ],
+    "control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.01236531507581911,
+      0.01236531507581911
+    ],
+    "achieved_control_effort_nm2_s_mean": 0.011096953029521033,
+    "achieved_control_effort_nm2_s_std": 0.0,
+    "achieved_control_effort_nm2_s_ci95_lower": null,
+    "achieved_control_effort_nm2_s_ci95_upper": null,
+    "achieved_control_effort_nm2_s_n": 1,
+    "achieved_control_effort_nm2_s_p05": 0.011096953029521033,
+    "achieved_control_effort_nm2_s_p50": 0.011096953029521033,
+    "achieved_control_effort_nm2_s_p95": 0.011096953029521033,
+    "achieved_control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.011096953029521033,
+      0.011096953029521033
+    ],
+    "achieved_control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.011096953029521033,
+      0.011096953029521033
+    ],
+    "achieved_control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.011096953029521033,
+      0.011096953029521033
+    ],
+    "peak_commanded_torque_nm_mean": 0.04622342589213834,
+    "peak_commanded_torque_nm_std": 0.0,
+    "peak_commanded_torque_nm_ci95_lower": null,
+    "peak_commanded_torque_nm_ci95_upper": null,
+    "peak_commanded_torque_nm_n": 1,
+    "peak_commanded_torque_nm_p05": 0.04622342589213834,
+    "peak_commanded_torque_nm_p50": 0.04622342589213834,
+    "peak_commanded_torque_nm_p95": 0.04622342589213834,
+    "peak_commanded_torque_nm_p05_bootstrap_ci95": [
+      0.04622342589213834,
+      0.04622342589213834
+    ],
+    "peak_commanded_torque_nm_p50_bootstrap_ci95": [
+      0.04622342589213834,
+      0.04622342589213834
+    ],
+    "peak_commanded_torque_nm_p95_bootstrap_ci95": [
+      0.04622342589213834,
+      0.04622342589213834
+    ],
+    "peak_achieved_torque_nm_mean": 0.042596854182125055,
+    "peak_achieved_torque_nm_std": 0.0,
+    "peak_achieved_torque_nm_ci95_lower": null,
+    "peak_achieved_torque_nm_ci95_upper": null,
+    "peak_achieved_torque_nm_n": 1,
+    "peak_achieved_torque_nm_p05": 0.042596854182125055,
+    "peak_achieved_torque_nm_p50": 0.042596854182125055,
+    "peak_achieved_torque_nm_p95": 0.042596854182125055,
+    "peak_achieved_torque_nm_p05_bootstrap_ci95": [
+      0.042596854182125055,
+      0.042596854182125055
+    ],
+    "peak_achieved_torque_nm_p50_bootstrap_ci95": [
+      0.042596854182125055,
+      0.042596854182125055
+    ],
+    "peak_achieved_torque_nm_p95_bootstrap_ci95": [
+      0.042596854182125055,
+      0.042596854182125055
+    ],
+    "command_torque_saturation_fraction_mean": 0.0,
+    "command_torque_saturation_fraction_std": 0.0,
+    "command_torque_saturation_fraction_ci95_lower": null,
+    "command_torque_saturation_fraction_ci95_upper": null,
+    "command_torque_saturation_fraction_n": 1,
+    "command_torque_saturation_fraction_p05": 0.0,
+    "command_torque_saturation_fraction_p50": 0.0,
+    "command_torque_saturation_fraction_p95": 0.0,
+    "command_torque_saturation_fraction_p05_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p50_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p95_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "wheel_gyroscopic_torque_rms_nm_mean": 6.39177019565901e-05,
+    "wheel_gyroscopic_torque_rms_nm_std": 0.0,
+    "wheel_gyroscopic_torque_rms_nm_ci95_lower": null,
+    "wheel_gyroscopic_torque_rms_nm_ci95_upper": null,
+    "wheel_gyroscopic_torque_rms_nm_n": 1,
+    "wheel_gyroscopic_torque_rms_nm_p05": 6.39177019565901e-05,
+    "wheel_gyroscopic_torque_rms_nm_p50": 6.39177019565901e-05,
+    "wheel_gyroscopic_torque_rms_nm_p95": 6.39177019565901e-05,
+    "wheel_gyroscopic_torque_rms_nm_p05_bootstrap_ci95": [
+      6.39177019565901e-05,
+      6.39177019565901e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p50_bootstrap_ci95": [
+      6.39177019565901e-05,
+      6.39177019565901e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p95_bootstrap_ci95": [
+      6.39177019565901e-05,
+      6.39177019565901e-05
+    ],
+    "attitude_estimation_rmse_rad_mean": 0.00015738814893557113,
+    "attitude_estimation_rmse_rad_std": 0.0,
+    "attitude_estimation_rmse_rad_ci95_lower": null,
+    "attitude_estimation_rmse_rad_ci95_upper": null,
+    "attitude_estimation_rmse_rad_n": 1,
+    "attitude_estimation_rmse_rad_p05": 0.00015738814893557113,
+    "attitude_estimation_rmse_rad_p50": 0.00015738814893557113,
+    "attitude_estimation_rmse_rad_p95": 0.00015738814893557113,
+    "attitude_estimation_rmse_rad_p05_bootstrap_ci95": [
+      0.00015738814893557113,
+      0.00015738814893557113
+    ],
+    "attitude_estimation_rmse_rad_p50_bootstrap_ci95": [
+      0.00015738814893557113,
+      0.00015738814893557113
+    ],
+    "attitude_estimation_rmse_rad_p95_bootstrap_ci95": [
+      0.00015738814893557113,
+      0.00015738814893557113
+    ],
+    "attitude_estimation_error_peak_rad_mean": 0.00035011133487670336,
+    "attitude_estimation_error_peak_rad_std": 0.0,
+    "attitude_estimation_error_peak_rad_ci95_lower": null,
+    "attitude_estimation_error_peak_rad_ci95_upper": null,
+    "attitude_estimation_error_peak_rad_n": 1,
+    "attitude_estimation_error_peak_rad_p05": 0.00035011133487670336,
+    "attitude_estimation_error_peak_rad_p50": 0.00035011133487670336,
+    "attitude_estimation_error_peak_rad_p95": 0.00035011133487670336,
+    "attitude_estimation_error_peak_rad_p05_bootstrap_ci95": [
+      0.00035011133487670336,
+      0.00035011133487670336
+    ],
+    "attitude_estimation_error_peak_rad_p50_bootstrap_ci95": [
+      0.00035011133487670336,
+      0.00035011133487670336
+    ],
+    "attitude_estimation_error_peak_rad_p95_bootstrap_ci95": [
+      0.00035011133487670336,
+      0.00035011133487670336
+    ],
+    "angular_rate_estimation_rmse_rad_s_mean": 0.0009968339636410963,
+    "angular_rate_estimation_rmse_rad_s_std": 0.0,
+    "angular_rate_estimation_rmse_rad_s_ci95_lower": null,
+    "angular_rate_estimation_rmse_rad_s_ci95_upper": null,
+    "angular_rate_estimation_rmse_rad_s_n": 1,
+    "angular_rate_estimation_rmse_rad_s_p05": 0.0009968339636410963,
+    "angular_rate_estimation_rmse_rad_s_p50": 0.0009968339636410963,
+    "angular_rate_estimation_rmse_rad_s_p95": 0.0009968339636410963,
+    "angular_rate_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      0.0009968339636410963,
+      0.0009968339636410963
+    ],
+    "angular_rate_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      0.0009968339636410963,
+      0.0009968339636410963
+    ],
+    "angular_rate_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      0.0009968339636410963,
+      0.0009968339636410963
+    ],
+    "angular_rate_estimation_error_peak_rad_s_mean": 0.004407062225558526,
+    "angular_rate_estimation_error_peak_rad_s_std": 0.0,
+    "angular_rate_estimation_error_peak_rad_s_ci95_lower": null,
+    "angular_rate_estimation_error_peak_rad_s_ci95_upper": null,
+    "angular_rate_estimation_error_peak_rad_s_n": 1,
+    "angular_rate_estimation_error_peak_rad_s_p05": 0.004407062225558526,
+    "angular_rate_estimation_error_peak_rad_s_p50": 0.004407062225558526,
+    "angular_rate_estimation_error_peak_rad_s_p95": 0.004407062225558526,
+    "angular_rate_estimation_error_peak_rad_s_p05_bootstrap_ci95": [
+      0.004407062225558526,
+      0.004407062225558526
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p50_bootstrap_ci95": [
+      0.004407062225558526,
+      0.004407062225558526
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p95_bootstrap_ci95": [
+      0.004407062225558526,
+      0.004407062225558526
+    ],
+    "bias_estimation_rmse_rad_s_mean": 1.1214965224675345e-05,
+    "bias_estimation_rmse_rad_s_std": 0.0,
+    "bias_estimation_rmse_rad_s_ci95_lower": null,
+    "bias_estimation_rmse_rad_s_ci95_upper": null,
+    "bias_estimation_rmse_rad_s_n": 1,
+    "bias_estimation_rmse_rad_s_p05": 1.1214965224675345e-05,
+    "bias_estimation_rmse_rad_s_p50": 1.1214965224675345e-05,
+    "bias_estimation_rmse_rad_s_p95": 1.1214965224675345e-05,
+    "bias_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      1.1214965224675345e-05,
+      1.1214965224675345e-05
+    ],
+    "bias_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      1.1214965224675345e-05,
+      1.1214965224675345e-05
+    ],
+    "bias_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      1.1214965224675345e-05,
+      1.1214965224675345e-05
+    ],
+    "attitude_3sigma_component_coverage_mean": 0.9701666666666666,
+    "attitude_3sigma_component_coverage_std": 0.0,
+    "attitude_3sigma_component_coverage_ci95_lower": null,
+    "attitude_3sigma_component_coverage_ci95_upper": null,
+    "attitude_3sigma_component_coverage_n": 1,
+    "attitude_3sigma_component_coverage_p05": 0.9701666666666666,
+    "attitude_3sigma_component_coverage_p50": 0.9701666666666666,
+    "attitude_3sigma_component_coverage_p95": 0.9701666666666666,
+    "attitude_3sigma_component_coverage_p05_bootstrap_ci95": [
+      0.9701666666666666,
+      0.9701666666666666
+    ],
+    "attitude_3sigma_component_coverage_p50_bootstrap_ci95": [
+      0.9701666666666666,
+      0.9701666666666666
+    ],
+    "attitude_3sigma_component_coverage_p95_bootstrap_ci95": [
+      0.9701666666666666,
+      0.9701666666666666
+    ],
+    "bias_3sigma_component_coverage_mean": 1.0,
+    "bias_3sigma_component_coverage_std": 0.0,
+    "bias_3sigma_component_coverage_ci95_lower": null,
+    "bias_3sigma_component_coverage_ci95_upper": null,
+    "bias_3sigma_component_coverage_n": 1,
+    "bias_3sigma_component_coverage_p05": 1.0,
+    "bias_3sigma_component_coverage_p50": 1.0,
+    "bias_3sigma_component_coverage_p95": 1.0,
+    "bias_3sigma_component_coverage_p05_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p50_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p95_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "innovation_lag1_autocorrelation_rms_mean": 0.14141272514909994,
+    "innovation_lag1_autocorrelation_rms_std": 0.0,
+    "innovation_lag1_autocorrelation_rms_ci95_lower": null,
+    "innovation_lag1_autocorrelation_rms_ci95_upper": null,
+    "innovation_lag1_autocorrelation_rms_n": 1,
+    "innovation_lag1_autocorrelation_rms_p05": 0.14141272514909994,
+    "innovation_lag1_autocorrelation_rms_p50": 0.14141272514909994,
+    "innovation_lag1_autocorrelation_rms_p95": 0.14141272514909994,
+    "innovation_lag1_autocorrelation_rms_p05_bootstrap_ci95": [
+      0.14141272514909994,
+      0.14141272514909994
+    ],
+    "innovation_lag1_autocorrelation_rms_p50_bootstrap_ci95": [
+      0.14141272514909994,
+      0.14141272514909994
+    ],
+    "innovation_lag1_autocorrelation_rms_p95_bootstrap_ci95": [
+      0.14141272514909994,
+      0.14141272514909994
+    ],
+    "pointing_rms_rad_full_mean": 0.03698373187862932,
+    "pointing_rms_rad_full_std": 0.0,
+    "pointing_rms_rad_full_ci95_lower": null,
+    "pointing_rms_rad_full_ci95_upper": null,
+    "pointing_rms_rad_full_n": 1,
+    "pointing_rms_rad_full_p05": 0.03698373187862932,
+    "pointing_rms_rad_full_p50": 0.03698373187862932,
+    "pointing_rms_rad_full_p95": 0.03698373187862932,
+    "pointing_rms_rad_full_p05_bootstrap_ci95": [
+      0.03698373187862932,
+      0.03698373187862932
+    ],
+    "pointing_rms_rad_full_p50_bootstrap_ci95": [
+      0.03698373187862932,
+      0.03698373187862932
+    ],
+    "pointing_rms_rad_full_p95_bootstrap_ci95": [
+      0.03698373187862932,
+      0.03698373187862932
+    ],
+    "pointing_peak_rad_full_mean": 0.07405946162287465,
+    "pointing_peak_rad_full_std": 0.0,
+    "pointing_peak_rad_full_ci95_lower": null,
+    "pointing_peak_rad_full_ci95_upper": null,
+    "pointing_peak_rad_full_n": 1,
+    "pointing_peak_rad_full_p05": 0.07405946162287465,
+    "pointing_peak_rad_full_p50": 0.07405946162287465,
+    "pointing_peak_rad_full_p95": 0.07405946162287465,
+    "pointing_peak_rad_full_p05_bootstrap_ci95": [
+      0.07405946162287465,
+      0.07405946162287465
+    ],
+    "pointing_peak_rad_full_p50_bootstrap_ci95": [
+      0.07405946162287465,
+      0.07405946162287465
+    ],
+    "pointing_peak_rad_full_p95_bootstrap_ci95": [
+      0.07405946162287465,
+      0.07405946162287465
+    ],
+    "pointing_final_rad_full_mean": 0.0021873673551094795,
+    "pointing_final_rad_full_std": 0.0,
+    "pointing_final_rad_full_ci95_lower": null,
+    "pointing_final_rad_full_ci95_upper": null,
+    "pointing_final_rad_full_n": 1,
+    "pointing_final_rad_full_p05": 0.0021873673551094795,
+    "pointing_final_rad_full_p50": 0.0021873673551094795,
+    "pointing_final_rad_full_p95": 0.0021873673551094795,
+    "pointing_final_rad_full_p05_bootstrap_ci95": [
+      0.0021873673551094795,
+      0.0021873673551094795
+    ],
+    "pointing_final_rad_full_p50_bootstrap_ci95": [
+      0.0021873673551094795,
+      0.0021873673551094795
+    ],
+    "pointing_final_rad_full_p95_bootstrap_ci95": [
+      0.0021873673551094795,
+      0.0021873673551094795
+    ]
+  },
+  {
+    "campaign": "E3",
+    "case": "R_scale_1",
+    "runs": 1,
+    "duration_s": 100.00000000000001,
+    "NEES_dof": 6,
+    "NIS_dof": 3,
+    "NEES_mean": 5.9020022201126014,
+    "NEES_in_bounds_pct": 99.9,
+    "NIS_mean": 3.109930071879407,
+    "NIS_pre_gate_mean": 3.109930071879407,
+    "NIS_in_bounds_pct": 97.5,
+    "star_tracker_updates": 100,
+    "rejected_measurements": 0,
+    "predicted_NEES_mean_steady": null,
+    "prediction_NEES_relative_error": null,
+    "prediction_NEES_pass": null,
+    "model_error_covariance_relative_error": null,
+    "prediction_error_covariance_pass": null,
+    "riccati_relative_frobenius_error": null,
+    "riccati_marginal_relative_error": null,
+    "riccati_relative_frobenius_error_late": null,
+    "riccati_marginal_relative_error_late": null,
+    "predicted_equilibrium_pointing_rad": null,
+    "measured_equilibrium_pointing_rad": null,
+    "equilibrium_relative_error": null,
+    "equilibrium_prediction_pass": null,
+    "lyapunov_pointing_bound_rad": null,
+    "lyapunov_measured_peak_pointing_rad": null,
+    "lyapunov_bound_pass": null,
+    "run_nees_mean": 5.9020022201126014,
+    "run_nees_mean_ci95": [
+      null,
+      null
+    ],
+    "run_nis_mean": 3.109930071879407,
+    "run_nis_mean_ci95": [
+      null,
+      null
+    ],
+    "R_scale": 1.0,
+    "Q_scale": 1.0,
+    "tracker_rate_hz": 1.0,
+    "pointing_rms_rad_mean": 0.0031223561814196694,
+    "pointing_rms_rad_std": 0.0,
+    "pointing_rms_rad_ci95_lower": null,
+    "pointing_rms_rad_ci95_upper": null,
+    "pointing_rms_rad_n": 1,
+    "pointing_rms_rad_p05": 0.0031223561814196694,
+    "pointing_rms_rad_p50": 0.0031223561814196694,
+    "pointing_rms_rad_p95": 0.0031223561814196694,
+    "pointing_rms_rad_p05_bootstrap_ci95": [
+      0.0031223561814196694,
+      0.0031223561814196694
+    ],
+    "pointing_rms_rad_p50_bootstrap_ci95": [
+      0.0031223561814196694,
+      0.0031223561814196694
+    ],
+    "pointing_rms_rad_p95_bootstrap_ci95": [
+      0.0031223561814196694,
+      0.0031223561814196694
+    ],
+    "pointing_peak_rad_mean": 0.004039709902774164,
+    "pointing_peak_rad_std": 0.0,
+    "pointing_peak_rad_ci95_lower": null,
+    "pointing_peak_rad_ci95_upper": null,
+    "pointing_peak_rad_n": 1,
+    "pointing_peak_rad_p05": 0.004039709902774164,
+    "pointing_peak_rad_p50": 0.004039709902774164,
+    "pointing_peak_rad_p95": 0.004039709902774164,
+    "pointing_peak_rad_p05_bootstrap_ci95": [
+      0.004039709902774164,
+      0.004039709902774164
+    ],
+    "pointing_peak_rad_p50_bootstrap_ci95": [
+      0.004039709902774164,
+      0.004039709902774164
+    ],
+    "pointing_peak_rad_p95_bootstrap_ci95": [
+      0.004039709902774164,
+      0.004039709902774164
+    ],
+    "pointing_final_rad_mean": 0.0021910055439973044,
+    "pointing_final_rad_std": 0.0,
+    "pointing_final_rad_ci95_lower": null,
+    "pointing_final_rad_ci95_upper": null,
+    "pointing_final_rad_n": 1,
+    "pointing_final_rad_p05": 0.0021910055439973044,
+    "pointing_final_rad_p50": 0.0021910055439973044,
+    "pointing_final_rad_p95": 0.0021910055439973044,
+    "pointing_final_rad_p05_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "pointing_final_rad_p50_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "pointing_final_rad_p95_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "control_effort_nm2_s_mean": 0.012364989736184917,
+    "control_effort_nm2_s_std": 0.0,
+    "control_effort_nm2_s_ci95_lower": null,
+    "control_effort_nm2_s_ci95_upper": null,
+    "control_effort_nm2_s_n": 1,
+    "control_effort_nm2_s_p05": 0.012364989736184917,
+    "control_effort_nm2_s_p50": 0.012364989736184917,
+    "control_effort_nm2_s_p95": 0.012364989736184917,
+    "control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.012364989736184917,
+      0.012364989736184917
+    ],
+    "control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.012364989736184917,
+      0.012364989736184917
+    ],
+    "control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.012364989736184917,
+      0.012364989736184917
+    ],
+    "achieved_control_effort_nm2_s_mean": 0.011096702207754211,
+    "achieved_control_effort_nm2_s_std": 0.0,
+    "achieved_control_effort_nm2_s_ci95_lower": null,
+    "achieved_control_effort_nm2_s_ci95_upper": null,
+    "achieved_control_effort_nm2_s_n": 1,
+    "achieved_control_effort_nm2_s_p05": 0.011096702207754211,
+    "achieved_control_effort_nm2_s_p50": 0.011096702207754211,
+    "achieved_control_effort_nm2_s_p95": 0.011096702207754211,
+    "achieved_control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.011096702207754211,
+      0.011096702207754211
+    ],
+    "achieved_control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.011096702207754211,
+      0.011096702207754211
+    ],
+    "achieved_control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.011096702207754211,
+      0.011096702207754211
+    ],
+    "peak_commanded_torque_nm_mean": 0.04623259124756798,
+    "peak_commanded_torque_nm_std": 0.0,
+    "peak_commanded_torque_nm_ci95_lower": null,
+    "peak_commanded_torque_nm_ci95_upper": null,
+    "peak_commanded_torque_nm_n": 1,
+    "peak_commanded_torque_nm_p05": 0.04623259124756798,
+    "peak_commanded_torque_nm_p50": 0.04623259124756798,
+    "peak_commanded_torque_nm_p95": 0.04623259124756798,
+    "peak_commanded_torque_nm_p05_bootstrap_ci95": [
+      0.04623259124756798,
+      0.04623259124756798
+    ],
+    "peak_commanded_torque_nm_p50_bootstrap_ci95": [
+      0.04623259124756798,
+      0.04623259124756798
+    ],
+    "peak_commanded_torque_nm_p95_bootstrap_ci95": [
+      0.04623259124756798,
+      0.04623259124756798
+    ],
+    "peak_achieved_torque_nm_mean": 0.04260540218742894,
+    "peak_achieved_torque_nm_std": 0.0,
+    "peak_achieved_torque_nm_ci95_lower": null,
+    "peak_achieved_torque_nm_ci95_upper": null,
+    "peak_achieved_torque_nm_n": 1,
+    "peak_achieved_torque_nm_p05": 0.04260540218742894,
+    "peak_achieved_torque_nm_p50": 0.04260540218742894,
+    "peak_achieved_torque_nm_p95": 0.04260540218742894,
+    "peak_achieved_torque_nm_p05_bootstrap_ci95": [
+      0.04260540218742894,
+      0.04260540218742894
+    ],
+    "peak_achieved_torque_nm_p50_bootstrap_ci95": [
+      0.04260540218742894,
+      0.04260540218742894
+    ],
+    "peak_achieved_torque_nm_p95_bootstrap_ci95": [
+      0.04260540218742894,
+      0.04260540218742894
+    ],
+    "command_torque_saturation_fraction_mean": 0.0,
+    "command_torque_saturation_fraction_std": 0.0,
+    "command_torque_saturation_fraction_ci95_lower": null,
+    "command_torque_saturation_fraction_ci95_upper": null,
+    "command_torque_saturation_fraction_n": 1,
+    "command_torque_saturation_fraction_p05": 0.0,
+    "command_torque_saturation_fraction_p50": 0.0,
+    "command_torque_saturation_fraction_p95": 0.0,
+    "command_torque_saturation_fraction_p05_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p50_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p95_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "wheel_gyroscopic_torque_rms_nm_mean": 6.393305801542837e-05,
+    "wheel_gyroscopic_torque_rms_nm_std": 0.0,
+    "wheel_gyroscopic_torque_rms_nm_ci95_lower": null,
+    "wheel_gyroscopic_torque_rms_nm_ci95_upper": null,
+    "wheel_gyroscopic_torque_rms_nm_n": 1,
+    "wheel_gyroscopic_torque_rms_nm_p05": 6.393305801542837e-05,
+    "wheel_gyroscopic_torque_rms_nm_p50": 6.393305801542837e-05,
+    "wheel_gyroscopic_torque_rms_nm_p95": 6.393305801542837e-05,
+    "wheel_gyroscopic_torque_rms_nm_p05_bootstrap_ci95": [
+      6.393305801542837e-05,
+      6.393305801542837e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p50_bootstrap_ci95": [
+      6.393305801542837e-05,
+      6.393305801542837e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p95_bootstrap_ci95": [
+      6.393305801542837e-05,
+      6.393305801542837e-05
+    ],
+    "attitude_estimation_rmse_rad_mean": 0.00015563352454060197,
+    "attitude_estimation_rmse_rad_std": 0.0,
+    "attitude_estimation_rmse_rad_ci95_lower": null,
+    "attitude_estimation_rmse_rad_ci95_upper": null,
+    "attitude_estimation_rmse_rad_n": 1,
+    "attitude_estimation_rmse_rad_p05": 0.00015563352454060197,
+    "attitude_estimation_rmse_rad_p50": 0.00015563352454060197,
+    "attitude_estimation_rmse_rad_p95": 0.00015563352454060197,
+    "attitude_estimation_rmse_rad_p05_bootstrap_ci95": [
+      0.00015563352454060197,
+      0.00015563352454060197
+    ],
+    "attitude_estimation_rmse_rad_p50_bootstrap_ci95": [
+      0.00015563352454060197,
+      0.00015563352454060197
+    ],
+    "attitude_estimation_rmse_rad_p95_bootstrap_ci95": [
+      0.00015563352454060197,
+      0.00015563352454060197
+    ],
+    "attitude_estimation_error_peak_rad_mean": 0.0003543365797566364,
+    "attitude_estimation_error_peak_rad_std": 0.0,
+    "attitude_estimation_error_peak_rad_ci95_lower": null,
+    "attitude_estimation_error_peak_rad_ci95_upper": null,
+    "attitude_estimation_error_peak_rad_n": 1,
+    "attitude_estimation_error_peak_rad_p05": 0.0003543365797566364,
+    "attitude_estimation_error_peak_rad_p50": 0.0003543365797566364,
+    "attitude_estimation_error_peak_rad_p95": 0.0003543365797566364,
+    "attitude_estimation_error_peak_rad_p05_bootstrap_ci95": [
+      0.0003543365797566364,
+      0.0003543365797566364
+    ],
+    "attitude_estimation_error_peak_rad_p50_bootstrap_ci95": [
+      0.0003543365797566364,
+      0.0003543365797566364
+    ],
+    "attitude_estimation_error_peak_rad_p95_bootstrap_ci95": [
+      0.0003543365797566364,
+      0.0003543365797566364
+    ],
+    "angular_rate_estimation_rmse_rad_s_mean": 0.0009968338165485295,
+    "angular_rate_estimation_rmse_rad_s_std": 0.0,
+    "angular_rate_estimation_rmse_rad_s_ci95_lower": null,
+    "angular_rate_estimation_rmse_rad_s_ci95_upper": null,
+    "angular_rate_estimation_rmse_rad_s_n": 1,
+    "angular_rate_estimation_rmse_rad_s_p05": 0.0009968338165485295,
+    "angular_rate_estimation_rmse_rad_s_p50": 0.0009968338165485295,
+    "angular_rate_estimation_rmse_rad_s_p95": 0.0009968338165485295,
+    "angular_rate_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      0.0009968338165485295,
+      0.0009968338165485295
+    ],
+    "angular_rate_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      0.0009968338165485295,
+      0.0009968338165485295
+    ],
+    "angular_rate_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      0.0009968338165485295,
+      0.0009968338165485295
+    ],
+    "angular_rate_estimation_error_peak_rad_s_mean": 0.004407377479734623,
+    "angular_rate_estimation_error_peak_rad_s_std": 0.0,
+    "angular_rate_estimation_error_peak_rad_s_ci95_lower": null,
+    "angular_rate_estimation_error_peak_rad_s_ci95_upper": null,
+    "angular_rate_estimation_error_peak_rad_s_n": 1,
+    "angular_rate_estimation_error_peak_rad_s_p05": 0.004407377479734623,
+    "angular_rate_estimation_error_peak_rad_s_p50": 0.004407377479734623,
+    "angular_rate_estimation_error_peak_rad_s_p95": 0.004407377479734623,
+    "angular_rate_estimation_error_peak_rad_s_p05_bootstrap_ci95": [
+      0.004407377479734623,
+      0.004407377479734623
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p50_bootstrap_ci95": [
+      0.004407377479734623,
+      0.004407377479734623
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p95_bootstrap_ci95": [
+      0.004407377479734623,
+      0.004407377479734623
+    ],
+    "bias_estimation_rmse_rad_s_mean": 1.1271397989703792e-05,
+    "bias_estimation_rmse_rad_s_std": 0.0,
+    "bias_estimation_rmse_rad_s_ci95_lower": null,
+    "bias_estimation_rmse_rad_s_ci95_upper": null,
+    "bias_estimation_rmse_rad_s_n": 1,
+    "bias_estimation_rmse_rad_s_p05": 1.1271397989703792e-05,
+    "bias_estimation_rmse_rad_s_p50": 1.1271397989703792e-05,
+    "bias_estimation_rmse_rad_s_p95": 1.1271397989703792e-05,
+    "bias_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      1.1271397989703792e-05,
+      1.1271397989703792e-05
+    ],
+    "bias_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      1.1271397989703792e-05,
+      1.1271397989703792e-05
+    ],
+    "bias_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      1.1271397989703792e-05,
+      1.1271397989703792e-05
+    ],
+    "attitude_3sigma_component_coverage_mean": 0.9994166666666666,
+    "attitude_3sigma_component_coverage_std": 0.0,
+    "attitude_3sigma_component_coverage_ci95_lower": null,
+    "attitude_3sigma_component_coverage_ci95_upper": null,
+    "attitude_3sigma_component_coverage_n": 1,
+    "attitude_3sigma_component_coverage_p05": 0.9994166666666666,
+    "attitude_3sigma_component_coverage_p50": 0.9994166666666666,
+    "attitude_3sigma_component_coverage_p95": 0.9994166666666666,
+    "attitude_3sigma_component_coverage_p05_bootstrap_ci95": [
+      0.9994166666666666,
+      0.9994166666666666
+    ],
+    "attitude_3sigma_component_coverage_p50_bootstrap_ci95": [
+      0.9994166666666666,
+      0.9994166666666666
+    ],
+    "attitude_3sigma_component_coverage_p95_bootstrap_ci95": [
+      0.9994166666666666,
+      0.9994166666666666
+    ],
+    "bias_3sigma_component_coverage_mean": 1.0,
+    "bias_3sigma_component_coverage_std": 0.0,
+    "bias_3sigma_component_coverage_ci95_lower": null,
+    "bias_3sigma_component_coverage_ci95_upper": null,
+    "bias_3sigma_component_coverage_n": 1,
+    "bias_3sigma_component_coverage_p05": 1.0,
+    "bias_3sigma_component_coverage_p50": 1.0,
+    "bias_3sigma_component_coverage_p95": 1.0,
+    "bias_3sigma_component_coverage_p05_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p50_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p95_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "innovation_lag1_autocorrelation_rms_mean": 0.0865659692387438,
+    "innovation_lag1_autocorrelation_rms_std": 0.0,
+    "innovation_lag1_autocorrelation_rms_ci95_lower": null,
+    "innovation_lag1_autocorrelation_rms_ci95_upper": null,
+    "innovation_lag1_autocorrelation_rms_n": 1,
+    "innovation_lag1_autocorrelation_rms_p05": 0.0865659692387438,
+    "innovation_lag1_autocorrelation_rms_p50": 0.0865659692387438,
+    "innovation_lag1_autocorrelation_rms_p95": 0.0865659692387438,
+    "innovation_lag1_autocorrelation_rms_p05_bootstrap_ci95": [
+      0.0865659692387438,
+      0.0865659692387438
+    ],
+    "innovation_lag1_autocorrelation_rms_p50_bootstrap_ci95": [
+      0.0865659692387438,
+      0.0865659692387438
+    ],
+    "innovation_lag1_autocorrelation_rms_p95_bootstrap_ci95": [
+      0.0865659692387438,
+      0.0865659692387438
+    ],
+    "pointing_rms_rad_full_mean": 0.03698043459194663,
+    "pointing_rms_rad_full_std": 0.0,
+    "pointing_rms_rad_full_ci95_lower": null,
+    "pointing_rms_rad_full_ci95_upper": null,
+    "pointing_rms_rad_full_n": 1,
+    "pointing_rms_rad_full_p05": 0.03698043459194663,
+    "pointing_rms_rad_full_p50": 0.03698043459194663,
+    "pointing_rms_rad_full_p95": 0.03698043459194663,
+    "pointing_rms_rad_full_p05_bootstrap_ci95": [
+      0.03698043459194663,
+      0.03698043459194663
+    ],
+    "pointing_rms_rad_full_p50_bootstrap_ci95": [
+      0.03698043459194663,
+      0.03698043459194663
+    ],
+    "pointing_rms_rad_full_p95_bootstrap_ci95": [
+      0.03698043459194663,
+      0.03698043459194663
+    ],
+    "pointing_peak_rad_full_mean": 0.0740526027568373,
+    "pointing_peak_rad_full_std": 0.0,
+    "pointing_peak_rad_full_ci95_lower": null,
+    "pointing_peak_rad_full_ci95_upper": null,
+    "pointing_peak_rad_full_n": 1,
+    "pointing_peak_rad_full_p05": 0.0740526027568373,
+    "pointing_peak_rad_full_p50": 0.0740526027568373,
+    "pointing_peak_rad_full_p95": 0.0740526027568373,
+    "pointing_peak_rad_full_p05_bootstrap_ci95": [
+      0.0740526027568373,
+      0.0740526027568373
+    ],
+    "pointing_peak_rad_full_p50_bootstrap_ci95": [
+      0.0740526027568373,
+      0.0740526027568373
+    ],
+    "pointing_peak_rad_full_p95_bootstrap_ci95": [
+      0.0740526027568373,
+      0.0740526027568373
+    ],
+    "pointing_final_rad_full_mean": 0.0021910055439973044,
+    "pointing_final_rad_full_std": 0.0,
+    "pointing_final_rad_full_ci95_lower": null,
+    "pointing_final_rad_full_ci95_upper": null,
+    "pointing_final_rad_full_n": 1,
+    "pointing_final_rad_full_p05": 0.0021910055439973044,
+    "pointing_final_rad_full_p50": 0.0021910055439973044,
+    "pointing_final_rad_full_p95": 0.0021910055439973044,
+    "pointing_final_rad_full_p05_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "pointing_final_rad_full_p50_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ],
+    "pointing_final_rad_full_p95_bootstrap_ci95": [
+      0.0021910055439973044,
+      0.0021910055439973044
+    ]
+  },
+  {
+    "campaign": "E3",
+    "case": "R_scale_10",
+    "runs": 1,
+    "duration_s": 100.00000000000001,
+    "NEES_dof": 6,
+    "NIS_dof": 3,
+    "NEES_mean": 4.317828349035492,
+    "NEES_in_bounds_pct": 100.0,
+    "NIS_mean": 1.0882159272860092,
+    "NIS_pre_gate_mean": 1.0882159272860092,
+    "NIS_in_bounds_pct": 87.5,
+    "star_tracker_updates": 100,
+    "rejected_measurements": 0,
+    "predicted_NEES_mean_steady": null,
+    "prediction_NEES_relative_error": null,
+    "prediction_NEES_pass": null,
+    "model_error_covariance_relative_error": null,
+    "prediction_error_covariance_pass": null,
+    "riccati_relative_frobenius_error": null,
+    "riccati_marginal_relative_error": null,
+    "riccati_relative_frobenius_error_late": null,
+    "riccati_marginal_relative_error_late": null,
+    "predicted_equilibrium_pointing_rad": null,
+    "measured_equilibrium_pointing_rad": null,
+    "equilibrium_relative_error": null,
+    "equilibrium_prediction_pass": null,
+    "lyapunov_pointing_bound_rad": null,
+    "lyapunov_measured_peak_pointing_rad": null,
+    "lyapunov_bound_pass": null,
+    "run_nees_mean": 4.317828349035492,
+    "run_nees_mean_ci95": [
+      null,
+      null
+    ],
+    "run_nis_mean": 1.0882159272860092,
+    "run_nis_mean_ci95": [
+      null,
+      null
+    ],
+    "R_scale": 10.0,
+    "Q_scale": 1.0,
+    "tracker_rate_hz": 1.0,
+    "pointing_rms_rad_mean": 0.0031216384462980757,
+    "pointing_rms_rad_std": 0.0,
+    "pointing_rms_rad_ci95_lower": null,
+    "pointing_rms_rad_ci95_upper": null,
+    "pointing_rms_rad_n": 1,
+    "pointing_rms_rad_p05": 0.0031216384462980757,
+    "pointing_rms_rad_p50": 0.0031216384462980757,
+    "pointing_rms_rad_p95": 0.0031216384462980757,
+    "pointing_rms_rad_p05_bootstrap_ci95": [
+      0.0031216384462980757,
+      0.0031216384462980757
+    ],
+    "pointing_rms_rad_p50_bootstrap_ci95": [
+      0.0031216384462980757,
+      0.0031216384462980757
+    ],
+    "pointing_rms_rad_p95_bootstrap_ci95": [
+      0.0031216384462980757,
+      0.0031216384462980757
+    ],
+    "pointing_peak_rad_mean": 0.0040349108256814165,
+    "pointing_peak_rad_std": 0.0,
+    "pointing_peak_rad_ci95_lower": null,
+    "pointing_peak_rad_ci95_upper": null,
+    "pointing_peak_rad_n": 1,
+    "pointing_peak_rad_p05": 0.0040349108256814165,
+    "pointing_peak_rad_p50": 0.0040349108256814165,
+    "pointing_peak_rad_p95": 0.0040349108256814165,
+    "pointing_peak_rad_p05_bootstrap_ci95": [
+      0.0040349108256814165,
+      0.0040349108256814165
+    ],
+    "pointing_peak_rad_p50_bootstrap_ci95": [
+      0.0040349108256814165,
+      0.0040349108256814165
+    ],
+    "pointing_peak_rad_p95_bootstrap_ci95": [
+      0.0040349108256814165,
+      0.0040349108256814165
+    ],
+    "pointing_final_rad_mean": 0.0022009594950235284,
+    "pointing_final_rad_std": 0.0,
+    "pointing_final_rad_ci95_lower": null,
+    "pointing_final_rad_ci95_upper": null,
+    "pointing_final_rad_n": 1,
+    "pointing_final_rad_p05": 0.0022009594950235284,
+    "pointing_final_rad_p50": 0.0022009594950235284,
+    "pointing_final_rad_p95": 0.0022009594950235284,
+    "pointing_final_rad_p05_bootstrap_ci95": [
+      0.0022009594950235284,
+      0.0022009594950235284
+    ],
+    "pointing_final_rad_p50_bootstrap_ci95": [
+      0.0022009594950235284,
+      0.0022009594950235284
+    ],
+    "pointing_final_rad_p95_bootstrap_ci95": [
+      0.0022009594950235284,
+      0.0022009594950235284
+    ],
+    "control_effort_nm2_s_mean": 0.012364256995845693,
+    "control_effort_nm2_s_std": 0.0,
+    "control_effort_nm2_s_ci95_lower": null,
+    "control_effort_nm2_s_ci95_upper": null,
+    "control_effort_nm2_s_n": 1,
+    "control_effort_nm2_s_p05": 0.012364256995845693,
+    "control_effort_nm2_s_p50": 0.012364256995845693,
+    "control_effort_nm2_s_p95": 0.012364256995845693,
+    "control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.012364256995845693,
+      0.012364256995845693
+    ],
+    "control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.012364256995845693,
+      0.012364256995845693
+    ],
+    "control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.012364256995845693,
+      0.012364256995845693
+    ],
+    "achieved_control_effort_nm2_s_mean": 0.011096101977895631,
+    "achieved_control_effort_nm2_s_std": 0.0,
+    "achieved_control_effort_nm2_s_ci95_lower": null,
+    "achieved_control_effort_nm2_s_ci95_upper": null,
+    "achieved_control_effort_nm2_s_n": 1,
+    "achieved_control_effort_nm2_s_p05": 0.011096101977895631,
+    "achieved_control_effort_nm2_s_p50": 0.011096101977895631,
+    "achieved_control_effort_nm2_s_p95": 0.011096101977895631,
+    "achieved_control_effort_nm2_s_p05_bootstrap_ci95": [
+      0.011096101977895631,
+      0.011096101977895631
+    ],
+    "achieved_control_effort_nm2_s_p50_bootstrap_ci95": [
+      0.011096101977895631,
+      0.011096101977895631
+    ],
+    "achieved_control_effort_nm2_s_p95_bootstrap_ci95": [
+      0.011096101977895631,
+      0.011096101977895631
+    ],
+    "peak_commanded_torque_nm_mean": 0.046251556025903195,
+    "peak_commanded_torque_nm_std": 0.0,
+    "peak_commanded_torque_nm_ci95_lower": null,
+    "peak_commanded_torque_nm_ci95_upper": null,
+    "peak_commanded_torque_nm_n": 1,
+    "peak_commanded_torque_nm_p05": 0.046251556025903195,
+    "peak_commanded_torque_nm_p50": 0.046251556025903195,
+    "peak_commanded_torque_nm_p95": 0.046251556025903195,
+    "peak_commanded_torque_nm_p05_bootstrap_ci95": [
+      0.046251556025903195,
+      0.046251556025903195
+    ],
+    "peak_commanded_torque_nm_p50_bootstrap_ci95": [
+      0.046251556025903195,
+      0.046251556025903195
+    ],
+    "peak_commanded_torque_nm_p95_bootstrap_ci95": [
+      0.046251556025903195,
+      0.046251556025903195
+    ],
+    "peak_achieved_torque_nm_mean": 0.04262242143548307,
+    "peak_achieved_torque_nm_std": 0.0,
+    "peak_achieved_torque_nm_ci95_lower": null,
+    "peak_achieved_torque_nm_ci95_upper": null,
+    "peak_achieved_torque_nm_n": 1,
+    "peak_achieved_torque_nm_p05": 0.04262242143548307,
+    "peak_achieved_torque_nm_p50": 0.04262242143548307,
+    "peak_achieved_torque_nm_p95": 0.04262242143548307,
+    "peak_achieved_torque_nm_p05_bootstrap_ci95": [
+      0.04262242143548307,
+      0.04262242143548307
+    ],
+    "peak_achieved_torque_nm_p50_bootstrap_ci95": [
+      0.04262242143548307,
+      0.04262242143548307
+    ],
+    "peak_achieved_torque_nm_p95_bootstrap_ci95": [
+      0.04262242143548307,
+      0.04262242143548307
+    ],
+    "command_torque_saturation_fraction_mean": 0.0,
+    "command_torque_saturation_fraction_std": 0.0,
+    "command_torque_saturation_fraction_ci95_lower": null,
+    "command_torque_saturation_fraction_ci95_upper": null,
+    "command_torque_saturation_fraction_n": 1,
+    "command_torque_saturation_fraction_p05": 0.0,
+    "command_torque_saturation_fraction_p50": 0.0,
+    "command_torque_saturation_fraction_p95": 0.0,
+    "command_torque_saturation_fraction_p05_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p50_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "command_torque_saturation_fraction_p95_bootstrap_ci95": [
+      0.0,
+      0.0
+    ],
+    "wheel_gyroscopic_torque_rms_nm_mean": 6.416840426633147e-05,
+    "wheel_gyroscopic_torque_rms_nm_std": 0.0,
+    "wheel_gyroscopic_torque_rms_nm_ci95_lower": null,
+    "wheel_gyroscopic_torque_rms_nm_ci95_upper": null,
+    "wheel_gyroscopic_torque_rms_nm_n": 1,
+    "wheel_gyroscopic_torque_rms_nm_p05": 6.416840426633147e-05,
+    "wheel_gyroscopic_torque_rms_nm_p50": 6.416840426633147e-05,
+    "wheel_gyroscopic_torque_rms_nm_p95": 6.416840426633147e-05,
+    "wheel_gyroscopic_torque_rms_nm_p05_bootstrap_ci95": [
+      6.416840426633147e-05,
+      6.416840426633147e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p50_bootstrap_ci95": [
+      6.416840426633147e-05,
+      6.416840426633147e-05
+    ],
+    "wheel_gyroscopic_torque_rms_nm_p95_bootstrap_ci95": [
+      6.416840426633147e-05,
+      6.416840426633147e-05
+    ],
+    "attitude_estimation_rmse_rad_mean": 0.0001751049950585621,
+    "attitude_estimation_rmse_rad_std": 0.0,
+    "attitude_estimation_rmse_rad_ci95_lower": null,
+    "attitude_estimation_rmse_rad_ci95_upper": null,
+    "attitude_estimation_rmse_rad_n": 1,
+    "attitude_estimation_rmse_rad_p05": 0.0001751049950585621,
+    "attitude_estimation_rmse_rad_p50": 0.0001751049950585621,
+    "attitude_estimation_rmse_rad_p95": 0.0001751049950585621,
+    "attitude_estimation_rmse_rad_p05_bootstrap_ci95": [
+      0.0001751049950585621,
+      0.0001751049950585621
+    ],
+    "attitude_estimation_rmse_rad_p50_bootstrap_ci95": [
+      0.0001751049950585621,
+      0.0001751049950585621
+    ],
+    "attitude_estimation_rmse_rad_p95_bootstrap_ci95": [
+      0.0001751049950585621,
+      0.0001751049950585621
+    ],
+    "attitude_estimation_error_peak_rad_mean": 0.00043799529615402177,
+    "attitude_estimation_error_peak_rad_std": 0.0,
+    "attitude_estimation_error_peak_rad_ci95_lower": null,
+    "attitude_estimation_error_peak_rad_ci95_upper": null,
+    "attitude_estimation_error_peak_rad_n": 1,
+    "attitude_estimation_error_peak_rad_p05": 0.00043799529615402177,
+    "attitude_estimation_error_peak_rad_p50": 0.00043799529615402177,
+    "attitude_estimation_error_peak_rad_p95": 0.00043799529615402177,
+    "attitude_estimation_error_peak_rad_p05_bootstrap_ci95": [
+      0.00043799529615402177,
+      0.00043799529615402177
+    ],
+    "attitude_estimation_error_peak_rad_p50_bootstrap_ci95": [
+      0.00043799529615402177,
+      0.00043799529615402177
+    ],
+    "attitude_estimation_error_peak_rad_p95_bootstrap_ci95": [
+      0.00043799529615402177,
+      0.00043799529615402177
+    ],
+    "angular_rate_estimation_rmse_rad_s_mean": 0.0009968292488675655,
+    "angular_rate_estimation_rmse_rad_s_std": 0.0,
+    "angular_rate_estimation_rmse_rad_s_ci95_lower": null,
+    "angular_rate_estimation_rmse_rad_s_ci95_upper": null,
+    "angular_rate_estimation_rmse_rad_s_n": 1,
+    "angular_rate_estimation_rmse_rad_s_p05": 0.0009968292488675655,
+    "angular_rate_estimation_rmse_rad_s_p50": 0.0009968292488675655,
+    "angular_rate_estimation_rmse_rad_s_p95": 0.0009968292488675655,
+    "angular_rate_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      0.0009968292488675655,
+      0.0009968292488675655
+    ],
+    "angular_rate_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      0.0009968292488675655,
+      0.0009968292488675655
+    ],
+    "angular_rate_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      0.0009968292488675655,
+      0.0009968292488675655
+    ],
+    "angular_rate_estimation_error_peak_rad_s_mean": 0.004408271431968105,
+    "angular_rate_estimation_error_peak_rad_s_std": 0.0,
+    "angular_rate_estimation_error_peak_rad_s_ci95_lower": null,
+    "angular_rate_estimation_error_peak_rad_s_ci95_upper": null,
+    "angular_rate_estimation_error_peak_rad_s_n": 1,
+    "angular_rate_estimation_error_peak_rad_s_p05": 0.004408271431968105,
+    "angular_rate_estimation_error_peak_rad_s_p50": 0.004408271431968105,
+    "angular_rate_estimation_error_peak_rad_s_p95": 0.004408271431968105,
+    "angular_rate_estimation_error_peak_rad_s_p05_bootstrap_ci95": [
+      0.004408271431968105,
+      0.004408271431968105
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p50_bootstrap_ci95": [
+      0.004408271431968105,
+      0.004408271431968105
+    ],
+    "angular_rate_estimation_error_peak_rad_s_p95_bootstrap_ci95": [
+      0.004408271431968105,
+      0.004408271431968105
+    ],
+    "bias_estimation_rmse_rad_s_mean": 1.1356125370597707e-05,
+    "bias_estimation_rmse_rad_s_std": 0.0,
+    "bias_estimation_rmse_rad_s_ci95_lower": null,
+    "bias_estimation_rmse_rad_s_ci95_upper": null,
+    "bias_estimation_rmse_rad_s_n": 1,
+    "bias_estimation_rmse_rad_s_p05": 1.1356125370597707e-05,
+    "bias_estimation_rmse_rad_s_p50": 1.1356125370597707e-05,
+    "bias_estimation_rmse_rad_s_p95": 1.1356125370597707e-05,
+    "bias_estimation_rmse_rad_s_p05_bootstrap_ci95": [
+      1.1356125370597707e-05,
+      1.1356125370597707e-05
+    ],
+    "bias_estimation_rmse_rad_s_p50_bootstrap_ci95": [
+      1.1356125370597707e-05,
+      1.1356125370597707e-05
+    ],
+    "bias_estimation_rmse_rad_s_p95_bootstrap_ci95": [
+      1.1356125370597707e-05,
+      1.1356125370597707e-05
+    ],
+    "attitude_3sigma_component_coverage_mean": 1.0,
+    "attitude_3sigma_component_coverage_std": 0.0,
+    "attitude_3sigma_component_coverage_ci95_lower": null,
+    "attitude_3sigma_component_coverage_ci95_upper": null,
+    "attitude_3sigma_component_coverage_n": 1,
+    "attitude_3sigma_component_coverage_p05": 1.0,
+    "attitude_3sigma_component_coverage_p50": 1.0,
+    "attitude_3sigma_component_coverage_p95": 1.0,
+    "attitude_3sigma_component_coverage_p05_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "attitude_3sigma_component_coverage_p50_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "attitude_3sigma_component_coverage_p95_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_mean": 1.0,
+    "bias_3sigma_component_coverage_std": 0.0,
+    "bias_3sigma_component_coverage_ci95_lower": null,
+    "bias_3sigma_component_coverage_ci95_upper": null,
+    "bias_3sigma_component_coverage_n": 1,
+    "bias_3sigma_component_coverage_p05": 1.0,
+    "bias_3sigma_component_coverage_p50": 1.0,
+    "bias_3sigma_component_coverage_p95": 1.0,
+    "bias_3sigma_component_coverage_p05_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p50_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "bias_3sigma_component_coverage_p95_bootstrap_ci95": [
+      1.0,
+      1.0
+    ],
+    "innovation_lag1_autocorrelation_rms_mean": 0.30524779562796217,
+    "innovation_lag1_autocorrelation_rms_std": 0.0,
+    "innovation_lag1_autocorrelation_rms_ci95_lower": null,
+    "innovation_lag1_autocorrelation_rms_ci95_upper": null,
+    "innovation_lag1_autocorrelation_rms_n": 1,
+    "innovation_lag1_autocorrelation_rms_p05": 0.30524779562796217,
+    "innovation_lag1_autocorrelation_rms_p50": 0.30524779562796217,
+    "innovation_lag1_autocorrelation_rms_p95": 0.30524779562796217,
+    "innovation_lag1_autocorrelation_rms_p05_bootstrap_ci95": [
+      0.30524779562796217,
+      0.30524779562796217
+    ],
+    "innovation_lag1_autocorrelation_rms_p50_bootstrap_ci95": [
+      0.30524779562796217,
+      0.30524779562796217
+    ],
+    "innovation_lag1_autocorrelation_rms_p95_bootstrap_ci95": [
+      0.30524779562796217,
+      0.30524779562796217
+    ],
+    "pointing_rms_rad_full_mean": 0.03698159160270055,
+    "pointing_rms_rad_full_std": 0.0,
+    "pointing_rms_rad_full_ci95_lower": null,
+    "pointing_rms_rad_full_ci95_upper": null,
+    "pointing_rms_rad_full_n": 1,
+    "pointing_rms_rad_full_p05": 0.03698159160270055,
+    "pointing_rms_rad_full_p50": 0.03698159160270055,
+    "pointing_rms_rad_full_p95": 0.03698159160270055,
+    "pointing_rms_rad_full_p05_bootstrap_ci95": [
+      0.03698159160270055,
+      0.03698159160270055
+    ],
+    "pointing_rms_rad_full_p50_bootstrap_ci95": [
+      0.03698159160270055,
+      0.03698159160270055
+    ],
+    "pointing_rms_rad_full_p95_bootstrap_ci95": [
+      0.03698159160270055,
+      0.03698159160270055
+    ],
+    "pointing_peak_rad_full_mean": 0.0740404788852808,
+    "pointing_peak_rad_full_std": 0.0,
+    "pointing_peak_rad_full_ci95_lower": null,
+    "pointing_peak_rad_full_ci95_upper": null,
+    "pointing_peak_rad_full_n": 1,
+    "pointing_peak_rad_full_p05": 0.0740404788852808,
+    "pointing_peak_rad_full_p50": 0.0740404788852808,
+    "pointing_peak_rad_full_p95": 0.0740404788852808,
+    "pointing_peak_rad_full_p05_bootstrap_ci95": [
+      0.0740404788852808,
+      0.0740404788852808
+    ],
+    "pointing_peak_rad_full_p50_bootstrap_ci95": [
+      0.0740404788852808,
+      0.0740404788852808
+    ],
+    "pointing_peak_rad_full_p95_bootstrap_ci95": [
+      0.0740404788852808,
+      0.0740404788852808
+    ],
+    "pointing_final_rad_full_mean": 0.0022009594950235284,
+    "pointing_final_rad_full_std": 0.0,
+    "pointing_final_rad_full_ci95_lower": null,
+    "pointing_final_rad_full_ci95_upper": null,
+    "pointing_final_rad_full_n": 1,
+    "pointing_final_rad_full_p05": 0.0022009594950235284,
+    "pointing_final_rad_full_p50": 0.0022009594950235284,
+    "pointing_final_rad_full_p95": 0.0022009594950235284,
+    "pointing_final_rad_full_p05_bootstrap_ci95": [
+      0.0022009594950235284,
+      0.0022009594950235284
+    ],
+    "pointing_final_rad_full_p50_bootstrap_ci95": [
+      0.0022009594950235284,
+      0.0022009594950235284
+    ],
+    "pointing_final_rad_full_p95_bootstrap_ci95": [
+      0.0022009594950235284,
+      0.0022009594950235284
+    ]
+  }
+]

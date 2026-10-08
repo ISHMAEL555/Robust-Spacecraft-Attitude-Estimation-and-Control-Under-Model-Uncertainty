@@ -70,6 +70,30 @@ class TestMEKF:
         # Both quaternion and omega_hat should change
         assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0], atol=1e-12)
         assert not np.allclose(mekf.omega_hat, 0.0)
+
+    def test_model_error_bound_adds_rate_process_uncertainty(self):
+        inertia = np.diag([100.0, 80.0, 60.0])
+        matched = MEKF(
+            MEKFParams(
+                variant="model_aided",
+                inertia_model=inertia,
+                model_error_relative_bound=0.0,
+            )
+        )
+        bounded = MEKF(
+            MEKFParams(
+                variant="model_aided",
+                inertia_model=inertia,
+                model_error_relative_bound=0.25,
+            )
+        )
+        omega_m = np.array([0.1, -0.05, 0.02])
+        torque = np.array([0.01, 0.02, -0.01])
+
+        matched.propagate(omega_m, torque, dt=0.01)
+        bounded.propagate(omega_m, torque, dt=0.01)
+
+        assert np.trace(bounded.P[3:6, 3:6]) > np.trace(matched.P[3:6, 3:6])
     
     def test_update(self):
         mekf = create_mekf_nominal('gyro_driven')

@@ -1,0 +1,2 @@
+experiment,predicted,measured,tolerance,pass,miss_explanation
+E4 NIS gate calibration,≤5% nominal rejection at the 95% gate; edge rejection nondecreasing,"{'nominal_rejection_rate': 0.177, 'edge_rejection_rates': [(0.9, 0.84), (1.0, 0.875), (1.1, 0.908)]}",nominal ≤5%; monotone 0.9/1.0/1.1 gate-ratio trend,False,Finite-sample gate decisions did not meet the nominal false-alarm or edge-trend prediction.

@@ -1,0 +1,5 @@
+{
+  "crossover_gyro_noise_scale": null,
+  "first_model_aided_win_scale": 0.001,
+  "fit": "linear interpolation in log10 noise scale between measured RMSE differences"
+}

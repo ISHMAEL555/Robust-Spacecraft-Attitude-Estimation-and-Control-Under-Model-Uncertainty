@@ -1,0 +1,2 @@
+experiment,predicted,measured,tolerance,pass,miss_explanation
+P8 tight pointing / tracker outage,1.63997987771499,0.003907265404617312,measured peak ≤ 1.1 × bound,True,

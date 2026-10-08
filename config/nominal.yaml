@@ -45,8 +45,10 @@ reaction_wheels:
   max_torque: 0.1  # N*m per wheel
   max_momentum: 10.0  # N*m*s per wheel
   num_wheels: 3
+  gyroscopic_coupling: false
 
 analysis:
   monte_carlo_runs: 100
   nees_confidence: 0.95
   nis_confidence: 0.95
+  steady_state_window_s: [60.0, 100.0]

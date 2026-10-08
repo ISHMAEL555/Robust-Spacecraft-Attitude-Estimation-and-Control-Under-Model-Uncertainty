@@ -21,6 +21,7 @@ from src.dynamics.rigid_body import RigidBody
 from src.sensors.gyro import Gyroscope, GyroParams
 from src.sensors.star_tracker import StarTracker, StarTrackerParams
 from src.estimation.mekf import MEKF, MEKFParams
+from src.estimation.linear_reference import inertia_mismatch_torque
 from src.control.attitude_controller import AttitudeController, ControllerParams
 from src.actuators.reaction_wheel import ReactionWheelAssembly, ReactionWheelParams
 
@@ -58,7 +59,6 @@ def load_config(config_path: str) -> SimulationConfig:
         analysis=config_dict['analysis'],
     )
 
-
 def run_simulation(config: SimulationConfig, 
                    true_inertia: Optional[np.ndarray] = None,
                    filter_inertia: Optional[np.ndarray] = None) -> Dict[str, Any]:
@@ -92,13 +92,21 @@ def run_simulation(config: SimulationConfig,
         initial_omega=np.array(config.spacecraft['initial_omega']),
         disturbance_torque=np.array(config.spacecraft['disturbance_torque'])
     )
+    model_inertia = (
+        np.asarray(filter_inertia, dtype=float)
+        if filter_inertia is not None
+        else np.asarray(config.spacecraft['inertia'], dtype=float)
+    )
     
     # Gyroscope
     gyro_params = GyroParams(
         sigma_v=config.gyroscope['sigma_v'],
         sigma_u=config.gyroscope['sigma_u'],
         sigma_b0=config.gyroscope['sigma_b0'],
-        rate=config.gyroscope['rate']
+        rate=config.gyroscope['rate'],
+        misalignment=np.asarray(
+            config.gyroscope.get('misalignment', np.eye(3)), dtype=float
+        ),
     )
     gyro = Gyroscope(
         gyro_params,
@@ -127,6 +135,8 @@ def run_simulation(config: SimulationConfig,
         R_scale=config.filter['R_scale'],
         nis_gate_confidence=config.filter.get('nis_gate_confidence', 0.999999),
         nis_gate_enabled=config.filter.get('nis_gate_enabled', False),
+        model_error_relative_bound=config.filter.get('model_error_relative_bound', 0.0),
+        model_error_correlation_time=config.filter.get('model_error_correlation_time', 1.0),
         inertia_model=(
             filter_inertia
             if filter_inertia is not None
@@ -153,7 +163,13 @@ def run_simulation(config: SimulationConfig,
         K_q=config.controller['K_q'],
         K_omega=config.controller['K_omega'],
         max_torque=config.controller['max_torque'],
-        control_type=config.controller['control_type']
+        control_type=config.controller['control_type'],
+        quaternion_sign_hysteresis=config.controller.get(
+            'quaternion_sign_hysteresis', False
+        ),
+        quaternion_sign_hysteresis_threshold=config.controller.get(
+            'quaternion_sign_hysteresis_threshold', 1e-3
+        ),
     )
     controller = AttitudeController(ctrl_params)
     controller.set_desired(np.array([0.0, 0.0, 0.0, 1.0]))  # Regulate to identity
@@ -162,7 +178,13 @@ def run_simulation(config: SimulationConfig,
     rw_params = ReactionWheelParams(
         max_torque=config.reaction_wheels['max_torque'],
         max_momentum=config.reaction_wheels['max_momentum'],
-        num_wheels=config.reaction_wheels['num_wheels']
+        num_wheels=config.reaction_wheels['num_wheels'],
+        initial_momentum=np.asarray(
+            config.reaction_wheels.get(
+                'initial_momentum', np.zeros(config.reaction_wheels['num_wheels'])
+            ),
+            dtype=float,
+        ),
     )
     rwa = ReactionWheelAssembly(rw_params)
     
@@ -175,11 +197,17 @@ def run_simulation(config: SimulationConfig,
         'b_hat': np.zeros((n_steps, 3)),
         'b_true': np.zeros((n_steps, 3)),
         'omega_hat': np.zeros((n_steps, 3)),
+        'omega_estimation_error': np.zeros((n_steps, 3)),
         'P': np.zeros((n_steps, mekf.state_dim, mekf.state_dim)),
         'nees_dof': mekf.nees_dof,
         'tau_cmd': np.zeros((n_steps, 3)),
         'tau_rw': np.zeros((n_steps, 3)),
+        'wheel_momentum': np.zeros((n_steps, rw_params.num_wheels)),
+        'body_wheel_momentum': np.zeros((n_steps, 3)),
         'NEES': np.zeros(n_steps),
+        'predicted_NEES': np.zeros(n_steps),
+        'model_error_mean': np.zeros((n_steps, mekf.state_dim)),
+        'estimation_error_state': np.zeros((n_steps, mekf.state_dim)),
         'NIS': np.zeros(n_steps),
         'innovation': np.zeros((n_steps, 3)),
         'innovation_valid': np.zeros(n_steps, dtype=bool),
@@ -215,8 +243,28 @@ def run_simulation(config: SimulationConfig,
         
         # Filter step
         tau_rw_prev = results['tau_rw'][i-1] if i > 0 else np.zeros(3)
+        wheel_momentum_body = (
+            rwa.get_body_momentum()
+            if config.reaction_wheels.get('gyroscopic_coupling', False)
+            else None
+        )
+        _, omega_dot_true = spacecraft.dynamics(tau_rw_prev, wheel_momentum_body)
+        model_error_torque = None
+        if config.filter['variant'] == 'model_aided':
+            true_i = np.asarray(true_inertia, dtype=float)
+            model_error_torque = inertia_mismatch_torque(
+                true_i - model_inertia,
+                omega_true,
+                omega_dot_true,
+            )
         filter_result = mekf.step(
-            omega_m, q_meas, tau_rw_prev, config.dt, t
+            omega_m,
+            q_meas,
+            tau_rw_prev,
+            config.dt,
+            t,
+            wheel_momentum=wheel_momentum_body,
+            model_error_torque=model_error_torque,
         )
         results['measurement_accepted'][i] = filter_result['measurement_accepted']
         
@@ -224,6 +272,11 @@ def run_simulation(config: SimulationConfig,
         results['b_hat'][i] = filter_result['b_hat']
         results['P'][i] = filter_result['P']
         results['omega_hat'][i] = mekf.get_estimated_omega(omega_m)
+        results['omega_estimation_error'][i] = (
+            results['omega_hat'][i] - omega_true
+        )
+        attitude_delta = error_quat(q_true, filter_result['q_hat'])
+        attitude_error_vector = error_quat_to_vec(attitude_delta)
         
         if filter_result['innovation'] is not None:
             results['innovation'][i] = filter_result['innovation']
@@ -235,6 +288,21 @@ def run_simulation(config: SimulationConfig,
         results['bias_error'][i] = b_true - filter_result['b_hat']
         nees = mekf.compute_nees(q_true, b_true, omega_true)
         results['NEES'][i] = nees
+        predicted_mean = filter_result['model_error_mean']
+        results['predicted_NEES'][i] = (
+            mekf.state_dim
+            + predicted_mean @ np.linalg.solve(mekf.P, predicted_mean)
+        )
+        results['model_error_mean'][i] = predicted_mean
+        state_error = np.concatenate([
+            attitude_error_vector,
+            omega_true - results['omega_hat'][i],
+            b_true - filter_result['b_hat'],
+        ]) if mekf.variant == 'model_aided' else np.concatenate([
+            attitude_error_vector,
+            b_true - filter_result['b_hat'],
+        ])
+        results['estimation_error_state'][i] = state_error
         
         # Controller
         tau_cmd = controller.compute_control(filter_result['q_hat'], results['omega_hat'][i])
@@ -243,16 +311,18 @@ def run_simulation(config: SimulationConfig,
         # Reaction wheels
         tau_rw = rwa.compute_torque(tau_cmd)
         results['tau_rw'][i] = tau_rw
-        rwa.update_momentum(config.dt)
+        results['wheel_momentum'][i] = rwa.get_momentum()
+        results['body_wheel_momentum'][i] = (
+            rwa.get_body_momentum()
+        )
         
         # Spacecraft dynamics
-        spacecraft.step(tau_rw, config.dt)
+        spacecraft.step(tau_rw, config.dt, wheel_momentum=wheel_momentum_body)
+        rwa.update_momentum(config.dt)
         
         # Separate true spacecraft pointing from estimator attitude error.
         pointing_delta = error_quat(q_true, controller.q_desired)
         pointing_err = np.linalg.norm(error_quat_to_vec(pointing_delta))
-        attitude_delta = error_quat(q_true, filter_result['q_hat'])
-        attitude_error_vector = error_quat_to_vec(attitude_delta)
         results['pointing_error'][i] = pointing_err
         results['pointing_error_deg'][i] = np.degrees(pointing_err)
         results['attitude_estimation_error'][i] = np.linalg.norm(attitude_error_vector)
@@ -261,67 +331,130 @@ def run_simulation(config: SimulationConfig,
     return results
 
 
-def compute_performance_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
-    """Summarize pointing, estimation, actuator, and covariance performance."""
-    time = results['time']
+def compute_performance_metrics(
+    results: Dict[str, Any],
+    evaluation_window_s: Optional[tuple[float, float]] = None,
+) -> Dict[str, Any]:
+    """Summarize performance over an optional common evaluation window."""
+    full_time = np.asarray(results['time'])
+    selected = np.ones(full_time.shape, dtype=bool)
+    if evaluation_window_s is not None:
+        start, end = evaluation_window_s
+        if start < 0.0 or end <= start:
+            raise ValueError("evaluation window must satisfy 0 <= start < end")
+        selected = (full_time >= start) & (full_time < end)
+        if not np.any(selected):
+            raise ValueError("evaluation window contains no simulation samples")
+    time = full_time[selected]
     dt = float(np.mean(np.diff(time))) if len(time) > 1 else 0.0
-    pointing = np.asarray(results['pointing_error'])
-    initial_error = float(pointing[0])
+    full_pointing = np.asarray(results['pointing_error'])
+    pointing = np.asarray(results['pointing_error'])[selected]
+    initial_error = float(full_pointing[0])
     settling_time = float('nan')
     if initial_error > 0.0:
-        within_tolerance = pointing <= 0.02 * initial_error
+        within_tolerance = full_pointing <= 0.02 * initial_error
         remains_within = np.logical_and.accumulate(within_tolerance[::-1])[::-1]
         settling_indices = np.flatnonzero(remains_within)
         if settling_indices.size:
-            settling_time = float(time[settling_indices[0]])
+            settling_time = float(full_time[settling_indices[0]])
 
-    torque = np.linalg.norm(results['tau_cmd'], axis=1)
-    achieved_torque = np.linalg.norm(results['tau_rw'], axis=1)
+    tau_cmd = np.asarray(results['tau_cmd'])[selected]
+    tau_rw = np.asarray(results['tau_rw'])[selected]
+    torque = np.linalg.norm(tau_cmd, axis=1)
+    achieved_torque = np.linalg.norm(tau_rw, axis=1)
     metrics = {
         'pointing_rms_rad': float(np.sqrt(np.mean(pointing**2))),
         'pointing_peak_rad': float(np.max(pointing)),
         'pointing_final_rad': float(pointing[-1]),
         'settling_time_2pct_s': settling_time,
-        'control_effort_nm2_s': float(np.sum(results['tau_cmd']**2) * dt),
-        'achieved_control_effort_nm2_s': float(np.sum(results['tau_rw']**2) * dt),
+        'control_effort_nm2_s': float(np.sum(tau_cmd**2) * dt),
+        'achieved_control_effort_nm2_s': float(np.sum(tau_rw**2) * dt),
         'peak_commanded_torque_nm': float(np.max(torque)),
         'peak_achieved_torque_nm': float(np.max(achieved_torque)),
         'command_torque_saturation_fraction': float(
             np.mean(torque >= results['max_torque'] * (1.0 - 1e-9))
         ),
     }
-    if 'attitude_estimation_error' in results:
-        metrics['attitude_estimation_rmse_rad'] = float(
-            np.sqrt(np.mean(results['attitude_estimation_error']**2))
+    if 'wheel_momentum' in results:
+        momentum_limit = float(results.get('max_wheel_momentum', np.inf))
+        body_momentum = np.asarray(results['body_wheel_momentum'])[selected]
+        coupling = np.cross(np.asarray(results['omega_true'])[selected], body_momentum)
+        metrics['wheel_momentum_utilization'] = (
+            float(np.max(np.abs(np.asarray(results['wheel_momentum'])[selected])) / momentum_limit)
+            if np.isfinite(momentum_limit) and momentum_limit > 0.0
+            else float('nan')
         )
+        metrics['wheel_gyroscopic_torque_rms_nm'] = float(
+            np.sqrt(np.mean(np.sum(coupling**2, axis=1)))
+        )
+    if 'attitude_estimation_error' in results:
+        attitude_error = np.asarray(results['attitude_estimation_error'])[selected]
+        metrics['attitude_estimation_rmse_rad'] = float(np.sqrt(np.mean(attitude_error**2)))
+        metrics['attitude_estimation_error_peak_rad'] = float(np.max(
+            np.linalg.norm(
+                np.asarray(results['attitude_estimation_error_vector'])[selected],
+                axis=1,
+            )
+        ))
     if 'omega_hat' in results and 'omega_true' in results:
         metrics['angular_rate_estimation_rmse_rad_s'] = float(
-            np.sqrt(np.mean((results['omega_hat'] - results['omega_true'])**2))
+            np.sqrt(np.mean(
+                (np.asarray(results['omega_hat'])[selected]
+                 - np.asarray(results['omega_true'])[selected])**2
+            ))
         )
+        metrics['angular_rate_estimation_error_peak_rad_s'] = float(np.max(
+            np.linalg.norm(
+                np.asarray(results['omega_hat'])[selected]
+                - np.asarray(results['omega_true'])[selected],
+                axis=1,
+            )
+        ))
     if 'bias_error' in results:
         metrics['bias_estimation_rmse_rad_s'] = float(
-            np.sqrt(np.mean(results['bias_error']**2))
+            np.sqrt(np.mean(np.asarray(results['bias_error'])[selected]**2))
         )
+    if 'P' in results and results['P'].shape[1] == 9:
+        rate_sigma = 3.0 * np.sqrt(
+            np.maximum(
+                np.diagonal(
+                    np.asarray(results['P'])[selected, 3:6, 3:6],
+                    axis1=1,
+                    axis2=2,
+                ),
+                0.0,
+            )
+        )
+        metrics['rate_3sigma_component_coverage'] = float(np.mean(
+            np.abs(np.asarray(results['omega_estimation_error'])[selected])
+            <= rate_sigma
+        ))
     if 'attitude_estimation_error_vector' in results and 'P' in results:
         sigma_attitude = 3.0 * np.sqrt(
-            np.maximum(np.diagonal(results['P'][:, :3, :3], axis1=1, axis2=2), 0.0)
+            np.maximum(
+                np.diagonal(np.asarray(results['P'])[selected, :3, :3], axis1=1, axis2=2),
+                0.0,
+            )
         )
         metrics['attitude_3sigma_component_coverage'] = float(np.mean(
-            np.abs(results['attitude_estimation_error_vector']) <= sigma_attitude
+            np.abs(np.asarray(results['attitude_estimation_error_vector'])[selected])
+            <= sigma_attitude
         ))
     if 'bias_error' in results and 'P' in results:
         bias_start = 6 if results['P'].shape[1] == 9 else 3
         bias_covariance = results['P'][
-            :, bias_start:bias_start + 3, bias_start:bias_start + 3
+            selected, bias_start:bias_start + 3, bias_start:bias_start + 3
         ]
         sigma_bias = 3.0 * np.sqrt(
             np.maximum(np.diagonal(bias_covariance, axis1=1, axis2=2), 0.0)
         )
         metrics['bias_3sigma_component_coverage'] = float(np.mean(
-            np.abs(results['bias_error']) <= sigma_bias
+            np.abs(np.asarray(results['bias_error'])[selected]) <= sigma_bias
         ))
     if 'innovation' in results and 'measurement_available' in results:
-        innovations = results['innovation'][results['measurement_available']]
+        innovations = np.asarray(results['innovation'])[
+            selected & np.asarray(results['measurement_available'])
+        ]
         if len(innovations) > 2:
             centered = innovations - np.mean(innovations, axis=0)
             left = centered[:-1]
@@ -340,14 +473,17 @@ def compute_performance_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
     if 'star_tracker_outage' in results and np.any(results['star_tracker_outage']):
         outage_indices = np.flatnonzero(results['star_tracker_outage'])
         outage_end_index = int(outage_indices[-1])
-        pre_outage_error = pointing[:outage_indices[0]]
+        pre_outage_error = full_pointing[:outage_indices[0]]
         if pre_outage_error.size and float(np.max(pre_outage_error)) > 0.0:
             threshold = 0.02 * float(np.max(pre_outage_error))
-            after_outage = pointing[outage_end_index + 1:]
+            after_outage = full_pointing[outage_end_index + 1:]
             remains_within = np.logical_and.accumulate((after_outage <= threshold)[::-1])[::-1]
             recovery_indices = np.flatnonzero(remains_within)
             metrics['outage_recovery_time_s'] = (
-                float(time[outage_end_index + 1 + recovery_indices[0]] - time[outage_end_index])
+                float(
+                    full_time[outage_end_index + 1 + recovery_indices[0]]
+                    - full_time[outage_end_index]
+                )
                 if recovery_indices.size
                 else float('nan')
             )
@@ -362,6 +498,7 @@ def summarize_performance(
 
     summary: Dict[str, Dict[str, Any]] = {}
     metric_names = performance_by_run[0].keys() if performance_by_run else ()
+    bootstrap_rng = np.random.default_rng(20251007)
     for name in metric_names:
         values = np.asarray([run.get(name, np.nan) for run in performance_by_run])
         values = values[np.isfinite(values)]
@@ -374,12 +511,33 @@ def summarize_performance(
             if values.size > 1
             else float('nan')
         )
+        bootstrap_samples = bootstrap_rng.choice(
+            values, size=(2000, values.size), replace=True
+        )
+        bootstrap_percentiles = np.percentile(
+            bootstrap_samples, [5.0, 50.0, 95.0], axis=1
+        )
         summary[name] = {
             'mean': mean,
             'std': std,
             'ci95_lower': mean - half_width if values.size > 1 else None,
             'ci95_upper': mean + half_width if values.size > 1 else None,
             'n': int(values.size),
+            'p05': float(np.percentile(values, 5.0)),
+            'p50': float(np.percentile(values, 50.0)),
+            'p95': float(np.percentile(values, 95.0)),
+            'p05_bootstrap_ci95': [
+                float(np.percentile(bootstrap_percentiles[0], 2.5)),
+                float(np.percentile(bootstrap_percentiles[0], 97.5)),
+            ],
+            'p50_bootstrap_ci95': [
+                float(np.percentile(bootstrap_percentiles[1], 2.5)),
+                float(np.percentile(bootstrap_percentiles[1], 97.5)),
+            ],
+            'p95_bootstrap_ci95': [
+                float(np.percentile(bootstrap_percentiles[2], 2.5)),
+                float(np.percentile(bootstrap_percentiles[2], 97.5)),
+            ],
         }
     return summary
 
@@ -403,41 +561,160 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
         raise ValueError("n_runs must be at least 1")
 
     compact_runs = []
+    parameter_draws = []
     performance_by_run = []
     accumulators: Dict[str, np.ndarray] = {}
     squared_accumulators: Dict[str, np.ndarray] = {}
+    error_covariance_sum = None
+    predicted_error_covariance_sum = None
+    error_vector_sum = None
+    error_covariance_sample_count = 0
     n_steps = int(config.duration / config.dt)
     time = np.arange(n_steps) * config.dt
 
     for run in range(n_runs):
         # Modify seed for each run
+        run_seed = config.seed + run * 1000
+        spacecraft_config = config.spacecraft
+        gyro_config = config.gyroscope
+        run_true_inertia = true_inertia
+        if config.analysis.get('disperse', False):
+            from scipy.spatial.transform import Rotation
+            from src.dynamics.quaternion import box_plus
+
+            rng = np.random.default_rng(run_seed + 7919)
+            dispersion = config.analysis.get('dispersions', {})
+            spacecraft_config = dict(config.spacecraft)
+            q0 = np.asarray(spacecraft_config['initial_attitude'], dtype=float)
+            attitude_sigma = float(dispersion.get('initial_attitude_sigma_rad', 0.15))
+            spacecraft_config['initial_attitude'] = box_plus(
+                q0, rng.normal(0.0, attitude_sigma, size=3)
+            ).tolist()
+            omega0 = np.asarray(spacecraft_config['initial_omega'], dtype=float)
+            spacecraft_config['initial_omega'] = (
+                omega0
+                + rng.normal(
+                    0.0,
+                    float(dispersion.get('initial_rate_sigma_rad_s', 0.002)),
+                    size=3,
+                )
+            ).tolist()
+            nominal_inertia = np.asarray(
+                true_inertia if true_inertia is not None
+                else config.spacecraft['inertia'],
+                dtype=float,
+            )
+            inertia_fraction = float(dispersion.get('inertia_fraction', 0.05))
+            scale = rng.uniform(1.0 - inertia_fraction, 1.0 + inertia_fraction, 3)
+            scale_matrix = np.diag(np.sqrt(scale))
+            run_true_inertia = scale_matrix @ nominal_inertia @ scale_matrix
+
+            gyro_config = dict(config.gyroscope)
+            bias_sigma = float(dispersion.get('bias_sigma_rad_s', 2e-4))
+            gyro_config['initial_bias'] = (
+                np.asarray(gyro_config['initial_bias'], dtype=float)
+                + rng.normal(0.0, bias_sigma, size=3)
+            ).tolist()
+            misalignment_sigma = np.radians(
+                float(dispersion.get('misalignment_sigma_deg', 0.2))
+            )
+            gyro_config['misalignment'] = Rotation.from_rotvec(
+                rng.normal(0.0, misalignment_sigma, size=3)
+            ).as_matrix().tolist()
+
         run_config = SimulationConfig(
             duration=config.duration,
             dt=config.dt,
-            seed=config.seed + run * 1000,
-            spacecraft=config.spacecraft,
-            gyroscope=config.gyroscope,
+            seed=run_seed,
+            spacecraft=spacecraft_config,
+            gyroscope=gyro_config,
             star_tracker=config.star_tracker,
             filter=config.filter,
             controller=config.controller,
             reaction_wheels=config.reaction_wheels,
             analysis=config.analysis
         )
+
+        parameter_draws.append({
+            'seed': run_seed,
+            'initial_attitude': np.asarray(
+                spacecraft_config['initial_attitude'], dtype=float
+            ),
+            'initial_rate': np.asarray(spacecraft_config['initial_omega'], dtype=float),
+            'inertia': np.asarray(
+                run_true_inertia if run_true_inertia is not None
+                else spacecraft_config['inertia'],
+                dtype=float,
+            ),
+            'initial_bias': np.asarray(gyro_config['initial_bias'], dtype=float),
+            'misalignment': np.asarray(
+                gyro_config.get('misalignment', np.eye(3)), dtype=float
+            ),
+        })
         
-        result = run_simulation(run_config, true_inertia, filter_inertia)
+        result = run_simulation(run_config, run_true_inertia, filter_inertia)
         if run == 0:
             time = result['time']
         compact_runs.append({
             key: result[key]
-            for key in ('NEES', 'NIS', 'measurement_available', 'measurement_accepted')
+            for key in (
+                'NEES', 'predicted_NEES', 'NIS',
+                'measurement_available', 'measurement_accepted',
+                'innovation_valid',
+            )
         })
-        performance_by_run.append(compute_performance_metrics(result))
+        evaluation_window = config.analysis.get(
+            'steady_state_window_s',
+            (60.0, 100.0) if config.duration >= 100.0 else None,
+        )
+        if evaluation_window is not None and float(evaluation_window[1]) > config.duration:
+            evaluation_window = None
+        run_performance = compute_performance_metrics(result, evaluation_window)
+        full_run_performance = compute_performance_metrics(result)
+        for metric in (
+            'pointing_rms_rad',
+            'pointing_peak_rad',
+            'pointing_final_rad',
+            'settling_time_2pct_s',
+        ):
+            run_performance[f'{metric}_full'] = full_run_performance[metric]
+        performance_by_run.append(run_performance)
+        if config.filter['variant'] == 'model_aided':
+            covariance_window = np.ones(result['time'].shape, dtype=bool)
+            if evaluation_window is not None:
+                covariance_window = (
+                    (result['time'] >= evaluation_window[0])
+                    & (result['time'] < evaluation_window[1])
+                )
+            errors = result['estimation_error_state'][covariance_window]
+            model_mean = result['model_error_mean'][covariance_window]
+            covariances = result['P'][covariance_window]
+            predicted_covariances = (
+                covariances + model_mean[:, :, None] * model_mean[:, None, :]
+            )
+            error_vector_sum = (
+                np.sum(errors, axis=0)
+                if error_vector_sum is None
+                else error_vector_sum + np.sum(errors, axis=0)
+            )
+            error_covariance_sum = (
+                np.einsum('ni,nj->ij', errors, errors)
+                if error_covariance_sum is None
+                else error_covariance_sum + np.einsum('ni,nj->ij', errors, errors)
+            )
+            predicted_error_covariance_sum = (
+                np.sum(predicted_covariances, axis=0)
+                if predicted_error_covariance_sum is None
+                else predicted_error_covariance_sum + np.sum(predicted_covariances, axis=0)
+            )
+            error_covariance_sample_count += len(errors)
 
         mean_fields = {
             'b_hat_mean': 'b_hat',
             'b_true_mean': 'b_true',
             'P_mean': 'P',
             'NEES_mean': 'NEES',
+            'predicted_NEES_mean': 'predicted_NEES',
             'pointing_error_mean': 'pointing_error',
             'attitude_estimation_error_mean': 'attitude_estimation_error',
         }
@@ -473,15 +750,52 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
         'innovation_count': np.zeros(n_steps, dtype=int),
         'measurement_rejection_count': np.zeros(n_steps, dtype=int),
         'max_torque': float(config.controller['max_torque']),
+        'max_wheel_momentum': float(config.reaction_wheels['max_momentum']),
         'is_monte_carlo': True,
         'n_runs': n_runs,
         'all_runs': compact_runs,
         'performance_by_run': performance_by_run,
         'performance_summary': summarize_performance(performance_by_run),
+        'monte_carlo_seed': np.asarray([draw['seed'] for draw in parameter_draws]),
+        'monte_carlo_initial_attitude': np.stack(
+            [draw['initial_attitude'] for draw in parameter_draws]
+        ),
+        'monte_carlo_initial_rate': np.stack(
+            [draw['initial_rate'] for draw in parameter_draws]
+        ),
+        'monte_carlo_inertia': np.stack([draw['inertia'] for draw in parameter_draws]),
+        'monte_carlo_initial_bias': np.stack(
+            [draw['initial_bias'] for draw in parameter_draws]
+        ),
+        'monte_carlo_misalignment': np.stack(
+            [draw['misalignment'] for draw in parameter_draws]
+        ),
     }
+    if error_covariance_sample_count:
+        assert error_vector_sum is not None
+        assert error_covariance_sum is not None
+        assert predicted_error_covariance_sum is not None
+        error_mean = error_vector_sum / error_covariance_sample_count
+        empirical_covariance = (
+            error_covariance_sum / error_covariance_sample_count
+            - np.outer(error_mean, error_mean)
+        )
+        predicted_covariance = (
+            predicted_error_covariance_sum / error_covariance_sample_count
+        )
+        aggregated['model_error_empirical_covariance'] = empirical_covariance
+        aggregated['model_error_predicted_covariance'] = predicted_covariance
+        aggregated['model_error_covariance_relative_error'] = float(
+            np.linalg.norm(empirical_covariance - predicted_covariance, ord='fro')
+            / max(np.linalg.norm(predicted_covariance, ord='fro'), 1e-15)
+        )
     nis_values = np.stack([r['NIS'] for r in compact_runs])
     nis_valid = np.stack([r['measurement_available'] for r in compact_runs])
     nis_accepted = np.stack([r['measurement_accepted'] for r in compact_runs])
+    innovation_valid = np.stack([r['innovation_valid'] for r in compact_runs])
+    aggregated['measurement_available_runs'] = nis_valid
+    aggregated['measurement_accepted_runs'] = nis_accepted
+    aggregated['innovation_valid_runs'] = innovation_valid
     aggregated['innovation_count'] = np.sum(nis_valid, axis=0)
     aggregated['measurement_rejection_count'] = np.sum(nis_valid & ~nis_accepted, axis=0)
     nis_sum = np.sum(np.where(nis_valid, nis_values, 0.0), axis=0)
@@ -507,6 +821,7 @@ def compute_consistency_stats(
     results: Dict[str, Any],
     confidence: float = 0.95,
     nis_confidence: Optional[float] = None,
+    evaluation_window_s: Optional[tuple[float, float]] = None,
 ) -> Dict[str, Any]:
     """
     Compute consistency statistics (NEES/NIS bounds).
@@ -526,18 +841,39 @@ def compute_consistency_stats(
         nis_confidence = confidence
     if not 0.0 < nis_confidence < 1.0:
         raise ValueError("nis_confidence must be between 0 and 1")
+
+    time = np.asarray(results.get('time', []))
+    selected = np.ones(time.shape, dtype=bool)
+    if evaluation_window_s is not None and time.size:
+        start, end = evaluation_window_s
+        if start < 0.0 or end <= start:
+            raise ValueError("evaluation window must satisfy 0 <= start < end")
+        if end <= time[-1] + (time[1] - time[0] if time.size > 1 else 0.0):
+            selected = (time >= start) & (time < end)
+        if not np.any(selected):
+            raise ValueError("evaluation window contains no consistency samples")
     
     is_monte_carlo = 'all_runs' in results
     all_nees: Optional[np.ndarray] = None
     all_nis: Optional[np.ndarray] = None
     all_nis_valid: Optional[np.ndarray] = None
+    all_nis_available: Optional[np.ndarray] = None
     nis_counts = np.zeros_like(results.get('NEES_mean', results.get('NEES')), dtype=int)
     nis_valid = np.zeros_like(nis_counts, dtype=bool)
     if is_monte_carlo:
         all_nees = np.stack([run['NEES'] for run in results['all_runs']])
         all_nis = np.stack([run['NIS'] for run in results['all_runs']])
-        all_nis_valid = np.stack([
+        all_nis_available = np.stack([
             run['measurement_available'] for run in results['all_runs']
+        ])
+        all_nis_valid = np.stack([
+            run['measurement_available']
+            & run.get(
+                'measurement_accepted',
+                np.ones_like(run['measurement_available'], dtype=bool),
+            )
+            & run.get('innovation_valid', np.ones_like(run['measurement_available']))
+            for run in results['all_runs']
         ])
         NEES = results['NEES_mean']
         nis_counts = np.sum(all_nis_valid, axis=0)
@@ -547,14 +883,42 @@ def compute_consistency_stats(
             out=np.zeros_like(NEES),
             where=nis_counts > 0,
         )
+        nis_available = all_nis_available
     else:
         NEES = results['NEES']
         NIS = results['NIS']
-        nis_valid = results.get(
+        nis_valid = (
+            results.get('measurement_available', NIS > 0)
+            & results.get('measurement_accepted', np.ones_like(NIS, dtype=bool))
+            & results.get('innovation_valid', np.ones_like(NIS, dtype=bool))
+        )
+        nis_available = results.get(
             'measurement_available',
             results.get('innovation_valid', NIS > 0),
         )
-    
+
+    if time.size:
+        NEES = NEES[selected]
+        NIS = NIS[selected]
+        if is_monte_carlo:
+            assert all_nees is not None and all_nis is not None
+            assert all_nis_valid is not None and all_nis_available is not None
+            all_nees = all_nees[:, selected]
+            all_nis = all_nis[:, selected]
+            all_nis_valid = all_nis_valid[:, selected]
+            all_nis_available = all_nis_available[:, selected]
+            nis_available = all_nis_available
+            nis_counts = np.sum(all_nis_valid, axis=0)
+            NIS = np.divide(
+                np.sum(np.where(all_nis_valid, all_nis, 0.0), axis=0),
+                nis_counts,
+                out=np.zeros_like(NEES),
+                where=nis_counts > 0,
+            )
+        else:
+            nis_valid = nis_valid[selected]
+            nis_available = nis_available[selected]
+
     # Degrees of freedom
     dof_nees = int(results.get('nees_dof', 6))
     dof_nis = 3   # 3 attitude measurement
@@ -616,6 +980,30 @@ def compute_consistency_stats(
             else float('nan')
         )
     
+    run_level: Dict[str, Any] = {}
+    if is_monte_carlo and all_nees is not None and all_nis is not None:
+        run_nees_means = np.mean(all_nees, axis=1)
+        run_nis_means = np.asarray([
+            np.mean(values[valid]) if np.any(valid) else np.nan
+            for values, valid in zip(all_nis, all_nis_valid)
+        ])
+
+        def mean_ci(values: np.ndarray) -> tuple[float, float]:
+            values = values[np.isfinite(values)]
+            if values.size < 2:
+                return (float('nan'), float('nan'))
+            half_width = stats.t.ppf(0.975, values.size - 1) * np.std(
+                values, ddof=1
+            ) / np.sqrt(values.size)
+            return (float(np.mean(values) - half_width), float(np.mean(values) + half_width))
+
+        run_level = {
+            'run_nees_mean': float(np.mean(run_nees_means)),
+            'run_nees_mean_ci95': mean_ci(run_nees_means),
+            'run_nis_mean': float(np.nanmean(run_nis_means)),
+            'run_nis_mean_ci95': mean_ci(run_nis_means),
+        }
+
     return {
         'nees_bounds': (nees_lower, nees_upper),
         'nis_bounds': (nis_lower, nis_upper),
@@ -629,8 +1017,14 @@ def compute_consistency_stats(
             if all_nis is not None and all_nis_valid is not None
             else np.mean(NIS[nis_valid]) if np.any(nis_valid) else float('nan')
         ),
+        'pre_gate_nis_mean': (
+            np.mean(all_nis[all_nis_available])
+            if all_nis is not None and all_nis_available is not None
+            else np.mean(NIS[nis_available]) if np.any(nis_available) else float('nan')
+        ),
         'dof_nees': dof_nees,
-        'dof_nis': dof_nis
+        'dof_nis': dof_nis,
+        **run_level,
     }
 
 
@@ -693,6 +1087,10 @@ def main():
         results,
         config.analysis['nees_confidence'],
         config.analysis['nis_confidence'],
+        config.analysis.get('steady_state_window_s')
+        if config.analysis.get('steady_state_window_s') is None
+        or float(config.analysis['steady_state_window_s'][1]) <= config.duration
+        else None,
     )
     results['consistency'] = stats
     if not args.monte_carlo:

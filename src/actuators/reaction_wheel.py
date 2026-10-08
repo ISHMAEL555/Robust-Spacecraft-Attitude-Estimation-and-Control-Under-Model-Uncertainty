@@ -23,6 +23,8 @@ class ReactionWheelParams:
     # Wheel axis directions (body frame) - 3xN matrix
     # Default: orthogonal axes aligned with body frame
     axes: Optional[np.ndarray] = None
+    # Initial individual wheel momentum (N*m*s), zero by default.
+    initial_momentum: Optional[np.ndarray] = None
 
 
 class ReactionWheelAssembly:
@@ -59,7 +61,15 @@ class ReactionWheelAssembly:
                 raise ValueError("Only 3 or 4 wheels supported by default")
         
         # Wheel states
-        self.momentum = np.zeros(params.num_wheels)  # N*m*s per wheel
+        self.momentum = (
+            np.zeros(params.num_wheels)
+            if params.initial_momentum is None
+            else np.asarray(params.initial_momentum, dtype=float).copy()
+        )
+        if self.momentum.shape != (params.num_wheels,):
+            raise ValueError("initial_momentum must contain one value per wheel")
+        if np.any(np.abs(self.momentum) > params.max_momentum):
+            raise ValueError("initial wheel momentum exceeds the configured limit")
         self.torque = np.zeros(params.num_wheels)    # N*m per wheel
     
     def compute_torque(self, tau_cmd: np.ndarray) -> np.ndarray:

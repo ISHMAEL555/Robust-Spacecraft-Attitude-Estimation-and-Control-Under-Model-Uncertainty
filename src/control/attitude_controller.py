@@ -24,6 +24,9 @@ class ControllerParams:
     max_torque: float = 0.1
     # Control law type
     control_type: Literal['quaternion_feedback', 'pd'] = 'quaternion_feedback'
+    # Retain the selected quaternion representative inside a near-180-degree band.
+    quaternion_sign_hysteresis: bool = False
+    quaternion_sign_hysteresis_threshold: float = 1e-3
 
 
 class AttitudeController:
@@ -51,10 +54,14 @@ class AttitudeController:
         # Desired state
         self.q_desired = np.array([0.0, 0.0, 0.0, 1.0])
         self.omega_desired = np.zeros(3)
+        self._quaternion_error_sign: Optional[float] = None
+        if params.quaternion_sign_hysteresis_threshold < 0.0:
+            raise ValueError("quaternion sign hysteresis threshold must be non-negative")
     
     def set_desired(self, q_desired: np.ndarray, omega_desired: Optional[np.ndarray] = None):
         """Set desired attitude and angular velocity."""
         self.q_desired = normalize(q_desired)
+        self._quaternion_error_sign = None
         if omega_desired is not None:
             self.omega_desired = np.array(omega_desired)
         else:
@@ -76,8 +83,16 @@ class AttitudeController:
         q_error = multiply(conjugate(self.q_desired), q_current)
         q_error = normalize(q_error)
         
-        # Ensure shortest path (positive scalar part)
-        if q_error[3] < 0:
+        if self.params.quaternion_sign_hysteresis:
+            threshold = self.params.quaternion_sign_hysteresis_threshold
+            if self._quaternion_error_sign is None:
+                self._quaternion_error_sign = -1.0 if q_error[3] < 0.0 else 1.0
+            elif q_error[3] < -threshold:
+                self._quaternion_error_sign = -1.0
+            elif q_error[3] > threshold:
+                self._quaternion_error_sign = 1.0
+            q_error = self._quaternion_error_sign * q_error
+        elif q_error[3] < 0.0:
             q_error = -q_error
         
         # Vector part of error quaternion

@@ -25,6 +25,8 @@ class GyroParams:
     sigma_b0: float = 1e-3  # rad/s
     # Update rate (Hz)
     rate: float = 100.0  # Hz
+    # Body-frame sensor-axis misalignment rotation matrix.
+    misalignment: Optional[np.ndarray] = None
     
     @property
     def dt(self) -> float:
@@ -58,6 +60,15 @@ class Gyroscope:
         """
         self.params = params
         self.dt = 1.0 / params.rate
+        self.misalignment = (
+            np.eye(3)
+            if params.misalignment is None
+            else np.asarray(params.misalignment, dtype=float)
+        )
+        if self.misalignment.shape != (3, 3) or not np.allclose(
+            self.misalignment.T @ self.misalignment, np.eye(3), atol=1e-8
+        ):
+            raise ValueError("gyro misalignment must be a 3x3 orthogonal matrix")
         
         if seed is not None:
             np.random.seed(seed)
@@ -88,7 +99,7 @@ class Gyroscope:
         noise = np.random.randn(3) * self.params.sigma_v / np.sqrt(self.dt)
         
         # Measurement: omega_m = omega_true + bias + noise
-        omega_measured = omega_true + self.true_bias + noise
+        omega_measured = self.misalignment @ omega_true + self.true_bias + noise
         
         return omega_measured
     
