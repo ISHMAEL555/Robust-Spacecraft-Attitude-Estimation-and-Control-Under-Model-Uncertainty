@@ -120,11 +120,9 @@ and decreasing coverage with duration, but the campaign has not yet
 established a formal maximum tolerated outage or an independently validated
 recovery-time requirement.
 
-**NIS qualification:** campaign NIS summaries historically included innovations
-from measurements that the gate later rejects. The cleanup branch now computes
-an explicit accepted-only NIS mean and accepted-only in-bound fraction in
-addition to the all-measurement diagnostic. Regenerate the campaign before
-using those new metrics as quantitative evidence.
+**NIS qualification:** accepted-only NIS is now reported separately from the
+all-measurement diagnostic. Regenerate the campaign after the actuator
+correction before using either metric as current quantitative evidence.
 
 ### Senior-engineering assessment
 
@@ -213,22 +211,24 @@ frame conventions are documented in [`docs/conventions.md`](docs/conventions.md)
 
 For Variant A, NEES uses the attitude and gyro-bias error; Variant B also
 includes angular-rate error. NIS uses the three-dimensional star-tracker
-innovation. Campaign summaries include every available innovation, including
-measurements subsequently rejected by the gate; interpret gated NIS with this
-definition in mind.
+innovation. Campaign summaries retain both all-measurement NIS and accepted-only NIS. The
+all-measurement diagnostic includes innovations from measurements subsequently
+rejected by the gate; accepted-only NIS excludes those rejected updates and is
+the appropriate metric for assessing post-gate innovation consistency.
 
 ## Verification and evidence
 
 The test suite covers quaternion and dynamics behavior, MEKF dimensions and
 updates, the model-aided Euler Jacobian against finite differences, covariance
-reset behavior, deterministic outage scheduling, and experiment metrics. The
-recorded full run after the estimator changes passed **112 tests**. Selected
-analytical checks include the E5 outage covariance-growth comparison.
+reset behavior, deterministic outage scheduling, experiment metrics, and
+reaction-wheel angular-momentum exchange. The GitHub editing environment used
+for this cleanup does not execute the project virtual environment, so test
+status must be established by running the commands below locally.
 
 These checks verify software behavior against the implemented model. They do
 not establish hardware fidelity, independent model validation, or flight
-readiness. The E1-E7 run is explicitly exploratory: 27 cases, 10 seeded runs
-per case, 100 seconds per run.
+readiness. The E1-E7 campaign is explicitly exploratory; the default pilot uses
+10 seeded runs per case and 100 seconds per run.
 
 ## Reproduce
 
