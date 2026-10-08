@@ -539,6 +539,10 @@ def compute_consistency_stats(
         all_nis_valid = np.stack([
             run['measurement_available'] for run in results['all_runs']
         ])
+        all_nis_accepted = np.stack([
+            run['measurement_available'] & run['measurement_accepted']
+            for run in results['all_runs']
+        ])
         NEES = results['NEES_mean']
         nis_counts = np.sum(all_nis_valid, axis=0)
         NIS = np.divide(
@@ -553,6 +557,9 @@ def compute_consistency_stats(
         nis_valid = results.get(
             'measurement_available',
             results.get('innovation_valid', NIS > 0),
+        )
+        nis_accepted = nis_valid & results.get(
+            'measurement_accepted', np.ones_like(nis_valid, dtype=bool)
         )
     
     # Degrees of freedom
@@ -569,10 +576,23 @@ def compute_consistency_stats(
     
     # For Monte Carlo, average NEES over runs
     if is_monte_carlo:
-        assert all_nees is not None and all_nis is not None and all_nis_valid is not None
+        assert (
+            all_nees is not None
+            and all_nis is not None
+            and all_nis_valid is not None
+            and all_nis_accepted is not None
+        )
         n_runs = len(results['all_runs'])
         nees_avg = np.mean(all_nees, axis=0)
         nis_avg = NIS
+        accepted_values = all_nis[all_nis_accepted]
+        nis_mean_accepted = float(np.mean(accepted_values)) if accepted_values.size else float('nan')
+        accepted_epoch_counts = np.sum(all_nis_accepted, axis=0)
+        accepted_sum = np.sum(np.where(all_nis_accepted, all_nis, 0.0), axis=0)
+        nis_avg_accepted = np.divide(
+            accepted_sum, accepted_epoch_counts,
+            out=np.zeros_like(NIS), where=accepted_epoch_counts > 0
+        )
         
         # Bounds for average over N runs
         nees_lower_mc = stats.chi2.ppf(
@@ -604,6 +624,19 @@ def compute_consistency_stats(
             if np.any(valid_nis_epochs)
             else float('nan')
         )
+        accepted_valid_epochs = accepted_epoch_counts > 0
+        nis_accepted_in_bounds = (
+            np.mean(
+                (nis_avg_accepted[accepted_valid_epochs] >=
+                 stats.chi2.ppf(alpha_nis / 2, accepted_epoch_counts[accepted_valid_epochs] * dof_nis) /
+                 accepted_epoch_counts[accepted_valid_epochs])
+                & (nis_avg_accepted[accepted_valid_epochs] <=
+                   stats.chi2.ppf(1 - alpha_nis / 2, accepted_epoch_counts[accepted_valid_epochs] * dof_nis) /
+                   accepted_epoch_counts[accepted_valid_epochs])
+            )
+            if np.any(accepted_valid_epochs)
+            else float('nan')
+        )
     else:
         nees_lower_mc = nees_lower
         nees_upper_mc = nees_upper
@@ -612,8 +645,13 @@ def compute_consistency_stats(
         nees_in_bounds = np.mean((NEES >= nees_lower) & (NEES <= nees_upper))
         nis_in_bounds = (
             np.mean((NIS[nis_valid] >= nis_lower) & (NIS[nis_valid] <= nis_upper))
-            if np.any(nis_valid)
-            else float('nan')
+            if np.any(nis_valid) else float('nan')
+        )
+        accepted_values = NIS[nis_accepted]
+        nis_mean_accepted = float(np.mean(accepted_values)) if accepted_values.size else float('nan')
+        nis_accepted_in_bounds = (
+            np.mean((accepted_values >= nis_lower) & (accepted_values <= nis_upper))
+            if accepted_values.size else float('nan')
         )
     
     return {
@@ -629,6 +667,8 @@ def compute_consistency_stats(
             if all_nis is not None and all_nis_valid is not None
             else np.mean(NIS[nis_valid]) if np.any(nis_valid) else float('nan')
         ),
+        'nis_mean_accepted': nis_mean_accepted,
+        'nis_accepted_in_bounds': nis_accepted_in_bounds,
         'dof_nees': dof_nees,
         'dof_nis': dof_nis
     }
