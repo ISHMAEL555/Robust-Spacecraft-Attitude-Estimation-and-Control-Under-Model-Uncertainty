@@ -1,1 +1,17 @@
-# Python\n__pycache__/\n*.py[cod]\n*.egg-info/\n.venv/\nvenv/\n.pytest_cache/\n.mypy_cache/\n.ruff_cache/\n\n# Generated simulation outputs\n*.npz\nreports/*.npz\n\n# Generated plots/reports\nreports/nominal_analysis/\nreports/research_campaigns/\n
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated simulation outputs
+*.npz
+reports/*.npz
+
+# Generated plots/reports
+reports/nominal_analysis/
+reports/research_campaigns/
