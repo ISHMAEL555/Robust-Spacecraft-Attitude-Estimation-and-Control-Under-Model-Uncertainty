@@ -1,7 +1,11 @@
 """
 Reaction wheel actuator model for spacecraft attitude control.
 
-Simple model: tau_rw = -h_dot_rw with torque and momentum limits.
+Simple reaction-wheel allocation model with torque and momentum limits.
+
+Sign convention: wheel motor torque increases wheel momentum, while the
+spacecraft reaction torque is equal to the negative of the wheel momentum
+rate projected into the body frame.
 """
 
 import numpy as np
@@ -72,11 +76,11 @@ class ReactionWheelAssembly:
         Returns:
             Achieved body torque (N*m) - 3-vector
         """
-        # Pseudo-inverse allocation: tau_wheel = A^+ * tau_cmd
-        # where A is the 3xN axis matrix
+        # Wheel motor torque increases wheel momentum. The spacecraft reaction
+        # torque is equal and opposite: tau_body = -A @ tau_wheel.
         A = self.axes
         A_pinv = np.linalg.pinv(A)
-        tau_wheel_cmd = A_pinv @ tau_cmd
+        tau_wheel_cmd = -A_pinv @ tau_cmd
         
         # Apply torque saturation
         tau_wheel_sat = np.clip(tau_wheel_cmd, -self.params.max_torque, self.params.max_torque)
@@ -88,8 +92,8 @@ class ReactionWheelAssembly:
         # Reduce torque if momentum is saturated
         tau_wheel_final = tau_wheel_sat * momentum_margin
         
-        # Convert back to body torque
-        tau_body = A @ tau_wheel_final
+        # Project wheel momentum rate into body frame with equal-and-opposite sign.
+        tau_body = -A @ tau_wheel_final
         
         # Update wheel states (simplified)
         self.torque = tau_wheel_final
@@ -133,7 +137,7 @@ def allocate_torque_3wheel(tau_cmd: np.ndarray, max_torque: float) -> np.ndarray
     Returns:
         Wheel torques (3-vector)
     """
-    return np.clip(tau_cmd, -max_torque, max_torque)
+    return -np.clip(tau_cmd, -max_torque, max_torque)
 
 
 def allocate_torque_4wheel_pyramid(tau_cmd: np.ndarray, max_torque: float, beta: float = None) -> np.ndarray:
@@ -159,7 +163,7 @@ def allocate_torque_4wheel_pyramid(tau_cmd: np.ndarray, max_torque: float, beta:
     ])
     
     A_pinv = np.linalg.pinv(A)
-    tau_wheel = A_pinv @ tau_cmd
+    tau_wheel = -A_pinv @ tau_cmd
     
     return np.clip(tau_wheel, -max_torque, max_torque)
 
