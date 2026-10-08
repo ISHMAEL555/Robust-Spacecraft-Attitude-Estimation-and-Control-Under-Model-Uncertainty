@@ -3,14 +3,13 @@
 **A simulation study of MEKF consistency and closed-loop pointing under spacecraft-model and sensor uncertainty.**
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-updated%20on%20cleanup%20branch-yellow)
-![Study](https://img.shields.io/badge/study-exploratory%20results-yellow)
+![Tests](https://img.shields.io/badge/tests-not%20run%20in%20connector-yellow)
+![Study](https://img.shields.io/badge/study-engineering%20verification-yellow)
 
-> **Status:** The simulation, two MEKF variants, verification tests, and all
-> 27 E1-E7 exploratory cases are implemented. The campaign is a pilot
-> (10 runs x 100 s per case), not statistically powered mission evidence.
-> Longer campaigns, interpretation of stress-case behavior, and a final
-> research report remain open. This is not flight-qualified software.
+> **Status:** The simulation, two MEKF variants, verification tests, and the E0-E7
+> campaign infrastructure are implemented. Numerical campaign results must be
+> regenerated after the reaction-wheel sign correction before they are treated
+> as current evidence. The study is exploratory and not flight-qualified software.
 
 ## At a glance
 
@@ -36,11 +35,13 @@ accuracy**, **covariance consistency**, **true pointing performance**, and
 
 ## Performance assessment
 
-The tables below describe the previously generated pilot results. They must be regenerated after the actuator-sign correction in this branch before being treated as current campaign evidence. E0 is one 1,000 s seed-42 trajectory. E7 and the degradation cases
-are 10-run, 100 s pilots. E7's 95% intervals are run-level Student-t
-intervals; with only ten runs they are descriptive, not qualification
-evidence. Source files: [E0 analysis report](reports/nominal_analysis/nominal_report.txt)
-and [E1-E7 metrics CSV](reports/research_campaigns/summary.csv).
+The repository contains pilot campaign artifacts for reference, but those numerical
+values were generated before the reaction-wheel sign correction. **They are not
+current engineering evidence and should not be used for conclusions.** Regenerate
+E0-E7 with the current implementation before quoting quantitative results. The
+intended campaign is 10 runs × 100 s per case unless a configuration specifies
+otherwise. Any 95% intervals should be interpreted as descriptive run-level
+intervals, not qualification evidence.
 
 ### Estimator accuracy and consistency
 
@@ -289,7 +290,7 @@ tests/unit/              Unit and regression tests
 
 **Next engineering steps**
 
-1. Regenerate E0-E7 results after the reaction-wheel sign correction and accepted-only NIS analysis.
+1. Run the full test suite and regenerate E0-E7 results after the reaction-wheel sign correction and accepted-only NIS analysis.
 2. Investigate model-aided consistency loss under inertia mismatch.
 3. Diagnose E6's actuator-saturated recovery behavior and separate controller
    limits from estimator effects.
