@@ -85,12 +85,17 @@ class ReactionWheelAssembly:
         # Apply torque saturation
         tau_wheel_sat = np.clip(tau_wheel_cmd, -self.params.max_torque, self.params.max_torque)
         
-        # Check momentum saturation (simplified: limit torque if near momentum limit)
+        # Check momentum saturation. Only torque that drives a wheel farther
+        # toward its current momentum limit is attenuated; unloading torque is
+        # preserved so a wheel can recover from saturation.
         momentum_margin = 1.0 - np.abs(self.momentum) / self.params.max_momentum
         momentum_margin = np.clip(momentum_margin, 0.0, 1.0)
-        
-        # Reduce torque if momentum is saturated
-        tau_wheel_final = tau_wheel_sat * momentum_margin
+        drives_toward_limit = self.momentum * tau_wheel_sat > 0.0
+        tau_wheel_final = np.where(
+            drives_toward_limit,
+            tau_wheel_sat * momentum_margin,
+            tau_wheel_sat,
+        )
         
         # Project wheel momentum rate into body frame with equal-and-opposite sign.
         tau_body = -A @ tau_wheel_final
