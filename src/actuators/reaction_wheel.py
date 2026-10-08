@@ -1,7 +1,11 @@
 """
 Reaction wheel actuator model for spacecraft attitude control.
 
-Simple reaction-wheel allocation model with torque and momentum limits.\n\nSign convention: wheel motor torque increases wheel momentum, while the\nspacecraft reaction torque is equal to the negative of the wheel momentum\nrate projected into the body frame.
+Simple reaction-wheel allocation model with torque and momentum limits.
+
+Sign convention: wheel motor torque increases wheel momentum, while the
+spacecraft reaction torque is equal to the negative of the wheel momentum
+rate projected into the body frame.
 """
 
 import numpy as np
@@ -133,7 +137,7 @@ def allocate_torque_3wheel(tau_cmd: np.ndarray, max_torque: float) -> np.ndarray
     Returns:
         Wheel torques (3-vector)
     """
-    return np.clip(tau_cmd, -max_torque, max_torque)
+    return -np.clip(tau_cmd, -max_torque, max_torque)
 
 
 def allocate_torque_4wheel_pyramid(tau_cmd: np.ndarray, max_torque: float, beta: float = None) -> np.ndarray:
@@ -159,7 +163,7 @@ def allocate_torque_4wheel_pyramid(tau_cmd: np.ndarray, max_torque: float, beta:
     ])
     
     A_pinv = np.linalg.pinv(A)
-    tau_wheel = A_pinv @ tau_cmd
+    tau_wheel = -A_pinv @ tau_cmd
     
     return np.clip(tau_wheel, -max_torque, max_torque)
 
