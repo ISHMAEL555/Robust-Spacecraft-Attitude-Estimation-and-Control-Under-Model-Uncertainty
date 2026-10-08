@@ -1,7 +1,7 @@
 """
 Reaction wheel actuator model for spacecraft attitude control.
 
-Simple model: tau_rw = -h_dot_rw with torque and momentum limits.
+Simple reaction-wheel allocation model with torque and momentum limits.\n\nSign convention: wheel motor torque increases wheel momentum, while the\nspacecraft reaction torque is equal to the negative of the wheel momentum\nrate projected into the body frame.
 """
 
 import numpy as np
