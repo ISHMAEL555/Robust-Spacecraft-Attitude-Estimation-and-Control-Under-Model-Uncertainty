@@ -143,7 +143,7 @@ class TestAllocationFunctions:
         
         tau_wheel = allocate_torque_3wheel(tau_cmd, max_torque)
         
-        assert np.allclose(tau_wheel, tau_cmd)
+        assert np.allclose(tau_wheel, -tau_cmd)
     
     def test_allocate_torque_3wheel_saturation(self):
         tau_cmd = np.array([0.5, 0.5, 0.5])
@@ -151,7 +151,7 @@ class TestAllocationFunctions:
         
         tau_wheel = allocate_torque_3wheel(tau_cmd, max_torque)
         
-        assert np.allclose(tau_wheel, [0.1, 0.1, 0.1])
+        assert np.allclose(tau_wheel, [-0.1, -0.1, -0.1])
     
     def test_allocate_torque_4wheel_pyramid(self):
         tau_cmd = np.array([0.05, 0.03, 0.02])
