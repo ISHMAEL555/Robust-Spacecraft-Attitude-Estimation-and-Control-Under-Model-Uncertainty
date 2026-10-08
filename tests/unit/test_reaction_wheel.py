@@ -80,6 +80,19 @@ class TestReactionWheelAssembly:
         expected_momentum = np.array([-0.05, -0.03, -0.02])
         assert np.allclose(rwa.get_momentum(), expected_momentum)
     
+    def test_momentum_saturation_does_not_block_unloading(self):
+        """Torque that reduces momentum magnitude remains available at the limit."""
+        params = ReactionWheelParams(num_wheels=3, max_torque=0.1, max_momentum=1.0)
+        rwa = ReactionWheelAssembly(params)
+        rwa.momentum[0] = -1.0
+
+        tau_cmd = np.array([0.1, 0.0, 0.0])
+        tau_achieved = rwa.compute_torque(tau_cmd)
+
+        # Positive wheel torque unloads a negatively saturated wheel, so the
+        # commanded body torque must remain available.
+        assert np.allclose(tau_achieved, tau_cmd)
+
     def test_momentum_saturation(self):
         params = ReactionWheelParams(num_wheels=3, max_torque=0.1, max_momentum=1.0)
         rwa = ReactionWheelAssembly(params)
