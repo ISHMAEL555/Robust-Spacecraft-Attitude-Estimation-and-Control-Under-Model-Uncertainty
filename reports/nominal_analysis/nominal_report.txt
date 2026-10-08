@@ -1,0 +1,25 @@
+Spacecraft Attitude Estimation Simulation Report
+==================================================
+
+Duration: 1000.0 s
+Time step: 0.010 s
+Steps: 100000
+
+Consistency Statistics:
+  NEES mean: 6.561
+  NEES in bounds: 96.7%
+  NIS mean: 2.953
+  NIS in bounds: 95.1%
+
+Star-tracker updates: 1000 attempted, 0 rejected
+
+Pointing Error:
+  Mean: 0.008 deg
+  RMS: 0.036 deg
+  Peak: 1.132 deg
+  Mean (arcsec): 30.5
+  RMS (arcsec): 130.8
+
+Final Covariance (3-sigma):
+  Attitude: [27.5 27.5 27.5] arcsec
+  Bias: [0.03 0.03 0.03] mrad/s

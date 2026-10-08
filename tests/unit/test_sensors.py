@@ -180,8 +180,9 @@ class TestStarTracker:
         q_meas1, valid1 = tracker.measure(q_true, 1.0)
         assert q_meas1 is None
         assert not valid1
+        tracker.params.outage_prob = 0.0
         
-            # Next 4 measurements should also be None (total 5 outage measurements)
+        # Next 4 measurements should also be None (total 5 outage measurements)
         for _ in range(4):
             q_meas, valid = tracker.measure(q_true, 1.0)
             assert q_meas is None

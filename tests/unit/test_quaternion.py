@@ -33,7 +33,7 @@ class TestQuaternionBasics:
         q = np.array([0.5, 0.5, 0.5, 0.5])
         assert is_unit(q)
         
-        q = np.array([1.0, 0.0, 0.0, 0.0])
+        q = np.array([2.0, 0.0, 0.0, 0.0])
         assert not is_unit(q)
     
     def test_conjugate(self):

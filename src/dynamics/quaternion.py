@@ -115,16 +115,18 @@ def error_quat(q_true: np.ndarray, q_est: np.ndarray) -> np.ndarray:
 
 def error_quat_to_vec(delta_q: np.ndarray) -> np.ndarray:
     """
-    Convert small error quaternion to error vector (3x1).
-    For small errors: delta_q ≈ [0.5 * delta_theta, 1]^T
+    Convert an error quaternion to its rotation vector (3x1).
     Returns delta_theta (3-vector).
     """
     delta_q = normalize(delta_q)
     # Ensure positive scalar part for minimal rotation
     if delta_q[3] < 0:
         delta_q = -delta_q
-    # delta_theta = 2 * vector_part
-    return 2.0 * delta_q[:3]
+    vector_norm = np.linalg.norm(delta_q[:3])
+    if vector_norm < 1e-12:
+        return 2.0 * delta_q[:3]
+    angle = 2.0 * np.arctan2(vector_norm, delta_q[3])
+    return delta_q[:3] * (angle / vector_norm)
 
 
 def vec_to_error_quat(delta_theta: np.ndarray) -> np.ndarray:
