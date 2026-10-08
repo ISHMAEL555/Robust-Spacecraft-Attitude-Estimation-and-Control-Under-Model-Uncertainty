@@ -93,8 +93,8 @@ class TestReactionWheelAssembly:
         momentum = rwa.get_momentum()
         # Should be saturated at max_momentum
         assert momentum[0] <= 1.0 + 1e-10
-            # The momentum should be close to max_momentum (allowing for momentum margin reduction)
-            assert momentum[0] >= 0.5  # At least half of max due to momentum margin
+        # The momentum should be close to max_momentum (allowing for momentum margin reduction)
+        assert momentum[0] >= 0.5  # At least half of max due to momentum margin
     
     def test_get_body_momentum(self):
         params = ReactionWheelParams(num_wheels=3, max_torque=0.1, max_momentum=10.0)

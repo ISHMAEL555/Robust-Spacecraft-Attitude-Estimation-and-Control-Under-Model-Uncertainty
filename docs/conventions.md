@@ -70,6 +70,10 @@ Conventions and derivations for the spacecraft attitude estimation project.
 # Discrete-time covariances (sample time Δt):
 # R_gyro = σ_v² / Δt · I₃
 # Q_bias = σ_u² Δt · I₃
+#
+# The MEKF Van Loan discretization takes continuous-time spectral densities,
+# so its Q_c blocks are σ_v² I₃ and σ_u² I₃. The expressions above are the
+# corresponding sampled/discrete covariances and must not be passed as Q_c.
 # 
 # Star Tracker:
 # q_ST = δq_ST ⊗ q_true

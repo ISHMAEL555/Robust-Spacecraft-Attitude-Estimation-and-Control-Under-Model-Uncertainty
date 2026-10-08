@@ -93,15 +93,16 @@ class StarTracker:
         
         # Check for outage
         if self.in_outage:
-            self.outage_counter -= 1
-            if self.outage_counter <= 0:
+            if self.outage_counter > 0:
+                self.outage_counter -= 1
+                return None, False
+            else:
                 self.in_outage = False
-            return None, False
         
         # Check for new outage
         if self.params.outage_prob > 0 and np.random.rand() < self.params.outage_prob:
             self.in_outage = True
-            self.outage_counter = self.params.outage_duration
+            self.outage_counter = max(self.params.outage_duration - 1, 0)
             return None, False
         
         # Generate measurement noise

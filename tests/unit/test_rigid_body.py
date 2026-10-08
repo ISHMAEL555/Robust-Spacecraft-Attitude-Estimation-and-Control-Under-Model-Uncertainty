@@ -99,8 +99,8 @@ class TestRigidBody:
         energy_initial = body.kinetic_energy()
         momentum_initial = body.angular_momentum_inertial()
         
-                dt = 0.01  # Smaller time step for better energy conservation
-                steps = 10000
+        dt = 0.01  # Smaller time step for better energy conservation
+        steps = 10000
         for _ in range(steps):
             body.step(np.zeros(3), dt)
         
@@ -111,7 +111,7 @@ class TestRigidBody:
         momentum_error = np.linalg.norm(momentum_final - momentum_initial) / np.linalg.norm(momentum_initial)
         
         # Energy and momentum should be conserved (within numerical error)
-                assert energy_error < 1e-4  # Relaxed tolerance for RK4
+        assert energy_error < 1e-4  # Relaxed tolerance for RK4
         assert momentum_error < 1e-6
     
     def test_kinetic_energy(self):
@@ -191,7 +191,7 @@ class TestInertiaFunctions:
         # Diagonal elements should be roughly within 10%
         for i in range(3):
             rel_error = abs(delta_I[i, i]) / I_nom[i, i]
-                assert rel_error < 0.2  # Allow some margin for random generation
+            assert rel_error < 0.2  # Allow some margin for random generation
 
 
 if __name__ == "__main__":

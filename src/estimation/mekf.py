@@ -10,13 +10,14 @@ Nominal state: [q_hat (4), b_hat (3)]
 """
 
 import numpy as np
+from scipy.linalg import expm
+from scipy.stats import chi2
 from typing import Optional, Tuple, Literal
 from dataclasses import dataclass
 from src.dynamics.quaternion import (
-    normalize, multiply, conjugate, quat_derivative, quat_to_rotmat,
-    box_plus, box_minus, error_quat, error_quat_to_vec, vec_to_error_quat
+    normalize, quat_derivative, box_plus, error_quat, error_quat_to_vec
 )
-from src.sensors.gyro import GyroParams, gyro_noise_covariance, gyro_bias_process_noise
+from src.sensors.gyro import GyroParams
 from src.sensors.star_tracker import StarTrackerParams, star_tracker_noise_covariance
 
 
@@ -35,6 +36,8 @@ class MEKFParams:
     # Process noise scaling factors (for mismatch studies)
     Q_scale: float = 1.0
     R_scale: float = 1.0
+    nis_gate_confidence: float = 0.999999
+    nis_gate_enabled: bool = False
     # Inertia matrix (for model-aided variant)
     inertia_model: Optional[np.ndarray] = None
 
@@ -62,6 +65,10 @@ class MEKF:
         """
         self.params = params
         self.variant = params.variant
+        if not 0.0 < params.nis_gate_confidence < 1.0:
+            raise ValueError("nis_gate_confidence must be between 0 and 1")
+        self.nis_threshold = chi2.ppf(params.nis_gate_confidence, 3)
+        self.last_measurement_accepted = False
         
         # Default sensor params if not provided
         if params.gyro_params is None:
@@ -110,10 +117,9 @@ class MEKF:
     def _build_process_noise(self) -> np.ndarray:
         """Build continuous-time process noise matrix."""
         Q = np.zeros((6, 6))
-        # Attitude process noise from gyro ARW
-        Q[:3, :3] = gyro_noise_covariance(self.gyro_params) * self.params.Q_scale
-        # Bias process noise from gyro BRW
-        Q[3:, 3:] = gyro_bias_process_noise(self.gyro_params) * self.params.Q_scale
+        # Van Loan discretization integrates continuous-time noise spectral densities.
+        Q[:3, :3] = np.eye(3) * self.gyro_params.sigma_v**2 * self.params.Q_scale
+        Q[3:, 3:] = np.eye(3) * self.gyro_params.sigma_u**2 * self.params.Q_scale
         return Q
     
     def _build_measurement_noise(self) -> np.ndarray:
@@ -139,7 +145,7 @@ class MEKF:
         M[n:, n:] = F.T
         
         # Matrix exponential
-        expM = np.linalg.matrix_exp(M * dt)
+        expM = expm(M * dt)
         
         Phi = expM[n:, n:].T
         Qd = Phi @ expM[:n, n:]
@@ -286,8 +292,15 @@ class MEKF:
         # Innovation covariance
         S = H @ self.P @ H.T + self.R
         
+        # NIS gate protects the state and covariance from inconsistent measurements.
+        NIS = innovation @ np.linalg.solve(S, innovation)
+        if self.params.nis_gate_enabled and NIS > self.nis_threshold:
+            self.last_measurement_accepted = False
+            return innovation, S, NIS
+        self.last_measurement_accepted = True
+
         # Kalman gain
-        K = self.P @ H.T @ np.linalg.inv(S)
+        K = np.linalg.solve(S, H @ self.P).T
         
         # State update (error state)
         delta_x = K @ innovation
@@ -302,9 +315,6 @@ class MEKF:
         I_KH = np.eye(6) - K @ H
         self.P = I_KH @ self.P @ I_KH.T + K @ self.R @ K.T
         self.P = (self.P + self.P.T) / 2
-        
-        # NIS
-        NIS = innovation @ np.linalg.inv(S) @ innovation
         
         return innovation, S, NIS
     
@@ -332,6 +342,7 @@ class MEKF:
         S = None
         NIS = None
         NEES = None
+        self.last_measurement_accepted = False
         
         if q_meas is not None:
             innovation, S, NIS = self.update(q_meas)
@@ -351,11 +362,13 @@ class MEKF:
         return {
             'q_hat': self.q_hat.copy(),
             'b_hat': self.b_hat.copy(),
+            'omega_hat': self.get_estimated_omega(omega_m),
             'P': self.P.copy(),
             'innovation': innovation,
             'S': S,
             'NIS': NIS,
-            'NEES': NEES
+            'NEES': NEES,
+            'measurement_accepted': self.last_measurement_accepted
         }
     
     def compute_nees(self, q_true: np.ndarray, b_true: np.ndarray) -> float:

@@ -37,6 +37,8 @@ filter:
   P0_bias: 1.0e-6
   Q_scale: 1.0
   R_scale: 1.0
+  nis_gate_enabled: true
+  nis_gate_confidence: 0.999999
 
 controller:
   K_q: 1.0

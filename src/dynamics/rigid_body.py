@@ -126,7 +126,7 @@ class RigidBody:
     def angular_momentum_inertial(self) -> np.ndarray:
         """Compute angular momentum in inertial frame."""
         R = quat_to_rotmat(self.q)
-        return R.T @ (self.I @ self.omega)
+        return R @ (self.I @ self.omega)
 
 
 def inertia_matrix_from_principal(Ixx: float, Iyy: float, Izz: float, 
@@ -155,8 +155,11 @@ def random_inertia_uncertainty(I_nominal: np.ndarray, max_rel_error: float = 0.1
     Returns:
         Uncertainty matrix delta_I
     """
-    # Generate symmetric uncertainty matrix
-    delta = np.random.randn(3, 3) * max_rel_error
+    if max_rel_error < 0:
+        raise ValueError("max_rel_error must be non-negative")
+
+    # Generate a symmetric uncertainty matrix bounded by max_rel_error.
+    delta = np.random.uniform(-max_rel_error, max_rel_error, size=(3, 3))
     delta = (delta + delta.T) / 2  # Make symmetric
     # Scale by nominal inertia magnitudes
     scale = np.sqrt(np.diag(I_nominal))

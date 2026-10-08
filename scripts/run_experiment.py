@@ -8,20 +8,19 @@ Runs experiments defined in config files.
 import numpy as np
 import yaml
 import argparse
-import os
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add the repository root so the src package is importable when run as a script.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.dynamics.quaternion import normalize, multiply, conjugate, error_quat, error_quat_to_vec, quat_to_rotmat
-from src.dynamics.rigid_body import RigidBody, inertia_matrix_from_principal
+from src.dynamics.quaternion import error_quat, error_quat_to_vec
+from src.dynamics.rigid_body import RigidBody
 from src.sensors.gyro import Gyroscope, GyroParams
 from src.sensors.star_tracker import StarTracker, StarTrackerParams
-from src.estimation.mekf import MEKF, MEKFParams, create_mekf_nominal
+from src.estimation.mekf import MEKF, MEKFParams
 from src.control.attitude_controller import AttitudeController, ControllerParams
 from src.actuators.reaction_wheel import ReactionWheelAssembly, ReactionWheelParams
 
@@ -45,7 +44,19 @@ def load_config(config_path: str) -> SimulationConfig:
     """Load configuration from YAML file."""
     with open(config_path, 'r') as f:
         config_dict = yaml.safe_load(f)
-    return SimulationConfig(**config_dict)
+    simulation = config_dict['simulation']
+    return SimulationConfig(
+        duration=simulation['duration'],
+        dt=simulation['dt'],
+        seed=simulation['seed'],
+        spacecraft=config_dict['spacecraft'],
+        gyroscope=config_dict['gyroscope'],
+        star_tracker=config_dict['star_tracker'],
+        filter=config_dict['filter'],
+        controller=config_dict['controller'],
+        reaction_wheels=config_dict['reaction_wheels'],
+        analysis=config_dict['analysis'],
+    )
 
 
 def run_simulation(config: SimulationConfig, 
@@ -63,9 +74,13 @@ def run_simulation(config: SimulationConfig,
         Dictionary with simulation results
     """
     np.random.seed(config.seed)
-    
+    if config.dt <= 0 or config.duration <= 0:
+        raise ValueError("Simulation duration and time step must be positive")
+
     # Time array
     n_steps = int(config.duration / config.dt)
+    if n_steps < 1:
+        raise ValueError("Simulation duration must be at least one time step")
     time = np.arange(n_steps) * config.dt
     
     # Spacecraft
@@ -107,7 +122,15 @@ def run_simulation(config: SimulationConfig,
         P0_bias=config.filter['P0_bias'],
         Q_scale=config.filter['Q_scale'],
         R_scale=config.filter['R_scale'],
-        inertia_model=filter_inertia
+        nis_gate_confidence=config.filter.get('nis_gate_confidence', 0.999999),
+        nis_gate_enabled=config.filter.get('nis_gate_enabled', False),
+        inertia_model=(
+            filter_inertia
+            if filter_inertia is not None
+            else np.array(config.spacecraft['inertia'])
+            if config.filter['variant'] == 'model_aided'
+            else None
+        )
     )
     filter_params.gyro_params = gyro_params
     filter_params.star_tracker_params = st_params
@@ -147,6 +170,7 @@ def run_simulation(config: SimulationConfig,
         'omega_true': np.zeros((n_steps, 3)),
         'q_hat': np.zeros((n_steps, 4)),
         'b_hat': np.zeros((n_steps, 3)),
+        'b_true': np.zeros((n_steps, 3)),
         'omega_hat': np.zeros((n_steps, 3)),
         'P': np.zeros((n_steps, 6, 6)),
         'tau_cmd': np.zeros((n_steps, 3)),
@@ -155,14 +179,13 @@ def run_simulation(config: SimulationConfig,
         'NIS': np.zeros(n_steps),
         'innovation': np.zeros((n_steps, 3)),
         'innovation_valid': np.zeros(n_steps, dtype=bool),
+        'measurement_available': np.zeros(n_steps, dtype=bool),
+        'measurement_accepted': np.zeros(n_steps, dtype=bool),
         'pointing_error': np.zeros(n_steps),
         'pointing_error_deg': np.zeros(n_steps),
     }
     
     # Star tracker update tracking
-    st_counter = 0
-    st_interval = int(1.0 / (st_params.rate * config.dt))
-    
     for i in range(n_steps):
         t = time[i]
         
@@ -176,18 +199,16 @@ def run_simulation(config: SimulationConfig,
         
         # Star tracker measurement (at lower rate)
         q_meas = None
-        if i % st_interval == 0:
-            q_meas, valid = star_tracker.measure(q_true, config.dt)
-            results['innovation_valid'][i] = valid
-            if q_meas is not None:
-                # Store for filter update
-                pass
+        q_meas, sensor_valid = star_tracker.measure(q_true, config.dt)
+        results['innovation_valid'][i] = sensor_valid
+        results['measurement_available'][i] = q_meas is not None
         
         # Filter step
         tau_cmd_prev = results['tau_cmd'][i-1] if i > 0 else np.zeros(3)
         filter_result = mekf.step(
             omega_m, q_meas, tau_cmd_prev, config.dt, t
         )
+        results['measurement_accepted'][i] = filter_result['measurement_accepted']
         
         results['q_hat'][i] = filter_result['q_hat']
         results['b_hat'][i] = filter_result['b_hat']
@@ -200,6 +221,7 @@ def run_simulation(config: SimulationConfig,
         
         # Compute NEES
         b_true = gyro.get_true_bias()
+        results['b_true'][i] = b_true
         nees = mekf.compute_nees(q_true, b_true)
         results['NEES'][i] = nees
         
@@ -222,11 +244,6 @@ def run_simulation(config: SimulationConfig,
         results['pointing_error'][i] = pointing_err
         results['pointing_error_deg'][i] = np.degrees(pointing_err)
     
-    # Convert history to arrays
-    for key in ['q_hat', 'b_hat', 'P', 'NEES', 'NIS', 'innovation']:
-        if key in mekf.history and len(mekf.history[key]) > 0:
-            results[f'filter_{key}'] = np.array(mekf.history[key])
-    
     return results
 
 
@@ -245,6 +262,9 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
     Returns:
         Aggregated results
     """
+    if n_runs < 1:
+        raise ValueError("n_runs must be at least 1")
+
     all_results = []
     
     for run in range(n_runs):
@@ -278,14 +298,40 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
         'q_hat_std': np.std([r['q_hat'] for r in all_results], axis=0),
         'b_hat_mean': np.mean([r['b_hat'] for r in all_results], axis=0),
         'b_hat_std': np.std([r['b_hat'] for r in all_results], axis=0),
+        'b_true_mean': np.mean([r['b_true'] for r in all_results], axis=0),
+        'P_mean': np.mean([r['P'] for r in all_results], axis=0),
         'NEES_mean': np.mean([r['NEES'] for r in all_results], axis=0),
         'NEES_std': np.std([r['NEES'] for r in all_results], axis=0),
-        'NIS_mean': np.mean([r['NIS'] for r in all_results], axis=0),
-        'NIS_std': np.std([r['NIS'] for r in all_results], axis=0),
+        'NIS_mean': np.zeros(n_steps),
+        'NIS_std': np.zeros(n_steps),
+        'innovation_count': np.zeros(n_steps, dtype=int),
+        'measurement_rejection_count': np.zeros(n_steps, dtype=int),
         'pointing_error_mean': np.mean([r['pointing_error'] for r in all_results], axis=0),
         'pointing_error_std': np.std([r['pointing_error'] for r in all_results], axis=0),
+        'is_monte_carlo': True,
+        'n_runs': n_runs,
         'all_runs': all_results
     }
+    nis_values = np.stack([r['NIS'] for r in all_results])
+    nis_valid = np.stack([r['measurement_available'] for r in all_results])
+    nis_accepted = np.stack([r['measurement_accepted'] for r in all_results])
+    aggregated['innovation_count'] = np.sum(nis_valid, axis=0)
+    aggregated['measurement_rejection_count'] = np.sum(nis_valid & ~nis_accepted, axis=0)
+    nis_sum = np.sum(np.where(nis_valid, nis_values, 0.0), axis=0)
+    aggregated['NIS_mean'] = np.divide(
+        nis_sum,
+        aggregated['innovation_count'],
+        out=np.zeros(n_steps),
+        where=aggregated['innovation_count'] > 0,
+    )
+    nis_squared_sum = np.sum(np.where(nis_valid, nis_values**2, 0.0), axis=0)
+    nis_variance = np.divide(
+        nis_squared_sum,
+        aggregated['innovation_count'],
+        out=np.zeros(n_steps),
+        where=aggregated['innovation_count'] > 0,
+    ) - aggregated['NIS_mean']**2
+    aggregated['NIS_std'] = np.sqrt(np.maximum(nis_variance, 0.0))
     
     return aggregated
 
@@ -303,8 +349,26 @@ def compute_consistency_stats(results: Dict[str, Any], confidence: float = 0.95)
     """
     from scipy import stats
     
-    NEES = results['NEES']
-    NIS = results['NIS']
+    is_monte_carlo = 'all_runs' in results
+    if is_monte_carlo:
+        all_nees = np.stack([run['NEES'] for run in results['all_runs']])
+        all_nis = np.stack([run['NIS'] for run in results['all_runs']])
+        all_        nis_valid = np.stack([run['measurement_available'] for run in results['all_runs']])
+        NEES = results['NEES_mean']
+        nis_counts = np.sum(all_nis_valid, axis=0)
+        NIS = np.divide(
+            np.sum(np.where(all_nis_valid, all_nis, 0.0), axis=0),
+            nis_counts,
+            out=np.zeros_like(NEES),
+            where=nis_counts > 0,
+        )
+    else:
+        NEES = results['NEES']
+        NIS = results['NIS']
+        nis_valid = results.get(
+            'measurement_available',
+            results.get('innovation_valid', NIS > 0),
+        )
     
     # Degrees of freedom
     dof_nees = 6  # 3 attitude + 3 bias
@@ -312,32 +376,44 @@ def compute_consistency_stats(results: Dict[str, Any], confidence: float = 0.95)
     
     # Chi-squared bounds
     alpha = 1.0 - confidence
-    nees_lower = stats.chi2.ppf(alpha / 2, dof_nees) / dof_nees
-    nees_upper = stats.chi2.ppf(1 - alpha / 2, dof_nees) / dof_nees
-    nis_lower = stats.chi2.ppf(alpha / 2, dof_nis) / dof_nis
-    nis_upper = stats.chi2.ppf(1 - alpha / 2, dof_nis) / dof_nis
+    nees_lower = stats.chi2.ppf(alpha / 2, dof_nees)
+    nees_upper = stats.chi2.ppf(1 - alpha / 2, dof_nees)
+    nis_lower = stats.chi2.ppf(alpha / 2, dof_nis)
+    nis_upper = stats.chi2.ppf(1 - alpha / 2, dof_nis)
     
     # For Monte Carlo, average NEES over runs
-    if 'all_runs' in results:
+    if is_monte_carlo:
         n_runs = len(results['all_runs'])
-        nees_avg = results['NEES_mean']
-        nis_avg = results['NIS_mean']
+        nees_avg = np.mean(all_nees, axis=0)
+        nis_avg = NIS
         
         # Bounds for average over N runs
-        nees_lower_mc = stats.chi2.ppf(alpha / 2, n_runs * dof_nees) / (n_runs * dof_nees)
-        nees_upper_mc = stats.chi2.ppf(1 - alpha / 2, n_runs * dof_nees) / (n_runs * dof_nees)
-        nis_lower_mc = stats.chi2.ppf(alpha / 2, n_runs * dof_nis) / (n_runs * dof_nis)
-        nis_upper_mc = stats.chi2.ppf(1 - alpha / 2, n_runs * dof_nis) / (n_runs * dof_nis)
+        nees_lower_mc = stats.chi2.ppf(alpha / 2, n_runs * dof_nees) / n_runs
+        nees_upper_mc = stats.chi2.ppf(1 - alpha / 2, n_runs * dof_nees) / n_runs
+        nis_lower_mc = stats.chi2.ppf(alpha / 2, n_runs * dof_nis) / n_runs
+        nis_upper_mc = stats.chi2.ppf(1 - alpha / 2, n_runs * dof_nis) / n_runs
         
         nees_in_bounds = np.mean((nees_avg >= nees_lower_mc) & (nees_avg <= nees_upper_mc))
-        nis_in_bounds = np.mean((nis_avg >= nis_lower_mc) & (nis_avg <= nis_upper_mc))
+        valid_nis_epochs = nis_counts > 0
+        nis_in_bounds = (
+            np.mean(
+                (nis_avg[valid_nis_epochs] >= nis_lower_mc)
+                & (nis_avg[valid_nis_epochs] <= nis_upper_mc)
+            )
+            if np.any(valid_nis_epochs)
+            else float('nan')
+        )
     else:
         nees_lower_mc = nees_lower
         nees_upper_mc = nees_upper
         nis_lower_mc = nis_lower
         nis_upper_mc = nis_upper
         nees_in_bounds = np.mean((NEES >= nees_lower) & (NEES <= nees_upper))
-        nis_in_bounds = np.mean((NIS >= nis_lower) & (NIS <= nis_upper))
+        nis_in_bounds = (
+            np.mean((NIS[nis_valid] >= nis_lower) & (NIS[nis_valid] <= nis_upper))
+            if np.any(nis_valid)
+            else float('nan')
+        )
     
     return {
         'nees_bounds': (nees_lower, nees_upper),
@@ -346,8 +422,12 @@ def compute_consistency_stats(results: Dict[str, Any], confidence: float = 0.95)
         'nis_bounds_mc': (nis_lower_mc, nis_upper_mc),
         'nees_in_bounds': nees_in_bounds,
         'nis_in_bounds': nis_in_bounds,
-        'nees_mean': np.mean(NEES),
-        'nis_mean': np.mean(NIS[NIS > 0]),
+        'nees_mean': np.mean(all_nees) if is_monte_carlo else np.mean(NEES),
+        'nis_mean': (
+            np.mean(all_nis[all_nis_valid])
+            if is_monte_carlo
+            else np.mean(NIS[nis_valid]) if np.any(nis_valid) else float('nan')
+        ),
         'dof_nees': dof_nees,
         'dof_nis': dof_nis
     }
@@ -432,7 +512,7 @@ def main():
         print(f"  Peak: {np.max(results['pointing_error'])*180/np.pi:.3f} deg")
     
     # Save results
-    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     save_results(results, args.output)
 
 

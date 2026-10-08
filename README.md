@@ -2,7 +2,7 @@
 
 **MEKF statistical consistency and its coupling to closed-loop pointing performance, under spacecraft-model and sensor mismatch.**
 
-![Status](https://img.shields.io/badge/status-architecture%20%26%20formulation-orange) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Domain](https://img.shields.io/badge/domain-spacecraft%20GNC-lightgrey)
+![Status](https://img.shields.io/badge/status-simulation%20core%20implemented-yellow) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![Domain](https://img.shields.io/badge/domain-spacecraft%20GNC-lightgrey)
 
 ------------------------------------------------------------------------
 
@@ -182,7 +182,7 @@ The study maps $\text{outage duration} \rightarrow \text{covariance growth} \rig
 
 ### Star-tracker outlier
 
-A single anomalous measurement is injected and gated by the NIS statistic against a $\chi^2_3$ threshold. The comparison between accepting and rejecting the outlier covers state, covariance and closed-loop pointing. This is a **measurement-consistency study, not a full FDIR design.**
+A single anomalous measurement is injected and gated by the NIS statistic against a configurable $\chi^2_3$ threshold. Gating is disabled for the nominal baseline and enabled in `config/sensor_degradation.yaml`; its confidence is configured separately from the NIS reporting confidence. The comparison between accepting and rejecting the outlier covers state, covariance and closed-loop pointing. This is a **measurement-consistency study, not a full FDIR design.**
 
 ------------------------------------------------------------------------
 
@@ -212,7 +212,27 @@ Unit tests live in `tests/unit/`, system-level tests in `tests/integration/`.
 
 ## Results
 
-> *Not yet available. The project is in the architecture and formulation phase. This section will be populated with:*
+### E0 nominal run (single seed)
+
+The first reproducible 1000 s nominal run (`config/nominal.yaml`, seed 42) completed
+with 100,000 time steps. The run produced a mean NEES of 6.561 and mean NIS of 2.953;
+96.7% of NEES samples and 95.1% of valid NIS samples fell within their raw 95%
+chi-squared bounds (6 and 3 degrees of freedom, respectively). Pointing-error RMS
+was 0.036 deg and the peak was 1.132 deg.
+
+These are **single-run, time-series diagnostics**, not Monte Carlo confidence
+claims; adjacent samples are correlated. Results and plots are in
+[`reports/nominal_analysis/`](reports/nominal_analysis/), with the raw simulation
+history in [`reports/nominal.npz`](reports/nominal.npz).
+
+| Result | Status |
+|------------------------------------|------------------------------------|
+| R1 | Preliminary nominal NEES/NIS for seed 42; Monte Carlo validation pending |
+| R2 | Consistency-limit curves for $\Delta I$, $Q$ and $R$ mismatch — pending |
+| R3 | Outage covariance growth vs. analytical prediction — pending |
+| R4 | Outlier accept/reject comparison — pending |
+| R5 | Pointing error vs. estimator degradation level — pending |
+| R6 | Consistency and pointing-performance limits — pending |
 
 | Result | Content |
 |------------------------------------|------------------------------------|
@@ -252,11 +272,30 @@ Python · NumPy · SciPy · Matplotlib · pytest · Git/GitHub. MATLAB/Simulink 
 
 ## Getting Started
 
-*Planned interface once implementation lands:*
+Install the package and development dependencies, then run the tests:
 
 ``` bash
-pip install -e .
-pytest tests/
+python -m pip install -e ".[dev]"
+pytest -q
+```
+
+Run a configured simulation and save its results:
+
+``` bash
+python scripts/run_experiment.py --config config/nominal.yaml --output reports/nominal.npz
+```
+
+Run the configured Monte Carlo campaign with a smaller run count for a quick check:
+
+``` bash
+python scripts/run_experiment.py --config config/nominal.yaml --monte-carlo --runs 5 --output reports/nominal_mc.npz
+```
+
+Generate a text report. Add `--all` to save diagnostic plots as well:
+
+``` bash
+python scripts/analyze_results.py reports/nominal.npz --output-dir reports/nominal_analysis
+python scripts/analyze_results.py reports/nominal.npz --all --output-dir reports/nominal_analysis
 python scripts/run_experiment.py --config config/nominal.yaml
 ```
 
@@ -272,11 +311,12 @@ python scripts/run_experiment.py --config config/nominal.yaml
 
 ## Roadmap
 
-- [ ] Freeze quaternion and frame conventions
-- [ ] Implement truth dynamics
-- [ ] Implement sensor models
-- [ ] Derive and implement MEKF (Variants A and B)
-- [ ] Verify estimator
+- [x] Freeze quaternion and frame conventions
+- [x] Implement truth dynamics
+- [x] Implement sensor models
+- [x] Derive and implement MEKF (Variants A and B)
+- [x] Verify core estimator behavior with unit and integration tests
+- [ ] Establish statistically consistent nominal NEES/NIS across Monte Carlo runs
 - [ ] Establish nominal consistency
 - [ ] Implement attitude controller
 - [ ] Integrate reaction-wheel model

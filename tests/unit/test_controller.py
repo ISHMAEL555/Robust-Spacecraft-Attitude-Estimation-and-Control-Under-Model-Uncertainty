@@ -110,6 +110,9 @@ class TestAttitudeController:
         omega_cross_Iomega = np.cross(omega_current, I @ omega_current)
         tau_fb = controller.compute_control(q_current, omega_current)
         expected = tau_fb + omega_cross_Iomega
+        expected_norm = np.linalg.norm(expected)
+        if expected_norm > params.max_torque:
+            expected *= params.max_torque / expected_norm
         
         assert np.allclose(tau, expected, atol=1e-10)
     

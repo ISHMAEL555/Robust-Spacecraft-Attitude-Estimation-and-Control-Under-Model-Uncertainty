@@ -22,6 +22,12 @@ class TestMEKF:
         assert mekf.P.shape == (6, 6)
         assert np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0])
         assert np.allclose(mekf.b_hat, 0.0)
+
+    def test_process_noise_uses_continuous_spectral_densities(self):
+        mekf = create_mekf_nominal('gyro_driven', gyro_sigma_v=2e-4, gyro_sigma_u=3e-6)
+
+        assert np.allclose(mekf.Q[:3, :3], (2e-4) ** 2 * np.eye(3))
+        assert np.allclose(mekf.Q[3:, 3:], (3e-6) ** 2 * np.eye(3))
     
     def test_initialization_model_aided(self):
         I = np.diag([100.0, 80.0, 60.0])
@@ -44,11 +50,12 @@ class TestMEKF:
         mekf.propagate(omega_m, dt=0.01)
         
         # Quaternion should have rotated
-        assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0])
+        assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0], atol=1e-12)
         # Bias should not change during propagation
         assert np.allclose(mekf.b_hat, 0.0)
         # Covariance should grow
-        assert np.trace(mekf.P) > 6 * 1e-4  # Initial trace
+        initial_trace = 3 * mekf.params.P0_attitude + 3 * mekf.params.P0_bias
+        assert np.trace(mekf.P) > initial_trace
     
     def test_propagate_model_aided(self):
         I = np.diag([100.0, 80.0, 60.0])
@@ -59,7 +66,7 @@ class TestMEKF:
         mekf.propagate(omega_m, tau_cmd, dt=0.01)
         
         # Both quaternion and omega_hat should change
-        assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0])
+        assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0], atol=1e-12)
         assert not np.allclose(mekf.omega_hat, 0.0)
     
     def test_update(self):
@@ -80,6 +87,22 @@ class TestMEKF:
         assert np.linalg.norm(innovation) < 1e-10
         # NIS should be near zero
         assert NIS < 1e-10
+
+    def test_update_rejects_outlier_without_changing_filter_state(self):
+        mekf = create_mekf_nominal('gyro_driven')
+        mekf.params.nis_gate_enabled = True
+        q_before = mekf.q_hat.copy()
+        b_before = mekf.b_hat.copy()
+        P_before = mekf.P.copy()
+        q_outlier = box_plus(q_before, np.array([1.0, 0.0, 0.0]))
+
+        _, _, NIS = mekf.update(q_outlier)
+
+        assert NIS > mekf.nis_threshold
+        assert not mekf.last_measurement_accepted
+        assert np.array_equal(mekf.q_hat, q_before)
+        assert np.array_equal(mekf.b_hat, b_before)
+        assert np.array_equal(mekf.P, P_before)
     
     def test_update_with_noise(self):
         mekf = create_mekf_nominal('gyro_driven')
@@ -213,7 +236,7 @@ class TestMEKFVariants:
         mekf.propagate(omega_m, dt=0.01)
         
         # Quaternion updated with omega_m - b_hat
-        assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0])
+        assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0], atol=1e-12)
     
     def test_variant_b_model_aided(self):
         """Variant B: Model-aided propagation."""
@@ -230,7 +253,7 @@ class TestMEKFVariants:
         mekf.propagate(omega_m, tau_cmd, dt=0.01)
         
         # Both quaternion and omega_hat updated
-        assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0])
+        assert not np.allclose(mekf.q_hat, [0.0, 0.0, 0.0, 1.0], atol=1e-12)
         assert not np.allclose(mekf.omega_hat, 0.0)
 
 
