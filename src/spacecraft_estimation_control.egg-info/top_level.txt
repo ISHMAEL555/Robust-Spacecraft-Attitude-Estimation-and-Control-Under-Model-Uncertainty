@@ -1,5 +1,0 @@
-actuators
-control
-dynamics
-estimation
-sensors
