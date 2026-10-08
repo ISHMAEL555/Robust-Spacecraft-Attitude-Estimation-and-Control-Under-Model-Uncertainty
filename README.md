@@ -34,30 +34,115 @@ accuracy**, **covariance consistency**, **true pointing performance**, and
 | Analysis | NEES/NIS, RMSE, covariance coverage, outage recovery, pointing and control effort |
 | Experiments | E0 nominal; E1-E7 model/noise mismatch, outlier, outage, closed-loop, and Monte Carlo |
 
-## Results snapshot
+## Performance assessment
 
-These results are from the checked-in simulation artifacts. E0 is a
-single-seed time history; E1-E7 are exploratory ten-run campaigns. Their
-confidence intervals describe variation across those runs and do **not**
-turn the small pilot into a final statistical study.
+The tables below are drawn from the checked-in E0 report and E1-E7 campaign
+summary. E0 is one 1,000 s seed-42 trajectory. E7 and the degradation cases
+are 10-run, 100 s pilots. E7's 95% intervals are run-level Student-t
+intervals; with only ten runs they are descriptive, not qualification
+evidence. Source files: [E0 analysis report](reports/nominal_analysis/nominal_report.txt)
+and [E1-E7 metrics CSV](reports/research_campaigns/summary.csv).
 
-| Case | Main observation |
-|---|---|
-| **E0 nominal, seed 42, 1,000 s** | NEES 6.561; NIS 2.953; true-pointing RMS 0.671 deg; peak 4.243 deg; attitude-estimation RMSE 0.036 deg |
-| **E1/E7 matched gyro-driven filter** | Mean NEES 6.007 and NIS 2.973; 95.9% and 97.0% of raw samples, respectively, lie within nominal 95% bounds |
-| **E1 model-aided inertia mismatch** | Mean NEES rises from 10.686 when matched to 225,876 at 10% and 1,166,892 at 25% mismatch |
-| **E2 process-noise mismatch** | Scaling Q by 0.1 / 1 / 10 gives mean NEES 45.318 / 6.007 / 0.875 |
-| **E4 outlier rejection** | With gating, mean NEES is 5.460; without gating, it exceeds 62,000 in the tested cases |
-| **E5 star-tracker outages** | Simulated-to-predicted attitude-variance ratios are 1.073, 1.029, and 1.012 for 1-, 10-, and 30-update outages |
-| **E6 large-error stress case** | 60 deg initial error and 0.1 rad/s rate produce 1.730 rad (99.1 deg) RMS pointing; commanded torque is saturated about 95.3% of the time |
+### Estimator accuracy and consistency
 
-**Interpretation matters.** E0's first 100 seconds have 2.119 deg pointing
-RMS, closely matching E7's 2.120 deg 100-second ensemble mean. E0's full
-1,000-second RMS is lower because the initial rate-damping transient is
-averaged over a longer interval. E6 is a deliberately severe, actuator-limited
-stress case—not nominal pointing or an isolated test of estimator quality.
-No mission pointing acceptance requirement has been defined, so these results
-are not labeled mission pass/fail.
+| Metric | E0 nominal (1 run, 1,000 s) | E7 matched nominal (10 runs, 100 s) | Engineering interpretation |
+|---|---:|---:|---|
+| Attitude-estimation RMSE | 0.0363 deg | 0.0944 deg; 95% CI [0.0749, 0.1139] deg | Different evaluation windows; E7 includes more of the initial rate transient |
+| Angular-rate RMSE | 0.0573 deg/s | 0.0574 deg/s | Similar rate error in these matched nominal setups |
+| Gyro-bias RMSE | 0.000801 deg/s | 0.00178 deg/s | The short pilot gives a less settled bias estimate |
+| Mean NEES (6 DOF) | 6.561 (expected 6) | 6.007 (expected 6) | Means are near the theoretical expectation |
+| Mean NIS (3 DOF) | 2.953 (expected 3) | 2.973 (expected 3) | Means are near the theoretical expectation |
+| Attitude / bias component $3\sigma$ coverage | 99.74% / 99.73% | 99.76% / 99.77% | Coverage is high in the matched nominal cases |
+| Consistency-bound statistic | NEES: 96.7%; NIS: 95.1% of valid updates | NEES: 95.9%; NIS: 97.0% of update epochs | E0 checks individual samples; E7 checks time epochs of the ensemble-mean statistics against run-count-adjusted bounds |
+
+The E7 confidence interval for pointing RMS is **2.115-2.126 deg** across
+the ten run-level values; the corresponding attitude-estimation RMSE interval
+is listed above. The displayed NEES/NIS in-bound percentages are descriptive
+fractions over time. Adjacent epochs are correlated, so these percentages are
+not independent-trial confidence statements and are not, by themselves, a
+formal pass/fail test.
+
+### Pointing and actuator performance
+
+| Metric | E0 nominal, 1,000 s | E7 nominal pilot, 100 s | E6 large-error stress, 100 s |
+|---|---:|---:|---:|
+| True-pointing RMS | 0.671 deg | 2.120 deg; 95% CI [2.115, 2.126] deg | 99.123 deg |
+| Mean run peak pointing error | 4.243 deg | 4.257 deg | 179.994 deg |
+| Final pointing error | 0.0167 deg | 0.129 deg | 120.122 deg |
+| 2%-of-initial-error settling | Not defined (initial error is zero) | Not defined (initial error is zero) | Not achieved within 100 s |
+| Peak commanded / applied torque | 0.100 / 0.100 N m | 0.100 / 0.100 N m | 0.100 / 0.100 N m |
+| Command torque at limit | 0.30% of samples | 2.80% of samples | 95.33% of samples |
+| Commanded / applied torque-squared effort | 0.3947 / 0.3573 N^2 m^2 s | 0.1239 / 0.1130 N^2 m^2 s | 0.9717 / 0.5394 N^2 m^2 s |
+| Applied / commanded effort | 90.5% | 91.1% | 55.5% |
+| Wheel momentum utilization | Not reported | Not reported | Not reported |
+
+E0 and E7 are consistent when compared over equal durations: E0's first 100 s
+have **2.119 deg** pointing RMS, versus E7's **2.120 deg** mean. The 1,000 s
+E0 RMS is smaller because the initial rate-damping transient is diluted over
+the longer record. E6's 95% saturation and 120 deg final error indicate that
+the tested controller/actuator configuration does not recover from this
+large-error initial condition in the 100 s window. Since E6's Q/R variants
+also remain near 99.1 deg RMS with similar saturation, actuator-limited
+behavior dominates these particular results; this does not establish that
+estimator quality is irrelevant outside this regime.
+
+### Model and sensor degradation
+
+| Test case | Estimator RMSE | Mean NEES / NIS | Attitude $3\sigma$ coverage | Pointing RMS | Engineering finding |
+|---|---:|---:|---:|---:|---|
+| Gyro-driven, 25% inertia mismatch | 0.0944 deg | 6.012 / 2.974 | 99.76% | 2.702 deg | Filter consistency remains near nominal, but pointing worsens from the matched 2.120 deg pilot |
+| Model-aided, matched inertia | 0.0940 deg | 10.686 / 3.033 | 98.75% | 2.098 deg | Attitude accuracy is similar; NEES is elevated relative to the 9-DOF expectation |
+| Model-aided, 10% inertia mismatch | 0.1301 deg | $2.26\times10^5$ / 1,009 | 11.19% | 2.469 deg | Severe inconsistency and covariance under-coverage |
+| Model-aided, 25% inertia mismatch | 0.2802 deg | $1.17\times10^6$ / 8,937 | 6.64% | 3.091 deg | Strong mismatch sensitivity; the rate/model propagation needs investigation |
+| 0.5 rad outlier, gate disabled | 5.402 deg | $1.56\times10^6$ / $1.39\times10^6$ | 73.59% | 2.524 deg | Outliers corrupt the estimate and increase control effort |
+| 0.5 rad outlier, gate enabled | 0.0945 deg | 5.460 / $7.34\times10^5$ | 99.67% | 2.122 deg | 46 of 1,000 tracker updates (4.6%) were rejected; state performance remained near nominal |
+| 30-update tracker outage | 0.1183 deg | 6.097 / 2.975 | 99.40% | 2.129 deg | Uncertainty/error grows with outage duration; covariance growth agrees with the analytical check |
+
+### Noise calibration and outage response
+
+| Sweep | Setting | Mean NEES | Mean NIS | Attitude $3\sigma$ coverage | Attitude RMSE / pointing RMS |
+|---|---:|---:|---:|---:|---:|
+| Process noise $Q$ | 0.1 x | 45.318 | 11.203 | 80.6% | 0.0946 / 2.120 deg |
+|  | 1 x | 6.007 | 2.973 | 99.8% | 0.0944 / 2.120 deg |
+|  | 10 x | 0.875 | 0.439 | 100.0% | 0.0944 / 2.121 deg |
+| Measurement noise $R$ | 0.1 x | 8.492 | 4.123 | 97.1% | 0.0944 / 2.120 deg |
+|  | 1 x | 6.007 | 2.973 | 99.8% | 0.0944 / 2.120 deg |
+|  | 10 x | 4.558 | 1.147 | 100.0% | 0.0946 / 2.120 deg |
+| Star-tracker outage | 1 update | 5.967 | 3.021 | 99.66% | 0.0944 / 2.121 deg |
+|  | 10 updates | 6.402 | 2.954 | 99.59% | 0.0962 / 2.123 deg |
+|  | 30 updates | 6.097 | 2.975 | 99.40% | 0.1183 / 2.129 deg |
+
+The Q/R sweeps are particularly instructive: estimated attitude RMSE and
+pointing RMS barely move in this short nominal scenario, while covariance
+consistency changes substantially. A controller-only performance comparison
+would miss this degradation. The outage runs show increasing attitude RMSE
+and decreasing coverage with duration, but the campaign has not yet
+established a formal maximum tolerated outage or an independently validated
+recovery-time requirement.
+
+**Important NIS qualification:** campaign NIS summaries include innovations
+from measurements that the gate later rejects. Therefore the very large
+gated-case NIS in the table is the expected pre-gate outlier diagnostic; it
+must not be read as the NIS of accepted measurements. An accepted-only
+consistency statistic should be added before using gated NIS to claim
+post-rejection consistency.
+
+### Senior-engineering assessment
+
+| Assessment | Evidence | Consequence / next action |
+|---|---|---|
+| Matched small-error behavior is encouraging, not a mission pass | E0/E7 means are near the expected NEES/NIS values and nominal $3\sigma$ coverage is high | Repeat at longer durations and more seeds; keep time-correlation caveats |
+| Model-aided propagation is the dominant estimator risk found so far | At only 10% inertia mismatch, NEES exceeds $2\times10^5$ and attitude coverage falls to 11.2% | Investigate rate propagation, applied-torque/model alignment, covariance process model, then add regression cases |
+| E6 is currently a control/authority failure case | About 95% command saturation, 55.5% effort realization, and 120 deg final error | Separate torque saturation, wheel momentum limits, controller law, and initial-rate effects; do not attribute the result solely to estimator degradation |
+| Outlier rejection protects state performance in the tested case | Gated attitude RMSE is 0.0945 deg versus 5.402 deg ungated | Report gate rejection rate and accepted-only innovation consistency; test gate confidence and outlier-rate sensitivity |
+| Outage covariance prediction is well matched in the tested interval | Variance ratios are within 7.3%, 2.9%, and 1.2% for the three tested outage lengths | Extend with recovery-time and closed-loop recovery criteria; these are not currently reported as validated outage pass limits |
+| Evidence is preliminary | Ten runs x 100 s; idealized rigid-body model and zero nominal disturbance | Increase run count/duration after model issues are resolved; add independent model validation and defensible requirements |
+
+**Decision:** the pilot supports continued development of the gyro-driven
+baseline and identifies a clear risk in the model-aided variant. It does not
+establish robust operating limits, mission pointing compliance, wheel-momentum
+margin, or flight readiness. No mission acceptance thresholds are currently
+defined.
 
 ## Selected figures
 
