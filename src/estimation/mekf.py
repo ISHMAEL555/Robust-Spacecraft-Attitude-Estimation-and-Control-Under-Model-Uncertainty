@@ -104,7 +104,17 @@ class MEKF:
         if self.variant == 'model_aided':
             if params.inertia_model is None:
                 raise ValueError("Model-aided variant requires inertia_model")
-            self.I_model = params.inertia_model
+            self.I_model = np.asarray(params.inertia_model, dtype=float)
+            if self.I_model.shape != (3, 3):
+                raise ValueError("inertia_model must be a 3x3 matrix")
+            if not np.all(np.isfinite(self.I_model)):
+                raise ValueError("inertia_model must contain only finite values")
+            if not np.allclose(self.I_model, self.I_model.T, rtol=1e-10, atol=1e-12):
+                raise ValueError("inertia_model must be symmetric")
+            try:
+                np.linalg.cholesky(self.I_model)
+            except np.linalg.LinAlgError as exc:
+                raise ValueError("inertia_model must be positive definite") from exc
             self.I_model_inv = np.linalg.inv(self.I_model)
             self.omega_hat = np.zeros(3)  # Estimated angular velocity
             self._omega_initialized = False
