@@ -29,6 +29,7 @@ SOURCE_PATHS = (
     "scripts/verify_robustness_slices.py",
     "scripts/verify_innovation_whiteness.py",
     "scripts/verify_wheel_coupling.py",
+    "scripts/plot_readme_figures.py",
     "config/nominal.yaml",
     "config/model_uncertainty.yaml",
     "config/sensor_degradation.yaml",
@@ -117,7 +118,10 @@ def main() -> None:
     source_paths = [ROOT / item for item in SOURCE_PATHS] + sorted(
         (ROOT / "src").rglob("*.py")
     )
-    figure_paths = sorted(path for path in args.figure_dir.glob("*.png") if path.is_file())
+    # Hash every published figure, including the README summary figures.
+    figure_paths = sorted(
+        path for path in (ROOT / "docs" / "figures").rglob("*.png") if path.is_file()
+    )
     try:
         git_head = subprocess.run(
             ["git", "rev-parse", "HEAD"],
