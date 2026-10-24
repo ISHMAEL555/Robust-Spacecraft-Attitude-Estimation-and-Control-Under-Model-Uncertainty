@@ -119,7 +119,7 @@ class TestMEKF:
         noise = np.array([0.001, -0.002, 0.0005])
         from src.dynamics.quaternion import vec_to_error_quat, multiply
         delta_q = vec_to_error_quat(noise)
-        q_meas = multiply(delta_q, q_true)
+        q_meas = multiply(q_true, delta_q)
         q_meas = normalize(q_meas)
         
         innovation, S, NIS = mekf.update(q_meas)

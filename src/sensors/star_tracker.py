@@ -1,7 +1,7 @@
 """
 Star tracker sensor model for spacecraft attitude estimation.
 
-Model: q_ST = delta_q_ST ⊗ q_true
+Model: q_ST = q_true ⊗ delta_q_ST
        delta_q_ST ≈ [0.5 * delta_theta_ST, 1]^T
        delta_theta_ST ~ N(0, R_ST)
 
@@ -16,7 +16,7 @@ import numpy as np
 from typing import Optional, Tuple
 from dataclasses import dataclass
 from src.dynamics.quaternion import (
-    normalize, multiply, conjugate, error_quat, vec_to_error_quat, error_quat_to_vec
+    normalize, multiply, right_error_quat, vec_to_error_quat, error_quat_to_vec
 )
 
 
@@ -80,7 +80,7 @@ class StarTracker:
         Generate star tracker measurement.
         
         Args:
-            q_true: True quaternion (I->B)
+            q_true: True body-to-inertial quaternion
             dt: Time since last call (s)
             
         Returns:
@@ -125,7 +125,7 @@ class StarTracker:
         # Generate measurement noise
         noise = np.random.randn(3) * self.params.sigma_theta
         delta_q_noise = vec_to_error_quat(noise)
-        q_meas = multiply(delta_q_noise, q_true)
+        q_meas = multiply(q_true, delta_q_noise)
         q_meas = normalize(q_meas)
         
         # Check for outlier
@@ -135,7 +135,7 @@ class StarTracker:
             outlier_dir = outlier_dir / np.linalg.norm(outlier_dir)
             outlier_noise = outlier_dir * self.params.outlier_magnitude
             delta_q_outlier = vec_to_error_quat(outlier_noise)
-            q_meas = multiply(delta_q_outlier, q_meas)
+            q_meas = multiply(q_meas, delta_q_outlier)
             q_meas = normalize(q_meas)
             return q_meas, False  # Invalid measurement (outlier)
         
@@ -170,7 +170,7 @@ def generate_outlier_measurement(q_true: np.ndarray, magnitude: float) -> np.nda
     outlier_dir = outlier_dir / np.linalg.norm(outlier_dir)
     outlier_noise = outlier_dir * magnitude
     delta_q_outlier = vec_to_error_quat(outlier_noise)
-    q_meas = multiply(delta_q_outlier, q_true)
+    q_meas = multiply(q_true, delta_q_outlier)
     return normalize(q_meas)
 
 
@@ -218,7 +218,7 @@ def test_star_tracker():
     # Compute error statistics
     errors = []
     for q_meas in measurements:
-        delta_q = error_quat(q_true, q_meas)
+        delta_q = right_error_quat(q_meas, q_true)
         delta_theta = error_quat_to_vec(delta_q)
         errors.append(delta_theta)
     

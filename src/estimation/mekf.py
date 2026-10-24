@@ -16,7 +16,7 @@ from scipy.stats import chi2
 from typing import Optional, Tuple, Literal
 from dataclasses import dataclass
 from src.dynamics.quaternion import (
-    normalize, quat_derivative, box_plus, error_quat, error_quat_to_vec
+    normalize, quat_derivative, right_box_plus, right_error_quat, error_quat_to_vec
 )
 from src.sensors.gyro import GyroParams, gyro_noise_covariance
 from src.sensors.star_tracker import StarTrackerParams, star_tracker_noise_covariance
@@ -93,7 +93,7 @@ class MEKF:
         self.inertia_slice = slice(9, 15) if self.variant == 'model_aided' else slice(0, 0)
 
         # State
-        self.q_hat = np.array([0.0, 0.0, 0.0, 1.0])  # Estimated quaternion (I->B)
+        self.q_hat = np.array([0.0, 0.0, 0.0, 1.0])  # Estimated body-to-inertial attitude
         self.b_hat = np.zeros(3)                      # Estimated gyro bias
         self.P = np.eye(self.state_dim)               # Error covariance
         
@@ -361,13 +361,14 @@ class MEKF:
         Measurement update with star tracker attitude.
         
         Args:
-            q_meas: Measured quaternion from star tracker (I->B)
+            q_meas: Measured body-to-inertial quaternion from the star tracker
             
         Returns:
             (innovation, innovation_covariance, NIS)
         """
-        # Innovation: delta_q = q_meas ⊗ q_hat^*
-        delta_q = error_quat(q_meas, self.q_hat)
+        # Right innovation for the covariance model's body-frame error:
+        # q_meas = q_hat ⊗ Exp(delta_theta).
+        delta_q = right_error_quat(q_meas, self.q_hat)
         innovation = error_quat_to_vec(delta_q)  # 3-vector
         
         # Star tracker observes attitude error only.
@@ -393,7 +394,7 @@ class MEKF:
         delta_bias = delta_x[self.bias_slice]
         
         # Multiplicative quaternion update
-        self.q_hat = box_plus(self.q_hat, delta_theta)
+        self.q_hat = right_box_plus(self.q_hat, delta_theta)
         if self.variant == 'model_aided':
             self.omega_hat += delta_x[3:6]
             self._inject_inertia_correction(delta_x[9:15])
@@ -418,7 +419,7 @@ class MEKF:
         K = np.linalg.solve(S, H @ self.P).T
         delta_x = K @ innovation
 
-        self.q_hat = box_plus(self.q_hat, delta_x[:3])
+        self.q_hat = right_box_plus(self.q_hat, delta_x[:3])
         self.omega_hat += delta_x[3:6]
         self.b_hat += delta_x[6:9]
         self._inject_inertia_correction(delta_x[9:15])
@@ -531,7 +532,7 @@ class MEKF:
             NEES value
         """
         # Error state
-        delta_q = error_quat(q_true, self.q_hat)
+        delta_q = right_error_quat(q_true, self.q_hat)
         delta_theta = error_quat_to_vec(delta_q)
         delta_bias = b_true - self.b_hat
         if self.variant == 'model_aided':
@@ -634,7 +635,7 @@ def test_mekf():
             noise = np.random.randn(3) * 10.0 * np.pi / 180.0 / 3600.0
             from src.dynamics.quaternion import vec_to_error_quat, multiply
             delta_q = vec_to_error_quat(noise)
-            q_meas = multiply(delta_q, q_true)
+            q_meas = multiply(q_true, delta_q)
             q_meas = normalize(q_meas)
         
         # Filter step

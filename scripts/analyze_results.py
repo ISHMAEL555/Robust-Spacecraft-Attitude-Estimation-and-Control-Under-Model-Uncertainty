@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional, Union
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from src.dynamics.quaternion import error_quat, error_quat_to_vec
+from src.dynamics.quaternion import right_error_quat, error_quat_to_vec
 
 
 def load_results(filepath: str) -> Dict[str, Any]:
@@ -77,7 +77,7 @@ def plot_attitude_error(results: Dict[str, Any], save_path: Optional[Union[str, 
     # Compute error quaternions
     errors = []
     for i in range(len(time)):
-        delta_q = error_quat(q_true[i], q_hat[i])
+        delta_q = right_error_quat(q_true[i], q_hat[i])
         delta_theta = error_quat_to_vec(delta_q)
         errors.append(delta_theta)
     errors = np.array(errors)

@@ -65,7 +65,7 @@ class AttitudeController:
         Compute control torque command.
         
         Args:
-            q_current: Current quaternion estimate (I->B)
+            q_current: Current body-to-inertial quaternion estimate
             omega_current: Current angular velocity estimate (rad/s)
             
         Returns:

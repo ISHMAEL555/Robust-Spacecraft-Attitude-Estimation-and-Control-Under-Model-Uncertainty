@@ -1,11 +1,11 @@
 """
 Quaternion algebra for spacecraft attitude representation.
 
-Conventions (JPL-style, scalar-last):
+Conventions (Hamilton product, scalar-last):
 - q = [x, y, z, w] where w is the scalar part
-- q maps inertial frame I to body frame B: v_B = q * v_I * q^*
-- Multiplicative error: q_true = delta_q ⊗ q_hat (body-frame error)
-- Error quaternion: delta_q ≈ [0.5 * delta_theta, 1]^T for small errors
+- The active rotation matrix maps body components to inertial components.
+- The filter uses a right-multiplicative error: q_true = q_hat ⊗ delta_q.
+- The legacy error_quat/box_plus helpers below use a left-multiplicative error.
 """
 
 import numpy as np
@@ -61,7 +61,7 @@ def rotate_vector(q: np.ndarray, v: np.ndarray) -> np.ndarray:
 
 
 def quat_to_rotmat(q: np.ndarray) -> np.ndarray:
-    """Convert unit quaternion to 3x3 rotation matrix (I -> B)."""
+    """Convert unit quaternion to the active body-to-inertial rotation matrix."""
     q = normalize(q)
     x, y, z, w = q
     
@@ -74,7 +74,7 @@ def quat_to_rotmat(q: np.ndarray) -> np.ndarray:
 
 
 def rotmat_to_quat(R: np.ndarray) -> np.ndarray:
-    """Convert 3x3 rotation matrix to unit quaternion (scalar-last)."""
+    """Convert a body-to-inertial rotation matrix to a scalar-last quaternion."""
     trace = np.trace(R)
     
     if trace > 0:
@@ -107,10 +107,16 @@ def rotmat_to_quat(R: np.ndarray) -> np.ndarray:
 
 def error_quat(q_true: np.ndarray, q_est: np.ndarray) -> np.ndarray:
     """
-    Compute multiplicative error quaternion: delta_q = q_true ⊗ q_est^*
-    Body-frame error: q_true = delta_q ⊗ q_est
+    Compute the left-relative quaternion error: delta_q = q_true ⊗ q_est^*.
+
+    This gives q_true = delta_q ⊗ q_est. The MEKF uses right_error_quat instead.
     """
     return multiply(q_true, inverse(q_est))
+
+
+def right_error_quat(q_true: np.ndarray, q_est: np.ndarray) -> np.ndarray:
+    """Return the right-multiplicative error ``q_est⁻¹ ⊗ q_true``."""
+    return multiply(inverse(q_est), q_true)
 
 
 def error_quat_to_vec(delta_q: np.ndarray) -> np.ndarray:
@@ -156,11 +162,7 @@ def vec_to_error_quat(delta_theta: np.ndarray) -> np.ndarray:
 
 def quat_derivative(q: np.ndarray, omega: np.ndarray) -> np.ndarray:
     """
-    Quaternion kinematics: q_dot = 0.5 * Omega(omega) * q
-    Omega(omega) = [  0   -wx  -wy  -wz
-                     wx    0   wz  -wy
-                     wy  -wz    0   wx
-                     wz   wy  -wx   0  ]
+    Body-to-inertial quaternion kinematics: q_dot = 0.5 * q ⊗ [omega, 0]
     """
     wx, wy, wz = omega
     x, y, z, w = q
@@ -180,11 +182,22 @@ def quat_derivative(q: np.ndarray, omega: np.ndarray) -> np.ndarray:
 
 def box_plus(q: np.ndarray, delta_theta: np.ndarray) -> np.ndarray:
     """
-    Box-plus operation: q_new = Exp(delta_theta) ⊗ q
-    Used for error-state update in MEKF.
+    Legacy left box-plus operation: q_new = Exp(delta_theta) ⊗ q.
+
+    The MEKF uses right_box_plus for its body-frame error-state update.
     """
     delta_q = vec_to_error_quat(delta_theta)
     return multiply(delta_q, q)
+
+
+def right_box_plus(q: np.ndarray, delta_theta: np.ndarray) -> np.ndarray:
+    """Inject a body-frame error on the right: ``q_new = q ⊗ Exp(delta_theta)``."""
+    return multiply(q, vec_to_error_quat(delta_theta))
+
+
+def right_box_minus(q_true: np.ndarray, q_est: np.ndarray) -> np.ndarray:
+    """Return the rotation vector for the right error ``q_est⁻¹ ⊗ q_true``."""
+    return error_quat_to_vec(right_error_quat(q_true, q_est))
 
 
 def box_minus(q1: np.ndarray, q2: np.ndarray) -> np.ndarray:

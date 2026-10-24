@@ -10,7 +10,7 @@ The project couples nonlinear rigid-body truth dynamics, gyroscope and star-trac
 
 **Can a filter retain low attitude-estimation error while becoming statistically inconsistent, and does that inconsistency necessarily degrade pointing?** The experiments show two distinct regimes:
 
-1. Under inertia mismatch, the model-aided filter's attitude RMSE stays near 0.094°, while its 15-state mean NEES rises from 18.4 at matched inertia to 953.7 at 25% mismatch. Low attitude error therefore does not imply a credible full-state covariance.
+1. Under inertia mismatch, the model-aided filter's attitude RMSE stays near 0.094°, while its 15-state mean NEES rises from 18.4 at matched inertia to 44.9 at 10% mismatch and 1,032.2 at 25%. Low attitude error therefore does not imply a credible full-state covariance.
 2. In the severe E6 recovery case, pointing RMS is about 99.4° and the commanded torque is saturated for 95% of samples. Scaling estimator noise changes NEES and NIS substantially but leaves pointing essentially unchanged. In this case, control and actuator authority dominate the closed-loop result.
 
 These are scenario findings, not universal thresholds. Full measurement conditions, definitions, and per-case results are in [current simulation evidence](docs/current_evidence.md) and the [32-case campaign summary](docs/campaign_summary.csv).
@@ -23,7 +23,7 @@ The truth model propagates a scalar-last attitude quaternion and body angular ve
 
 ```text
 I ω̇ = τ_body + τ_disturbance − ω × (I ω)
-q̇   = 1/2 Ω(ω) q
+q̇   = 1/2 q ⊗ [ω_body, 0]
 ```
 
 The rigid-body state is integrated with RK4 at the configured simulation step. The nominal E0 configuration uses `dt = 0.01 s` (100 Hz), principal inertias of 100, 80, and 60 kg·m², zero disturbance torque, and an initial body rate of `[0.01, 0.005, 0.002] rad/s`.
@@ -32,7 +32,7 @@ The gyro samples at 100 Hz and includes white rate noise, bias, and bias random 
 
 ### Estimators
 
-Both filters are MEKFs: a unit nominal quaternion is maintained separately from a local three-component attitude error. Covariance propagation discretizes the continuous error model with the Van Loan method. Star-tracker innovations are formed in the attitude tangent space; accepted updates use a Joseph covariance update and reset the local attitude error.
+Both filters are MEKFs: a unit nominal quaternion is maintained separately from a local three-component attitude error. The quaternion represents the body-to-inertial rotation; the filter uses a right-multiplicative body-frame error consistently in its covariance model, star-tracker innovation, and correction injection. Covariance propagation discretizes the continuous error model with the Van Loan method. Accepted updates use a Joseph covariance update and reset the local attitude error.
 
 | Filter | Error state | Propagation and measurements |
 |---|---|---|
@@ -66,7 +66,7 @@ flowchart LR
     F --> N[NEES, NIS, and coverage metrics]
 ```
 
-The quaternion convention, sensor covariance units, state definitions, and wheel sign convention are specified in [docs/conventions.md](docs/conventions.md); those conventions are part of the model definition.
+The quaternion frame convention, attitude-error side, sensor covariance units, state definitions, and wheel sign convention are specified in [docs/conventions.md](docs/conventions.md); these conventions are part of the model definition.
 
 ## Experiment design
 
@@ -87,7 +87,7 @@ The regenerated E1–E7 campaign uses ten runs of 100 s per case. E0 is a single
 
 ### Nominal reference (E0)
 
-The single 1,000 s nominal run produces mean NEES 6.560 (6 DOF), mean NIS 2.953 (3 DOF), attitude-estimation RMSE 0.036°, and true pointing RMS 0.673°. Of its time samples, 96.7% of NEES and 95.1% of NIS values fall inside the respective single-sample 95% chi-square bounds. These fractions are descriptive time-series statistics from one run, not independent-trial confidence statements.
+The single 1,000 s nominal run produces mean NEES 6.552 (6 DOF), mean NIS 2.954 (3 DOF), attitude-estimation RMSE 0.036°, and true pointing RMS 0.673°. Of its time samples, 96.7% of NEES and 95.1% of NIS values fall inside the respective single-sample 95% chi-square bounds. These fractions are descriptive time-series statistics from one run, not independent-trial confidence statements.
 
 ### Inertia mismatch (E1)
 
@@ -95,12 +95,12 @@ Mean values across ten 100 s runs per case:
 
 | Filter | Truth inertia mismatch | NEES (DOF) | NIS (DOF) | Attitude RMSE | Pointing RMS |
 |---|---:|---:|---:|---:|---:|
-| Gyro-driven | 0% | 6.007 (6) | 2.973 (3) | 0.0944° | 2.122° |
-| Gyro-driven | 10% | 6.010 (6) | 2.974 (3) | 0.0944° | 2.350° |
-| Gyro-driven | 25% | 6.013 (6) | 2.974 (3) | 0.0944° | 2.700° |
-| Model-aided | 0% | 18.409 (15) | 2.979 (3) | 0.0940° | 2.097° |
-| Model-aided | 10% | 40.498 (15) | 3.023 (3) | 0.0940° | 2.324° |
-| Model-aided | 25% | 953.660 (15) | 3.290 (3) | 0.0940° | 2.669° |
+| Gyro-driven | 0% | 5.986 (6) | 2.971 (3) | 0.0944° | 2.122° |
+| Gyro-driven | 10% | 5.986 (6) | 2.971 (3) | 0.0944° | 2.350° |
+| Gyro-driven | 25% | 5.987 (6) | 2.972 (3) | 0.0944° | 2.700° |
+| Model-aided | 0% | 18.391 (15) | 2.977 (3) | 0.0940° | 2.097° |
+| Model-aided | 10% | 44.850 (15) | 3.022 (3) | 0.0940° | 2.324° |
+| Model-aided | 25% | 1,032.234 (15) | 3.299 (3) | 0.0940° | 2.669° |
 
 The model-aided matched-inertia case is already above the 15-DOF mean-NEES reference. The 25% case is severely inconsistent, despite nearly unchanged attitude RMSE. NEES includes all 15 modeled error states, so it should be read with the separate attitude RMSE, attitude-component coverage, NIS, and pointing metrics. No acceptable mismatch envelope has been established.
 
@@ -108,27 +108,27 @@ The model-aided matched-inertia case is already above the 15-DOF mean-NEES refer
 
 | Study | Setting | Mean NEES | Mean NIS | Attitude RMSE | Pointing RMS |
 |---|---|---:|---:|---:|---:|
-| Process noise | `Q = 0.1×` | 45.323 | 11.203 | 0.0946° | 2.122° |
-| Process noise | `Q = 1×` | 6.007 | 2.973 | 0.0944° | 2.122° |
-| Process noise | `Q = 10×` | 0.875 | 0.439 | 0.0944° | 2.122° |
-| Measurement noise | `R = 0.1×` | 8.493 | 4.123 | 0.0944° | 2.122° |
-| Measurement noise | `R = 1×` | 6.007 | 2.973 | 0.0944° | 2.122° |
-| Measurement noise | `R = 10×` | 4.558 | 1.147 | 0.0946° | 2.122° |
+| Process noise | `Q = 0.1×` | 45.146 | 11.207 | 0.0946° | 2.122° |
+| Process noise | `Q = 1×` | 5.986 | 2.971 | 0.0944° | 2.122° |
+| Process noise | `Q = 10×` | 0.873 | 0.438 | 0.0944° | 2.122° |
+| Measurement noise | `R = 0.1×` | 8.469 | 4.119 | 0.0944° | 2.122° |
+| Measurement noise | `R = 1×` | 5.986 | 2.971 | 0.0944° | 2.122° |
+| Measurement noise | `R = 10×` | 4.540 | 1.147 | 0.0946° | 2.122° |
 | 0.5 rad outliers, ungated | 5% outlier probability | 1.56 × 10⁶ | 1.39 × 10⁶ | 5.40° | — |
-| 0.5 rad outliers, NIS gate enabled | 5% outlier probability | 5.46 | 7.34 × 10⁵ all innovations; 2.94 accepted-only | 0.094° | 2.124° |
-| Star-tracker outage | 30 updates | 6.098 | 2.975 | 0.1183° | 2.131° |
+| 0.5 rad outliers, NIS gate enabled | 5% outlier probability | 5.493 | 7.34 × 10⁵ all innovations; 2.942 accepted-only | 0.0945° | 2.124° |
+| Star-tracker outage | 30 updates | 6.063 | 2.977 | 0.1185° | 2.131° |
 
 Noise scaling shifts reported NEES/NIS substantially while changing attitude RMSE and pointing very little in these cases. The high coverage under inflated noise does not mean the covariance is calibrated; NEES/NIS fall well below their expected dimensions. For E4, all-innovation NIS includes rejected outlier innovations, so accepted-only NIS is the relevant gated-update diagnostic. The 30-update outage is a tested scenario, not a validated maximum outage duration.
 
 ### Closed-loop stress (E6)
 
-The baseline stress case starts 60° from the desired attitude with body rate 0.1 rad/s and runs for 100 s. Across ten runs, it produces 99.41° pointing RMS and 122.34° mean final error. The commanded torque reaches its limit for 95.26% of samples; peak wheel momentum reaches 53.0% of the configured limit. Multiplying process noise by ten changes mean NEES from 3,273 to 241 and mean NIS from 71.9 to 5.57, but pointing RMS remains 99.41°.
+The baseline stress case starts 60° from the desired attitude with body rate 0.1 rad/s and runs for 100 s. Across ten runs, it produces 99.403° pointing RMS and 122.33° mean final error. The commanded torque reaches its limit for 95.25% of samples; peak wheel momentum reaches 53.0% of the configured limit. With the corrected MEKF error convention, baseline mean NEES/NIS are 6.013/2.971. Multiplying process noise by ten changes them to 0.876/0.439 while pointing RMS remains 99.403°.
 
 This is evidence that the tested recovery failure is dominated by control and actuator limits. In a zero-initial-rate case, the system reaches the configured 2%-of-initial-error settling criterion after 76.96 s. A 1 N·m·s wheel momentum limit reaches 99.9% utilization and spends 12.31% of samples near the limit. These are scenario comparisons, not controller or actuator acceptance limits.
 
 ### Nominal repeatability (E7)
 
-Ten 100 s nominal runs give mean NEES 6.007 (6 DOF), mean NIS 2.973 (3 DOF), attitude RMSE 0.0944° (run-level 95% CI 0.0749°–0.1139°), and pointing RMS 2.122° (run-level 95% CI 2.117°–2.127°). The intervals are Student-t intervals over the ten run summaries. Fractions of time samples inside single-sample chi-square bounds are descriptive: adjacent samples are temporally correlated and are not independent trials.
+Ten 100 s nominal runs give mean NEES 5.986 (6 DOF), mean NIS 2.971 (3 DOF), attitude RMSE 0.0944° (run-level 95% CI 0.0749°–0.1139°), and pointing RMS 2.122° (run-level 95% CI 2.117°–2.127°). The intervals are Student-t intervals over the ten run summaries. Fractions of time samples inside single-sample chi-square bounds are descriptive: adjacent samples are temporally correlated and are not independent trials.
 
 ### Metric interpretation
 

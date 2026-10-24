@@ -16,7 +16,7 @@ from dataclasses import dataclass
 # Add the repository root so the src package is importable when run as a script.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.dynamics.quaternion import error_quat, error_quat_to_vec
+from src.dynamics.quaternion import right_box_plus, right_error_quat, error_quat_to_vec
 from src.dynamics.rigid_body import RigidBody
 from src.sensors.gyro import Gyroscope, GyroParams
 from src.sensors.star_tracker import StarTracker, StarTrackerParams
@@ -144,8 +144,7 @@ def run_simulation(config: SimulationConfig,
     q_init = spacecraft.q.copy()
     # Add small initial error
     delta_init = np.random.randn(3) * 0.01
-    from src.dynamics.quaternion import box_plus
-    q_init = box_plus(q_init, delta_init)
+    q_init = right_box_plus(q_init, delta_init)
     b_init = gyro.get_true_bias() + np.random.randn(3) * 1e-4
     mekf.reset(q_init, b_init)
     
@@ -258,9 +257,9 @@ def run_simulation(config: SimulationConfig,
         spacecraft.step(tau_rw, config.dt)
         
         # Separate true spacecraft pointing from estimator attitude error.
-        pointing_delta = error_quat(q_true, controller.q_desired)
+        pointing_delta = right_error_quat(q_true, controller.q_desired)
         pointing_err = np.linalg.norm(error_quat_to_vec(pointing_delta))
-        attitude_delta = error_quat(q_true, filter_result['q_hat'])
+        attitude_delta = right_error_quat(q_true, filter_result['q_hat'])
         attitude_error_vector = error_quat_to_vec(attitude_delta)
         results['pointing_error'][i] = pointing_err
         results['pointing_error_deg'][i] = np.degrees(pointing_err)

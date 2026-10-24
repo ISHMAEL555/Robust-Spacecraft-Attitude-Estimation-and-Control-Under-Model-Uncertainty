@@ -3,7 +3,7 @@ Rigid body dynamics for spacecraft attitude simulation.
 
 Truth model: nonlinear rigid body dynamics with reaction wheel torque and disturbances.
 I * omega_dot + omega x (I * omega) = tau_rw + tau_d
-q_dot = 0.5 * Omega(omega) * q
+q_dot = 0.5 * q ⊗ [omega_body, 0]
 """
 
 import numpy as np
@@ -17,7 +17,7 @@ class RigidBody:
     """
     Nonlinear rigid body dynamics for spacecraft attitude.
     
-    State: [q (4), omega (3)] - quaternion (I->B) and body angular velocity
+    State: [q (4), omega (3)] - body-to-inertial quaternion and body angular velocity
     """
     
     def __init__(
@@ -32,7 +32,7 @@ class RigidBody:
         
         Args:
             inertia: 3x3 inertia matrix (kg*m^2) in body frame
-            initial_q: Initial quaternion [x, y, z, w] (I->B)
+            initial_q: Initial body-to-inertial quaternion [x, y, z, w]
             initial_omega: Initial body angular velocity (rad/s)
             disturbance_torque: Constant disturbance torque (N*m) in body frame
         """
