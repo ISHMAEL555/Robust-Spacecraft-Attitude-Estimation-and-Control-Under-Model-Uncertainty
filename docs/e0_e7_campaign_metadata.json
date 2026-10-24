@@ -1,7 +1,7 @@
 {
   "title": "Robust spacecraft attitude estimation and control: refreshed E0-E7 campaign",
-  "completed_at_utc": "2026-10-24T10:04:38+00:00",
-  "git_head_at_export": "f2c9b865e3bfea548511e002e2c7754ccd226741",
+  "completed_at_utc": "2026-10-24T10:05:48+00:00",
+  "git_head_at_export": "a1515b18900fd19fec66f88a2dfb74d4998853f3",
   "scope": "Simulation characterization; not hardware, mission acceptance, qualification, or flight-readiness evidence.",
   "campaign_design": {
     "cases": 33,
