@@ -142,3 +142,11 @@ The updated E6 seed-42 run has covariance-normalized, accepted star-tracker inno
 ### Controller and software verification
 
 The controller now forms its attitude correction in current-body coordinates and rotates the desired body rate into that same frame. Regression tests cover non-identity desired attitudes. Wheel tests cover torque/momentum hard limits and motor lag. The automated suite and CI are summarized in the repository README and the risk/traceability document.
+
+### Selected robustness slices
+
+The post-review slices use five seeds per case and report independent-run 95% t intervals. They are exploratory. The 25% model-aided inertia mismatch gives mean full-state NEES/DOF 20.36 while attitude RMSE is 0.092 deg, showing that good attitude accuracy does not make the augmented covariance consistent. The five-run t interval for the raw run-mean NEES crosses zero and is extremely wide, so it is not a useful bound for an acceptance claim.
+
+With 5% one-radian star-tracker outliers, disabling the NIS gate yields mean NEES above 6.6 million and accepted NIS above 6.0 million. Enabling the gate rejects 25 of 500 measurements; accepted mean NIS is 3.03 and attitude RMSE is 0.093 deg. A scheduled 30-update outage recovers to the pre-outage 2% pointing band 62.78 s after the outage ends. Tenfold Q and R scaling produce mean NIS 0.439 and 1.131, respectively, illustrating over-conservative covariance in these mismatched settings.
+
+Five-run closed-loop ensembles show 60 deg acquisition from rest settling within 2% at 148.3 s and holding for 51.7 s. A 170 deg initial attitude needs about 235.0 s to reach the 2%-of-initial-error band; by 400 s it has 0.061 deg mean terminal error, 6.57e-5 rad/s mean terminal rate, and 48.4% mean peak wheel utilization. It does not meet the 180 s nominal project benchmark, which was defined for a 60 deg initial error. See [the machine-readable robustness results](robustness_slices.json) and [the scenario comparison plot](figures/robustness_slices.png).

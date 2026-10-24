@@ -1,0 +1,548 @@
+{
+  "scope": "Exploratory robustness slices; not qualification or mission evidence.",
+  "runs_per_case": 5,
+  "base_duration_s": 100.0,
+  "base_seed": 42,
+  "cases": [
+    {
+      "case": "model_aided_inertia_mismatch_25pct",
+      "category": "inertia mismatch",
+      "assumptions": {
+        "variant": "model_aided",
+        "true_inertia_scale": 1.25,
+        "filter_inertia_scale": 1.0,
+        "inertia_prior_relative_sigma": 0.25,
+        "sigma_omega_process": 1e-07
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 15,
+      "mean_nees": 305.36601680178836,
+      "mean_nees_per_dof": 20.357734453452558,
+      "run_mean_nees_ci95": [
+        -91.1761729949522,
+        701.908206598529
+      ],
+      "mean_nis_accepted": 3.100927837474939,
+      "run_mean_nis_accepted_ci95": [
+        2.7802420687528824,
+        3.421613606196996
+      ],
+      "pointing_rms_rad": {
+        "mean": 0.04378039590614732,
+        "run_mean_ci95": [
+          0.043656023015588415,
+          0.04390476879670622
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.0016127256296965668,
+        "run_mean_ci95": [
+          0.0012522395086459422,
+          0.0019732117507471913
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 2.842576633187202e-05,
+        "run_mean_ci95": [
+          2.303495284940052e-05,
+          3.381657981434352e-05
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 500,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "one_rad_outliers_gated_false",
+      "category": "star-tracker outliers",
+      "assumptions": {
+        "outlier_probability": 0.05,
+        "outlier_magnitude_rad": 1.0,
+        "nis_gate_enabled": false
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 6,
+      "mean_nees": 6665154.789557762,
+      "mean_nees_per_dof": 1110859.1315929603,
+      "run_mean_nees_ci95": [
+        2085581.5567654716,
+        11244728.022350054
+      ],
+      "mean_nis_accepted": 6088692.2939921515,
+      "run_mean_nis_accepted_ci95": [
+        1968529.7227960308,
+        10208854.865188273
+      ],
+      "pointing_rms_rad": {
+        "mean": 0.041662931757447084,
+        "run_mean_ci95": [
+          0.03046948602626068,
+          0.05285637748863349
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.18709304917970887,
+        "run_mean_ci95": [
+          0.1206492702002133,
+          0.2535368281592044
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 0.0043656998568854365,
+        "run_mean_ci95": [
+          0.0005214185455286735,
+          0.0082099811682422
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 500,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "one_rad_outliers_gated_true",
+      "category": "star-tracker outliers",
+      "assumptions": {
+        "outlier_probability": 0.05,
+        "outlier_magnitude_rad": 1.0,
+        "nis_gate_enabled": true
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 6,
+      "mean_nees": 5.592477876480705,
+      "mean_nees_per_dof": 0.9320796460801174,
+      "run_mean_nees_ci95": [
+        3.8763814382058657,
+        7.3085743147555435
+      ],
+      "mean_nis_accepted": 3.026023376614416,
+      "run_mean_nis_accepted_ci95": [
+        2.640025031416909,
+        3.412021721811923
+      ],
+      "pointing_rms_rad": {
+        "mean": 0.03521316782122732,
+        "run_mean_ci95": [
+          0.0350858997854222,
+          0.035340435857032435
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.0016194772610377557,
+        "run_mean_ci95": [
+          0.0012618145432649014,
+          0.00197713997881061
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 2.9317291905807547e-05,
+        "run_mean_ci95": [
+          2.3924018858298227e-05,
+          3.471056495331687e-05
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 500,
+      "rejected_measurements": 25,
+      "rejection_fraction": 0.05
+    },
+    {
+      "case": "scheduled_outage_30_updates",
+      "category": "star-tracker outage",
+      "assumptions": {
+        "outage_start_time_s": 5.0,
+        "outage_duration_updates": 30
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 6,
+      "mean_nees": 5.5149696465729505,
+      "mean_nees_per_dof": 0.9191616077621584,
+      "run_mean_nees_ci95": [
+        4.152454180053741,
+        6.87748511309216
+      ],
+      "mean_nis_accepted": 2.914118183767638,
+      "run_mean_nis_accepted_ci95": [
+        2.471667981917004,
+        3.356568385618272
+      ],
+      "pointing_rms_rad": {
+        "mean": 0.03533204036674057,
+        "run_mean_ci95": [
+          0.03457889577536426,
+          0.036085184958116884
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.0019209412402256467,
+        "run_mean_ci95": [
+          0.001781126429325327,
+          0.0020607560511259663
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 3.9048681975186815e-05,
+        "run_mean_ci95": [
+          2.710161191635815e-05,
+          5.099575203401548e-05
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": 62.78,
+        "run_mean_ci95": [
+          62.78,
+          62.78
+        ]
+      },
+      "measurement_count": 350,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "process_noise_scale_10",
+      "category": "filter noise mismatch",
+      "assumptions": {
+        "Q_scale": 10.0
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 6,
+      "mean_nees": 0.8711306037247724,
+      "mean_nees_per_dof": 0.14518843395412873,
+      "run_mean_nees_ci95": [
+        0.5764879071410745,
+        1.1657733003084703
+      ],
+      "mean_nis_accepted": 0.4391427141401924,
+      "run_mean_nis_accepted_ci95": [
+        0.4103682798081283,
+        0.4679171484722565
+      ],
+      "pointing_rms_rad": {
+        "mean": 0.03524411657850497,
+        "run_mean_ci95": [
+          0.03505620874155257,
+          0.035432024415457376
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.0016186944542940728,
+        "run_mean_ci95": [
+          0.0012597901429540587,
+          0.001977598765634087
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 3.0016023451171423e-05,
+        "run_mean_ci95": [
+          2.6125181883052268e-05,
+          3.3906865019290575e-05
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 500,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "measurement_noise_scale_10",
+      "category": "filter noise mismatch",
+      "assumptions": {
+        "R_scale": 10.0
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 6,
+      "mean_nees": 4.7084929393041595,
+      "mean_nees_per_dof": 0.78474882321736,
+      "run_mean_nees_ci95": [
+        1.5476251862450892,
+        7.86936069236323
+      ],
+      "mean_nis_accepted": 1.1308208372940909,
+      "run_mean_nis_accepted_ci95": [
+        1.0223070982556544,
+        1.2393345763325274
+      ],
+      "pointing_rms_rad": {
+        "mean": 0.035251449914070115,
+        "run_mean_ci95": [
+          0.035071884851332995,
+          0.035431014976807236
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.0016205791735978531,
+        "run_mean_ci95": [
+          0.001261906794979117,
+          0.0019792515522165893
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 3.033622351201672e-05,
+        "run_mean_ci95": [
+          2.6137730256531844e-05,
+          3.45347167675016e-05
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 500,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "closed_loop_zero_initial_rate",
+      "category": "closed-loop initial condition",
+      "assumptions": {
+        "initial_condition": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "duration_s": 200.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 6,
+      "mean_nees": 6.359423592782288,
+      "mean_nees_per_dof": 1.0599039321303814,
+      "run_mean_nees_ci95": [
+        4.244367142452759,
+        8.474480043111816
+      ],
+      "mean_nis_accepted": 2.953427038425223,
+      "run_mean_nis_accepted_ci95": [
+        2.7738713676471844,
+        3.1329827092032616
+      ],
+      "pointing_rms_rad": {
+        "mean": 0.4047688174055034,
+        "run_mean_ci95": [
+          0.404697921239276,
+          0.4048397135717308
+        ]
+      },
+      "pointing_final_rad": {
+        "mean": 0.004588806553470116,
+        "run_mean_ci95": [
+          0.0036069089262161166,
+          0.0055707041807241155
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": 148.316,
+        "run_mean_ci95": [
+          146.5453200934578,
+          150.0866799065422
+        ]
+      },
+      "settling_hold_duration_s": {
+        "mean": 51.674,
+        "run_mean_ci95": [
+          49.90332009345781,
+          53.44467990654219
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.0011488477856526225,
+        "run_mean_ci95": [
+          0.0008956450330226251,
+          0.00140205053828262
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 2.323657016690318e-05,
+        "run_mean_ci95": [
+          1.993844781931516e-05,
+          2.6534692514491197e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 0.00015274161740405713,
+        "run_mean_ci95": [
+          0.00012223254383850966,
+          0.0001832506909696046
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.09638947701362413,
+        "run_mean_ci95": [
+          0.09618172543318318,
+          0.09659722859406508
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 1000,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "closed_loop_near_180deg_initial_attitude",
+      "category": "closed-loop initial condition",
+      "assumptions": {
+        "initial_condition": [
+          0.0,
+          0.0,
+          0.996194698,
+          0.087155743
+        ]
+      },
+      "duration_s": 400.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 6,
+      "mean_nees": 6.2370370283505405,
+      "mean_nees_per_dof": 1.0395061713917568,
+      "run_mean_nees_ci95": [
+        4.6966944183470005,
+        7.7773796383540805
+      ],
+      "mean_nis_accepted": 2.993551425291765,
+      "run_mean_nis_accepted_ci95": [
+        2.883845340675697,
+        3.103257509907833
+      ],
+      "pointing_rms_rad": {
+        "mean": 1.454524954324866,
+        "run_mean_ci95": [
+          1.4544515765686412,
+          1.4545983320810907
+        ]
+      },
+      "pointing_final_rad": {
+        "mean": 0.001057985020312071,
+        "run_mean_ci95": [
+          0.0008400232597930089,
+          0.001275946780831133
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": 234.97600000000003,
+        "run_mean_ci95": [
+          234.6362284535243,
+          235.31577154647576
+        ]
+      },
+      "settling_hold_duration_s": {
+        "mean": 165.01399999999998,
+        "run_mean_ci95": [
+          164.67422845352425,
+          165.3537715464757
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.00081928032229482,
+        "run_mean_ci95": [
+          0.000642033419795711,
+          0.000996527224793929
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 1.7825510765512445e-05,
+        "run_mean_ci95": [
+          1.5447591410884078e-05,
+          2.020343012014081e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 6.571396451145158e-05,
+        "run_mean_ci95": [
+          2.969343244729019e-05,
+          0.00010173449657561297
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.4843577196291675,
+        "run_mean_ci95": [
+          0.48427075588888413,
+          0.4844446833694509
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 2000,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    }
+  ],
+  "interpretation": "The matched-inertia 10-run result remains the statistical baseline. These selected cases show sensitivity to one-at-a-time mismatch and fault conditions; small-run confidence intervals are descriptive and do not establish a validated operating envelope."
+}

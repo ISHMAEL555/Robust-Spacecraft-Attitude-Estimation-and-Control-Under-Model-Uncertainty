@@ -15,6 +15,7 @@ This repository implements two multiplicative extended Kalman filters (MEKFs), a
 - **E6 pointing acquisition:** The labeled project benchmark starts at 60 deg error and 0.1 rad/s body rate, with a 0.1 N m wheel torque limit, 20 N m s per-wheel momentum limit, and a 50 ms first-order motor response. The deterministic seed-42 run settles within 2% of its initial error at 176.58 s, holds that bound for 23.41 s, peaks at 1.083 deg during the final 20 s, and ends at 2.81e-4 rad/s. Peak wheel use is 49.9%. It passes the project benchmark in [the machine-readable report](docs/e6_project_benchmark.json).
 - **Innovation check:** The E6 run's covariance-normalized star-tracker innovations have a 10-lag multivariate Ljung-Box p-value of 0.387. This is evidence for that run, not a general sensor validation result.
 - **Model-aided covariance:** With an explicit angular-rate process-noise term, the 15-state matched-inertia case has mean NEES 15.047 (10-run 95% t interval [12.530, 17.565]) and mean NIS 2.958 (run-level interval [2.760, 3.156]). This is an exploratory matched case; the process-noise setting is not hardware-calibrated and the inertia-mismatch envelope remains open. See the [consistency report](docs/model_aided_consistency.json).
+- **Robustness slices:** Five-run ensembles cover 25% inertia mismatch, Q/R scaling, 1-rad tracker outliers with and without gating, a 30-update outage, and closed-loop initial conditions. At 25% inertia mismatch the model-aided filter has mean NEES/DOF 20.36 despite 0.092 deg attitude RMSE. Gating rejects 25 of 500 tracker measurements and restores accepted NIS to 3.03; without gating, NEES exceeds 6 million. A 170 deg acquisition settles at about 235 s in the 400 s stress case, outside the nominal 180 s project benchmark. See the [robustness report](docs/robustness_slices.json) and [plot](docs/figures/robustness_slices.png).
 - **Regression and integration tests:** The GitHub Actions workflow runs the suite on Python 3.10 and 3.12.
 
 The E6 targets are explicit **project benchmarks**, not mission requirements. The full checks and assumptions are in [requirements traceability](docs/requirements_traceability.md). The benchmark trajectory and wheel margin are shown below.
@@ -102,17 +103,28 @@ Re-run the E6 benchmark and model-aided matched-inertia consistency check, then 
 python scripts/evaluate_e6_benchmark.py
 python scripts/verify_model_aided_consistency.py
 python scripts/plot_mekf_consistency.py
+python scripts/verify_robustness_slices.py
 ```
+
+The default robustness command runs five seeds per selected case. To extend the near-180 deg acquisition to 400 s without rerunning the other cases, run:
+
+```powershell
+python scripts/verify_robustness_slices.py --duration 400 --case closed_loop_near_180deg_initial_attitude
+```
+
+Use `--plot-only` to rebuild the robustness figure from the saved JSON report.
 
 ## Estimator statistics and interpretation
 
-NEES and NIS are reported with their state and measurement degrees of freedom. The gyro-driven filter is the statistically consistent baseline in the original nominal campaign. The model-aided filter's matched-inertia result now passes the repository's exploratory 10-run ensemble criterion, with wide confidence intervals; this does not establish consistency under inertia mismatch or randomized prior errors.
+NEES and NIS are reported with their state and measurement degrees of freedom. The gyro-driven filter is the statistically consistent baseline in the original nominal campaign. The model-aided filter's matched-inertia result passes the exploratory 10-run ensemble check, but the five-run 25% inertia-mismatch slice has mean NEES/DOF 20.36. Accurate attitude estimates do not imply calibrated full-state covariance. The robustness slices characterize selected scenarios; they do not establish consistency over a validated mismatch envelope.
 
 Innovation whiteness is evaluated on accepted, covariance-normalized innovations. The multivariate Ljung-Box result is approximate and depends on independent, regularly sampled innovations; outages and rejected outliers change that interpretation. Monte Carlo confidence intervals are computed over independent run summaries, while time-series fractions are descriptive because adjacent epochs are correlated.
 
-Review the [current evidence and limitations](docs/current_evidence.md) alongside the [requirements traceability and risk register](docs/requirements_traceability.md). Earlier E0-E7 campaign results are retained as a campaign snapshot; the E6 project benchmark is reported separately with the updated actuator model.
+Review the [current evidence and limitations](docs/current_evidence.md) alongside the [requirements traceability and risk register](docs/requirements_traceability.md). Earlier E0-E7 campaign results are retained as a campaign snapshot; the E6 project benchmark and selected post-review robustness slices are reported separately with the updated timing and actuator models.
 
 ![Model-aided matched-inertia NEES by state group and full-state ensemble interval](docs/figures/model_aided_nees_groups.png)
+
+![Selected robustness cases: estimator consistency and pointing performance](docs/figures/robustness_slices.png)
 
 ## Install, test, and reproduce
 
