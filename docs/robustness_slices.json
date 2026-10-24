@@ -35,11 +35,63 @@
         2.7802420687528824,
         3.421613606196996
       ],
+      "marginal_nees_by_state_group": {
+        "attitude": {
+          "dof": 3,
+          "mean": 6.158871473075929,
+          "run_mean_ci95": [
+            3.7544542778472207,
+            8.563288668304637
+          ]
+        },
+        "rate": {
+          "dof": 3,
+          "mean": 13.144000371075185,
+          "run_mean_ci95": [
+            4.988267350840278,
+            21.29973339131009
+          ]
+        },
+        "bias": {
+          "dof": 3,
+          "mean": 2.8225709385096893,
+          "run_mean_ci95": [
+            0.009877185536799615,
+            5.635264691482579
+          ]
+        },
+        "inertia": {
+          "dof": 6,
+          "mean": 129.30951242185455,
+          "run_mean_ci95": [
+            -24.20781472014815,
+            282.8268395638572
+          ]
+        }
+      },
       "pointing_rms_rad": {
         "mean": 0.04378039590614732,
         "run_mean_ci95": [
           0.043656023015588415,
           0.04390476879670622
+        ]
+      },
+      "pointing_final_rad": {
+        "mean": 0.0038862109368629923,
+        "run_mean_ci95": [
+          0.003851615545833108,
+          0.003920806327892877
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
         ]
       },
       "attitude_estimation_rmse_rad": {
@@ -54,6 +106,20 @@
         "run_mean_ci95": [
           2.303495284940052e-05,
           3.381657981434352e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 0.00018858039778705678,
+        "run_mean_ci95": [
+          0.00018785641695906073,
+          0.00018930437861505283
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.15514619685773834,
+        "run_mean_ci95": [
+          0.15507714711094742,
+          0.15521524660452926
         ]
       },
       "outage_recovery_time_s": {
@@ -100,6 +166,24 @@
           0.05285637748863349
         ]
       },
+      "pointing_final_rad": {
+        "mean": 0.026849592945795652,
+        "run_mean_ci95": [
+          -0.007411972343471549,
+          0.06111115823506286
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
+        ]
+      },
       "attitude_estimation_rmse_rad": {
         "mean": 0.18709304917970887,
         "run_mean_ci95": [
@@ -112,6 +196,20 @@
         "run_mean_ci95": [
           0.0005214185455286735,
           0.0082099811682422
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 0.0006790788439814711,
+        "run_mean_ci95": [
+          0.0002670909231761692,
+          0.001091066764786773
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.1286337591919376,
+        "run_mean_ci95": [
+          0.11872629534391753,
+          0.13854122303995764
         ]
       },
       "outage_recovery_time_s": {
@@ -158,6 +256,24 @@
           0.035340435857032435
         ]
       },
+      "pointing_final_rad": {
+        "mean": 0.0017411267213922478,
+        "run_mean_ci95": [
+          0.0014356743171527009,
+          0.0020465791256317947
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
+        ]
+      },
       "attitude_estimation_rmse_rad": {
         "mean": 0.0016194772610377557,
         "run_mean_ci95": [
@@ -170,6 +286,20 @@
         "run_mean_ci95": [
           2.3924018858298227e-05,
           3.471056495331687e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 8.190967955092026e-05,
+        "run_mean_ci95": [
+          6.357390234844619e-05,
+          0.00010024545675339433
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.12151034528192814,
+        "run_mean_ci95": [
+          0.1210965067410176,
+          0.12192418382283868
         ]
       },
       "outage_recovery_time_s": {
@@ -215,6 +345,24 @@
           0.036085184958116884
         ]
       },
+      "pointing_final_rad": {
+        "mean": 0.0014995585048035848,
+        "run_mean_ci95": [
+          0.0009465690345042915,
+          0.002052547975102878
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
+        ]
+      },
       "attitude_estimation_rmse_rad": {
         "mean": 0.0019209412402256467,
         "run_mean_ci95": [
@@ -227,6 +375,20 @@
         "run_mean_ci95": [
           2.710161191635815e-05,
           5.099575203401548e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 8.62739823927441e-05,
+        "run_mean_ci95": [
+          7.058585096061824e-05,
+          0.00010196211382486996
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.12097474621313449,
+        "run_mean_ci95": [
+          0.11992833672521577,
+          0.12202115570105321
         ]
       },
       "outage_recovery_time_s": {
@@ -274,6 +436,24 @@
           0.035432024415457376
         ]
       },
+      "pointing_final_rad": {
+        "mean": 0.0015446231207076342,
+        "run_mean_ci95": [
+          0.0012186536584215615,
+          0.0018705925829937068
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
+        ]
+      },
       "attitude_estimation_rmse_rad": {
         "mean": 0.0016186944542940728,
         "run_mean_ci95": [
@@ -286,6 +466,20 @@
         "run_mean_ci95": [
           2.6125181883052268e-05,
           3.3906865019290575e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 9.37722039334234e-05,
+        "run_mean_ci95": [
+          7.419636902582195e-05,
+          0.00011334803884102484
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.12149415405982286,
+        "run_mean_ci95": [
+          0.1212246717688838,
+          0.12176363635076193
         ]
       },
       "outage_recovery_time_s": {
@@ -330,6 +524,24 @@
           0.035431014976807236
         ]
       },
+      "pointing_final_rad": {
+        "mean": 0.0015716816048059225,
+        "run_mean_ci95": [
+          0.0012081308195548153,
+          0.0019352323900570297
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
+        ]
+      },
       "attitude_estimation_rmse_rad": {
         "mean": 0.0016205791735978531,
         "run_mean_ci95": [
@@ -342,6 +554,20 @@
         "run_mean_ci95": [
           2.6137730256531844e-05,
           3.45347167675016e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 9.526965241465467e-05,
+        "run_mean_ci95": [
+          7.520318528270956e-05,
+          0.00011533611954659979
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.12149529184803569,
+        "run_mean_ci95": [
+          0.12120678072759736,
+          0.12178380296847402
         ]
       },
       "outage_recovery_time_s": {
@@ -540,6 +766,384 @@
         "run_mean_ci95": null
       },
       "measurement_count": 2000,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "model_aided_mismatch_sigma_omega_0",
+      "category": "inertia mismatch and rate-process noise",
+      "assumptions": {
+        "variant": "model_aided",
+        "true_inertia_scale": 1.25,
+        "filter_inertia_scale": 1.0,
+        "inertia_prior_relative_sigma": 0.25,
+        "sigma_omega_process_rad_s_per_sqrt_s": 0.0
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 15,
+      "mean_nees": 973.5701950153318,
+      "mean_nees_per_dof": 64.90467966768878,
+      "run_mean_nees_ci95": [
+        -423.2106932174481,
+        2370.3510832481115
+      ],
+      "mean_nis_accepted": 3.1771803742408626,
+      "run_mean_nis_accepted_ci95": [
+        2.833055065284567,
+        3.5213056831971583
+      ],
+      "marginal_nees_by_state_group": {
+        "attitude": {
+          "dof": 3,
+          "mean": 8.179719293486494,
+          "run_mean_ci95": [
+            4.8449043822395375,
+            11.514534204733451
+          ]
+        },
+        "rate": {
+          "dof": 3,
+          "mean": 34.39227720054939,
+          "run_mean_ci95": [
+            9.884706738268282,
+            58.899847662830496
+          ]
+        },
+        "bias": {
+          "dof": 3,
+          "mean": 2.8226311655223695,
+          "run_mean_ci95": [
+            0.009680177425260172,
+            5.635582153619479
+          ]
+        },
+        "inertia": {
+          "dof": 6,
+          "mean": 160.20479930482048,
+          "run_mean_ci95": [
+            -39.05663743295628,
+            359.46623604259725
+          ]
+        }
+      },
+      "pointing_rms_rad": {
+        "mean": 0.04378038053336749,
+        "run_mean_ci95": [
+          0.04365604100437791,
+          0.04390472006235707
+        ]
+      },
+      "pointing_final_rad": {
+        "mean": 0.0038909047621602396,
+        "run_mean_ci95": [
+          0.003855841274470392,
+          0.003925968249850087
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.001612769813453041,
+        "run_mean_ci95": [
+          0.001252281797328289,
+          0.001973257829577793
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 2.842575794889433e-05,
+        "run_mean_ci95": [
+          2.303484451116116e-05,
+          3.38166713866275e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 0.00018783576559267538,
+        "run_mean_ci95": [
+          0.0001871771346956066,
+          0.00018849439648974415
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.15514618016884157,
+        "run_mean_ci95": [
+          0.15507712708031676,
+          0.1552152332573664
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 500,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "model_aided_mismatch_sigma_omega_0.001",
+      "category": "inertia mismatch and rate-process noise",
+      "assumptions": {
+        "variant": "model_aided",
+        "true_inertia_scale": 1.25,
+        "filter_inertia_scale": 1.0,
+        "inertia_prior_relative_sigma": 0.25,
+        "sigma_omega_process_rad_s_per_sqrt_s": 0.001
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 15,
+      "mean_nees": 13.257620469432249,
+      "mean_nees_per_dof": 0.8838413646288166,
+      "run_mean_nees_ci95": [
+        10.49388991195225,
+        16.02135102691225
+      ],
+      "mean_nis_accepted": 2.9342976070688698,
+      "run_mean_nis_accepted_ci95": [
+        2.713936064455345,
+        3.1546591496823946
+      ],
+      "marginal_nees_by_state_group": {
+        "attitude": {
+          "dof": 3,
+          "mean": 2.8291337955682048,
+          "run_mean_ci95": [
+            2.6872115452966083,
+            2.971056045839801
+          ]
+        },
+        "rate": {
+          "dof": 3,
+          "mean": 1.527657653059063,
+          "run_mean_ci95": [
+            1.5018767828223887,
+            1.5534385232957375
+          ]
+        },
+        "bias": {
+          "dof": 3,
+          "mean": 3.2263621564736957,
+          "run_mean_ci95": [
+            0.30432078823253006,
+            6.148403524714862
+          ]
+        },
+        "inertia": {
+          "dof": 6,
+          "mean": 5.836058359035131,
+          "run_mean_ci95": [
+            5.536187593503968,
+            6.135929124566294
+          ]
+        }
+      },
+      "pointing_rms_rad": {
+        "mean": 0.043772251890197664,
+        "run_mean_ci95": [
+          0.04361080942685389,
+          0.043933694353541435
+        ]
+      },
+      "pointing_final_rad": {
+        "mean": 0.0039698894214451625,
+        "run_mean_ci95": [
+          0.0037049077104187324,
+          0.004234871132471592
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.001617866437430135,
+        "run_mean_ci95": [
+          0.0012585640994698395,
+          0.0019771687753904303
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 3.0429915772531398e-05,
+        "run_mean_ci95": [
+          2.5838350524302234e-05,
+          3.5021481020760565e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 0.00019384679849075964,
+        "run_mean_ci95": [
+          0.00017802577449579858,
+          0.0002096678224857207
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.1552532345200177,
+        "run_mean_ci95": [
+          0.15503349053879606,
+          0.15547297850123937
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 500,
+      "rejected_measurements": 0,
+      "rejection_fraction": 0.0
+    },
+    {
+      "case": "model_aided_mismatch_sigma_omega_0.0001",
+      "category": "inertia mismatch and rate-process noise",
+      "assumptions": {
+        "variant": "model_aided",
+        "true_inertia_scale": 1.25,
+        "filter_inertia_scale": 1.0,
+        "inertia_prior_relative_sigma": 0.25,
+        "sigma_omega_process_rad_s_per_sqrt_s": 0.0001
+      },
+      "duration_s": 100.0,
+      "runs": 5,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042
+      ],
+      "nees_dof": 15,
+      "mean_nees": 10.468999466467515,
+      "mean_nees_per_dof": 0.6979332977645011,
+      "run_mean_nees_ci95": [
+        8.01265130110984,
+        12.925347631825192
+      ],
+      "mean_nis_accepted": 2.508078338768283,
+      "run_mean_nis_accepted_ci95": [
+        2.2715229704600683,
+        2.7446337070764977
+      ],
+      "marginal_nees_by_state_group": {
+        "attitude": {
+          "dof": 3,
+          "mean": 2.424562819752249,
+          "run_mean_ci95": [
+            2.2769813789622253,
+            2.572144260542273
+          ]
+        },
+        "rate": {
+          "dof": 3,
+          "mean": 1.074902352063724,
+          "run_mean_ci95": [
+            1.0219036678029425,
+            1.1279010363245054
+          ]
+        },
+        "bias": {
+          "dof": 3,
+          "mean": 3.0377761390363442,
+          "run_mean_ci95": [
+            0.19791694492822964,
+            5.877635333144459
+          ]
+        },
+        "inertia": {
+          "dof": 6,
+          "mean": 4.1534659870631385,
+          "run_mean_ci95": [
+            2.8908237147816527,
+            5.416108259344624
+          ]
+        }
+      },
+      "pointing_rms_rad": {
+        "mean": 0.04376032981532982,
+        "run_mean_ci95": [
+          0.04363829433473315,
+          0.043882365295926484
+        ]
+      },
+      "pointing_final_rad": {
+        "mean": 0.003885773653267181,
+        "run_mean_ci95": [
+          0.0037671977618038074,
+          0.004004349544730555
+        ]
+      },
+      "settling_time_2pct_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "settling_hold_duration_s": {
+        "mean": 0.0,
+        "run_mean_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "attitude_estimation_rmse_rad": {
+        "mean": 0.0016150788275288586,
+        "run_mean_ci95": [
+          0.0012552260501147478,
+          0.0019749316049429695
+        ]
+      },
+      "bias_estimation_rmse_rad_s": {
+        "mean": 2.8614180512489302e-05,
+        "run_mean_ci95": [
+          2.3348589029132264e-05,
+          3.387977199584634e-05
+        ]
+      },
+      "final_angular_rate_norm_rad_s": {
+        "mean": 0.0001908465388906124,
+        "run_mean_ci95": [
+          0.00018194866905359226,
+          0.00019974440872763257
+        ]
+      },
+      "peak_wheel_momentum_utilization": {
+        "mean": 0.15516071133960058,
+        "run_mean_ci95": [
+          0.15508448184868157,
+          0.1552369408305196
+        ]
+      },
+      "outage_recovery_time_s": {
+        "mean": null,
+        "run_mean_ci95": null
+      },
+      "measurement_count": 500,
       "rejected_measurements": 0,
       "rejection_fraction": 0.0
     }

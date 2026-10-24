@@ -20,6 +20,7 @@ from scripts.run_experiment import (
 )
 from src.dynamics.quaternion import right_box_plus
 from scripts.run_research_campaigns import build_campaign_cases
+from scripts.verify_robustness_slices import _build_cases
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -64,14 +65,26 @@ def test_nis_reporting_confidence_is_independent_from_nees_confidence():
     )
 
 
-def test_campaign_matrix_covers_e1_through_e7():
+def test_campaign_matrix_covers_e0_through_e7():
     cases = build_campaign_cases("all", duration=12.0)
 
-    assert len(cases) == 32
+    assert len(cases) == 33
     assert {case["campaign"] for case in cases} == {
-        "E1", "E2", "E3", "E4", "E5", "E6", "E7"
+        "E0", "E1", "E2", "E3", "E4", "E5", "E6", "E7"
     }
-    assert all(case["config"].duration == 12.0 for case in cases)
+    assert {
+        campaign: sum(case["campaign"] == campaign for case in cases)
+        for campaign in {case["campaign"] for case in cases}
+    } == {
+        "E0": 1, "E1": 6, "E2": 3, "E3": 3,
+        "E4": 6, "E5": 3, "E6": 10, "E7": 1,
+    }
+    assert all(
+        case["config"].duration == 12.0
+        for case in cases if case["campaign"] != "E0"
+    )
+    assert cases[0]["campaign"] == "E0"
+    assert cases[0]["config"].duration == 1000.0
     assert {case["nis_gate_enabled"] for case in cases if case["campaign"] == "E4"} == {
         False, True
     }
@@ -87,6 +100,22 @@ def test_campaign_matrix_covers_e1_through_e7():
         "low_wheel_momentum_limit",
         "near_180deg_attitude",
     } <= e6_names
+
+
+def test_mismatch_process_noise_sweep_holds_truth_and_prior_fixed():
+    cases = [
+        case for case in _build_cases(12.0)
+        if case["name"].startswith("model_aided_")
+    ]
+
+    assert sorted(
+        case["config"].filter["sigma_omega_process"] for case in cases
+    ) == [0.0, 1e-7, 1e-4, 1e-3]
+    assert all(case["inertia_mismatch"] == 0.25 for case in cases)
+    assert all(
+        case["config"].filter["inertia_relative_sigma"] == 0.25
+        for case in cases
+    )
 
 
 def test_monte_carlo_nis_bounds_follow_available_sample_count():

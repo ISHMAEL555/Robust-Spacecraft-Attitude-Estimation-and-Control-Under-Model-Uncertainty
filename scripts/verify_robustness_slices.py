@@ -72,6 +72,26 @@ def _run_case(case: dict, runs: int) -> dict:
         np.sum(run["measurement_available"]) for run in results["all_runs"]
     ))
     rejected_count = measurement_count - accepted_count
+    marginal_nees = {}
+    component_groups = (
+        ("attitude", 0, 3),
+        ("rate", 1, 3),
+        ("bias", 2, 3),
+        ("inertia", 3, 6),
+    )
+    for name, column, degrees_of_freedom in component_groups:
+        run_means = []
+        for run in results["all_runs"]:
+            values = run["NEES_components"][:, column]
+            values = values[np.isfinite(values)]
+            if values.size:
+                run_means.append(float(np.mean(values)))
+        if run_means:
+            marginal_nees[name] = {
+                "dof": degrees_of_freedom,
+                "mean": float(np.mean(run_means)),
+                "run_mean_ci95": _mean_ci(run_means),
+            }
     return {
         "case": case["name"],
         "category": case["category"],
@@ -88,6 +108,7 @@ def _run_case(case: dict, runs: int) -> dict:
         "run_mean_nees_ci95": _mean_ci(nees_means),
         "mean_nis_accepted": float(np.nanmean(nis_means)),
         "run_mean_nis_accepted_ci95": _mean_ci(nis_means),
+        "marginal_nees_by_state_group": marginal_nees,
         "pointing_rms_rad": metric_summary("pointing_rms_rad"),
         "pointing_final_rad": metric_summary("pointing_final_rad"),
         "settling_time_2pct_s": metric_summary("settling_time_2pct_s"),
@@ -128,6 +149,31 @@ def _build_cases(duration: float) -> list[dict]:
             "sigma_omega_process": model.filter["sigma_omega_process"],
         },
     }]
+
+    # The nominal 1e-7 value is the baseline above. These bracketing cases
+    # quantify how much rate-process spectral density changes the mismatch
+    # consistency result; they are sensitivity runs, not a tuning claim.
+    for sigma_omega_process in (0.0, 1e-4, 1e-3):
+        process_config = replace(
+            model,
+            filter={
+                **model.filter,
+                "sigma_omega_process": sigma_omega_process,
+            },
+        )
+        cases.append({
+            "name": f"model_aided_mismatch_sigma_omega_{sigma_omega_process:g}",
+            "category": "inertia mismatch and rate-process noise",
+            "config": process_config,
+            "inertia_mismatch": 0.25,
+            "assumptions": {
+                "variant": "model_aided",
+                "true_inertia_scale": 1.25,
+                "filter_inertia_scale": 1.0,
+                "inertia_prior_relative_sigma": 0.25,
+                "sigma_omega_process_rad_s_per_sqrt_s": sigma_omega_process,
+            },
+        })
 
     for gated in (False, True):
         outlier_config = replace(
@@ -264,6 +310,94 @@ def _write_plot(rows: list[dict], output: Path, runs: int) -> None:
     plt.close(figure)
 
 
+def _write_mismatch_sensitivity_plot(rows: list[dict], output: Path) -> None:
+    """Plot marginal state-group consistency across the rate-noise bracket."""
+    selected = [
+        row for row in rows
+        if row["case"].startswith("model_aided_")
+        and row.get("marginal_nees_by_state_group")
+    ]
+
+    def process_noise(row: dict) -> float:
+        assumptions = row["assumptions"]
+        if "sigma_omega_process_rad_s_per_sqrt_s" in assumptions:
+            return float(assumptions["sigma_omega_process_rad_s_per_sqrt_s"])
+        return float(assumptions["sigma_omega_process"])
+
+    selected.sort(key=process_noise)
+    if not selected:
+        return
+
+    groups = ("attitude", "rate", "bias", "inertia")
+    colors = {
+        "attitude": "#0072B2",
+        "rate": "#D55E00",
+        "bias": "#009E73",
+        "inertia": "#CC79A7",
+    }
+    x = np.arange(len(selected), dtype=float)
+    width = 0.18
+    figure, axis = plt.subplots(figsize=(9.5, 5.2), constrained_layout=True)
+    for group_index, group in enumerate(groups):
+        means = []
+        lower_errors = []
+        upper_errors = []
+        for row in selected:
+            summary = row["marginal_nees_by_state_group"][group]
+            mean = float(summary["mean"] / summary["dof"])
+            lower, upper = (
+                float(value / summary["dof"])
+                for value in summary["run_mean_ci95"]
+            )
+            means.append(mean)
+            # The log-scale figure cannot display a lower t bound below zero;
+            # the complete, unmodified intervals remain in the JSON report.
+            lower_errors.append(max(mean - max(lower, 0.05), 0.0))
+            upper_errors.append(max(upper - mean, 0.0))
+        offset = (group_index - (len(groups) - 1) / 2) * width
+        axis.bar(
+            x + offset,
+            means,
+            width,
+            color=colors[group],
+            label=group.capitalize(),
+            alpha=0.9,
+        )
+        axis.errorbar(
+            x + offset,
+            means,
+            yerr=np.vstack((lower_errors, upper_errors)),
+            fmt="none",
+            ecolor="#202124",
+            capsize=2,
+            linewidth=0.8,
+        )
+
+    labels = [
+        "0" if process_noise(row) == 0.0 else f"{process_noise(row):.0e}"
+        for row in selected
+    ]
+    axis.axhline(1.0, color="#333333", linestyle="--", linewidth=1.0)
+    axis.set_yscale("log")
+    axis.set_ylim(0.05, None)
+    axis.set_xticks(x, labels)
+    axis.set_xlabel(r"Rate-process noise amplitude $\sigma_\omega$ [(rad/s)/$\sqrt{s}$]")
+    axis.set_ylabel("Marginal mean NEES / DOF")
+    axis.set_title("25% inertia mismatch: covariance sensitivity to rate-process noise")
+    axis.grid(True, axis="y", color="#D9DEE5", linewidth=0.7)
+    axis.legend(frameon=False, ncol=4)
+    figure.text(
+        0.5,
+        -0.015,
+        "95% t intervals over independent runs; marginal group NEES values are not additive.",
+        ha="center",
+        fontsize=8,
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output, dpi=220, bbox_inches="tight", facecolor="white")
+    plt.close(figure)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=int, default=5)
@@ -288,12 +422,17 @@ def main() -> None:
     if args.plot_only:
         report = json.loads(args.output.read_text(encoding="utf-8"))
         _write_plot(report["cases"], args.figure, int(report["runs_per_case"]))
+        _write_mismatch_sensitivity_plot(
+            report["cases"], args.figure.with_name("inertia_mismatch_process_noise.png")
+        )
         print(f"Saved robustness figure: {args.figure}")
         return
     if args.runs < 2 or args.duration <= 0.0:
         parser.error("--runs must be at least two and --duration must be positive")
 
-    cases = _build_cases(args.duration)
+    all_cases = _build_cases(args.duration)
+    case_order = {case["name"]: index for index, case in enumerate(all_cases)}
+    cases = all_cases
     if args.case:
         selected_names = set(args.case)
         unknown = selected_names - {case["name"] for case in cases}
@@ -327,12 +466,19 @@ def main() -> None:
             "The matched-inertia 10-run result remains the statistical baseline. "
             "These selected cases show sensitivity to one-at-a-time mismatch and fault "
             "conditions; small-run confidence intervals are descriptive and do not "
-            "establish a validated operating envelope."
+            "establish a validated operating envelope. Marginal state-group NEES uses "
+            "each group's covariance block and is not additive to full-state NEES."
         ),
     }
+    report["cases"] = sorted(
+        report["cases"], key=lambda row: case_order.get(row["case"], len(case_order))
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     _write_plot(report["cases"], args.figure, args.runs)
+    _write_mismatch_sensitivity_plot(
+        report["cases"], args.figure.with_name("inertia_mismatch_process_noise.png")
+    )
     print(f"Saved robustness report: {args.output}")
     print(f"Saved robustness figure: {args.figure}")
 

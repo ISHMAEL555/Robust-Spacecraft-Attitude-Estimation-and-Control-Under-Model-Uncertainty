@@ -185,6 +185,30 @@ def test_model_aided_rate_process_noise_enters_rate_covariance():
     assert np.all(np.diag(Qd)[3:6] > 0.0)
 
 
+def test_model_aided_rate_noise_is_a_continuous_spectral_density():
+    sigma_omega = 2e-5
+    dt = 0.25
+    mekf = create_mekf_nominal(
+        "model_aided",
+        inertia=np.diag([100.0, 80.0, 60.0]),
+        sigma_omega_process=sigma_omega,
+    )
+
+    assert np.allclose(
+        mekf.Q[3:6, 3:6], sigma_omega**2 * np.eye(3)
+    )
+    assert np.allclose(mekf.Q[9:15, 9:15], 0.0)
+
+    _, Qd = mekf._van_loan_discretization(
+        np.zeros((mekf.state_dim, mekf.state_dim)),
+        np.eye(mekf.state_dim),
+        mekf.Q,
+        dt,
+    )
+    assert np.allclose(Qd[3:6, 3:6], sigma_omega**2 * dt * np.eye(3))
+    assert np.allclose(Qd[9:15, 9:15], 0.0)
+
+
 def test_small_angle_quaternion_exponential_matches_rotation_vector():
     delta = np.array([1e-9, -2e-9, 3e-9])
     quaternion = vec_to_error_quat(delta)

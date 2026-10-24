@@ -147,6 +147,23 @@ The controller now forms its attitude correction in current-body coordinates and
 
 The post-review slices use five seeds per case and report independent-run 95% t intervals. They are exploratory. The 25% model-aided inertia mismatch gives mean full-state NEES/DOF 20.36 while attitude RMSE is 0.092 deg, showing that good attitude accuracy does not make the augmented covariance consistent. The five-run t interval for the raw run-mean NEES crosses zero and is extremely wide, so it is not a useful bound for an acceptance claim.
 
+### Inertia-mismatch and process-noise sensitivity
+
+The local model-aided Jacobian, including all six symmetric-inertia coordinates, agrees with finite differences. In the simulation loop, the model-aided filter and truth plant receive the same achieved body torque. This narrows the current discrepancy to the closed-loop statistical response under model mismatch and process-noise assumptions; it does not prove that the continuous-time model is complete. The test case uses a 25% diagonal inertia offset, a 25% one-sigma inertia prior, zero disturbance torque, and no off-diagonal truth mismatch. Inertia-error coordinates are constant parameters with zero direct process noise; uncertainty enters the rate covariance through the model-aided dynamics Jacobian. `sigma_omega_process` is a continuous rate-state spectral-density amplitude, so its covariance contribution scales with amplitude squared and is discretized by Van Loan's method.
+
+The five-run sensitivity changes only `sigma_omega_process`; seeds, 25% truth mismatch, inertia prior, sensors, and duration remain fixed. Marginal state-group NEES values below use the group's covariance block and do not add to the full-state NEES.
+
+| `sigma_omega_process` [(rad/s)/sqrt(s)] | Full mean NEES/DOF (95% run-mean t interval) | Attitude / rate / bias / inertia marginal NEES per DOF | Mean NIS (3 DOF) |
+|---:|---:|---:|---:|
+| 0 | 64.905 [-28.214, 158.023] | 2.727 / 11.464 / 0.941 / 26.701 | 3.177 |
+| 1e-7 (configured baseline) | 20.358 [-6.078, 46.794] | 2.053 / 4.381 / 0.941 / 21.552 | 3.101 |
+| 1e-4 | 0.698 [0.534, 0.862] | 0.808 / 0.358 / 1.013 / 0.692 | 2.508 |
+| 1e-3 | 0.884 [0.700, 1.068] | 0.943 / 0.509 / 1.075 / 0.973 | 2.934 |
+
+The baseline mismatch response is driven mainly by inertia and rate marginal NEES, while bias stays near its three-DOF reference. Removing rate-process noise increases the rate and full-state NEES. Larger amplitudes make the covariance more conservative; `1e-4` produces mean NEES below one DOF-normalized and accepted NIS below three, while `1e-3` gives a full-state interval that contains one. This is a sensitivity study, not a noise identification or a validated correction. The five-run t intervals for the low-noise cases are very wide and have negative mathematical lower bounds; the untruncated intervals are retained in [the JSON report](robustness_slices.json).
+
+![Marginal NEES sensitivity to angular-rate process-noise amplitude under 25% inertia mismatch](figures/inertia_mismatch_process_noise.png)
+
 With 5% one-radian star-tracker outliers, disabling the NIS gate yields mean NEES above 6.6 million and accepted NIS above 6.0 million. Enabling the gate rejects 25 of 500 measurements; accepted mean NIS is 3.03 and attitude RMSE is 0.093 deg. A scheduled 30-update outage recovers to the pre-outage 2% pointing band 62.78 s after the outage ends. Tenfold Q and R scaling produce mean NIS 0.439 and 1.131, respectively, illustrating over-conservative covariance in these mismatched settings.
 
 Five-run closed-loop ensembles show 60 deg acquisition from rest settling within 2% at 148.3 s and holding for 51.7 s. A 170 deg initial attitude needs about 235.0 s to reach the 2%-of-initial-error band; by 400 s it has 0.061 deg mean terminal error, 6.57e-5 rad/s mean terminal rate, and 48.4% mean peak wheel utilization. It does not meet the 180 s nominal project benchmark, which was defined for a 60 deg initial error. See [the machine-readable robustness results](robustness_slices.json) and [the scenario comparison plot](figures/robustness_slices.png).
