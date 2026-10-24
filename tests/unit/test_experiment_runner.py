@@ -64,7 +64,7 @@ def test_nis_reporting_confidence_is_independent_from_nees_confidence():
 def test_campaign_matrix_covers_e1_through_e7():
     cases = build_campaign_cases("all", duration=12.0)
 
-    assert len(cases) == 27
+    assert len(cases) == 32
     assert {case["campaign"] for case in cases} == {
         "E1", "E2", "E3", "E4", "E5", "E6", "E7"
     }
@@ -76,6 +76,14 @@ def test_campaign_matrix_covers_e1_through_e7():
     assert [case["config"].star_tracker["outage_duration"] for case in outages] == [
         1, 10, 30
     ]
+    e6_names = {case["name"] for case in cases if case["campaign"] == "E6"}
+    assert {
+        "zero_initial_rate",
+        "half_torque_authority",
+        "double_torque_authority",
+        "low_wheel_momentum_limit",
+        "near_180deg_attitude",
+    } <= e6_names
 
 
 def test_monte_carlo_nis_bounds_follow_available_sample_count():
@@ -86,11 +94,13 @@ def test_monte_carlo_nis_bounds_follow_available_sample_count():
                 "NEES": np.array([6.0, 6.0]),
                 "NIS": np.array([3.0, 0.0]),
                 "measurement_available": np.array([True, False]),
+                "measurement_accepted": np.array([True, False]),
             },
             {
                 "NEES": np.array([6.0, 6.0]),
                 "NIS": np.array([3.0, 3.0]),
                 "measurement_available": np.array([True, True]),
+                "measurement_accepted": np.array([True, True]),
             },
         ],
     }
@@ -261,7 +271,7 @@ def test_monte_carlo_results_can_be_summarized_and_saved(tmp_path, monkeypatch):
     assert (output_dir / "monte_carlo_mc_consistency.png").exists()
 
 
-def test_model_aided_simulation_uses_nine_state_consistency():
+def test_model_aided_simulation_uses_augmented_inertia_consistency():
     config = load_config(str(PROJECT_ROOT / "config" / "nominal.yaml"))
     model_config = replace(
         config,
@@ -272,9 +282,9 @@ def test_model_aided_simulation_uses_nine_state_consistency():
     results = run_simulation(model_config)
     consistency = compute_consistency_stats(results)
 
-    assert results["P"].shape == (110, 9, 9)
-    assert results["nees_dof"] == 9
-    assert consistency["dof_nees"] == 9
+    assert results["P"].shape == (110, 15, 15)
+    assert results["nees_dof"] == 15
+    assert consistency["dof_nees"] == 15
     assert np.isfinite(consistency["nees_mean"])
 
 

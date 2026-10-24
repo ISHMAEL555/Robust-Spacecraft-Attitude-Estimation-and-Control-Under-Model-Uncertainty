@@ -37,6 +37,12 @@ def _case(name: str, campaign: str, config_name: str, **parameters: Any) -> Dict
         config,
         filter={**config.filter, **overrides.pop("filter", {})},
         star_tracker={**config.star_tracker, **overrides.pop("star_tracker", {})},
+        spacecraft={**config.spacecraft, **overrides.pop("spacecraft", {})},
+        controller={**config.controller, **overrides.pop("controller", {})},
+        reaction_wheels={
+            **config.reaction_wheels,
+            **overrides.pop("reaction_wheels", {}),
+        },
     )
     return {
         "name": name,
@@ -58,8 +64,14 @@ def build_campaign_cases(campaign: str, duration: float | None = None) -> List[D
                         f"{variant}_inertia_{mismatch:.2f}",
                         selected,
                         "model_uncertainty.yaml",
+                        config_overrides={
+                            "filter": {
+                                "inertia_relative_sigma": max(abs(mismatch), 0.05)
+                            }
+                        },
                         variant=variant,
                         inertia_mismatch=mismatch,
+                        inertia_relative_sigma=max(abs(mismatch), 0.05),
                     ))
         elif selected == "E2":
             for scale in (0.1, 1.0, 10.0):
@@ -127,6 +139,43 @@ def build_campaign_cases(campaign: str, duration: float | None = None) -> List[D
                 "inertia_mismatch_25pct", selected, "closed_loop.yaml",
                 inertia_mismatch=0.25,
             ))
+            cases.extend([
+                _case(
+                    "zero_initial_rate", selected, "closed_loop.yaml",
+                    config_overrides={"spacecraft": {"initial_omega": [0.0, 0.0, 0.0]}},
+                    initial_rate_rad_s=0.0,
+                ),
+                _case(
+                    "half_torque_authority", selected, "closed_loop.yaml",
+                    config_overrides={
+                        "controller": {"max_torque": 0.05},
+                        "reaction_wheels": {"max_torque": 0.05},
+                    },
+                    torque_limit_nm=0.05,
+                ),
+                _case(
+                    "double_torque_authority", selected, "closed_loop.yaml",
+                    config_overrides={
+                        "controller": {"max_torque": 0.2},
+                        "reaction_wheels": {"max_torque": 0.2},
+                    },
+                    torque_limit_nm=0.2,
+                ),
+                _case(
+                    "low_wheel_momentum_limit", selected, "closed_loop.yaml",
+                    config_overrides={"reaction_wheels": {"max_momentum": 1.0}},
+                    wheel_momentum_limit_nms=1.0,
+                ),
+                _case(
+                    "near_180deg_attitude", selected, "closed_loop.yaml",
+                    config_overrides={
+                        "spacecraft": {
+                            "initial_attitude": [0.0, 0.0, 0.996194698, 0.087155743]
+                        }
+                    },
+                    initial_attitude_deg=170.0,
+                ),
+            ])
         elif selected == "E7":
             cases.append(_case("nominal_monte_carlo", selected, "monte_carlo.yaml"))
 
@@ -177,6 +226,10 @@ def _summary_row(case: Dict[str, Any], results: Dict[str, Any]) -> Dict[str, Any
         "NEES_in_bounds_pct": finite_or_none(100.0 * consistency["nees_in_bounds"]),
         "NIS_mean": finite_or_none(consistency["nis_mean"]),
         "NIS_in_bounds_pct": finite_or_none(100.0 * consistency["nis_in_bounds"]),
+        "NIS_mean_accepted": finite_or_none(consistency["nis_mean_accepted"]),
+        "NIS_accepted_in_bounds_pct": finite_or_none(
+            100.0 * consistency["nis_accepted_in_bounds"]
+        ),
         "star_tracker_updates": int(np.sum(results["innovation_count"])),
         "rejected_measurements": int(np.sum(results["measurement_rejection_count"])),
     }

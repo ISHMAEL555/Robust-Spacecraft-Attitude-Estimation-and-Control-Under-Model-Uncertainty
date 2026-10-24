@@ -36,6 +36,7 @@ filter:
   P0_bias: 1.0e-6
   Q_scale: 1.0
   R_scale: 1.0
+  inertia_relative_sigma: 0.25  # 1-sigma prior for the model-aided inertia state
 
 controller:
   K_q: 1.0

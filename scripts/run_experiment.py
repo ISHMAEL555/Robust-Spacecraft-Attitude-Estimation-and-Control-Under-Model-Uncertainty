@@ -133,7 +133,8 @@ def run_simulation(config: SimulationConfig,
             else np.array(config.spacecraft['inertia'])
             if config.filter['variant'] == 'model_aided'
             else None
-        )
+        ),
+        inertia_relative_sigma=config.filter.get('inertia_relative_sigma', 0.05)
     )
     filter_params.gyro_params = gyro_params
     filter_params.star_tracker_params = st_params
@@ -179,6 +180,7 @@ def run_simulation(config: SimulationConfig,
         'nees_dof': mekf.nees_dof,
         'tau_cmd': np.zeros((n_steps, 3)),
         'tau_rw': np.zeros((n_steps, 3)),
+        'wheel_momentum': np.zeros((n_steps, config.reaction_wheels['num_wheels'])),
         'NEES': np.zeros(n_steps),
         'NIS': np.zeros(n_steps),
         'innovation': np.zeros((n_steps, 3)),
@@ -192,7 +194,11 @@ def run_simulation(config: SimulationConfig,
         'attitude_estimation_error_vector': np.zeros((n_steps, 3)),
         'bias_error': np.zeros((n_steps, 3)),
         'max_torque': float(config.controller['max_torque']),
+        'max_wheel_momentum': float(config.reaction_wheels['max_momentum']),
     }
+    if config.filter['variant'] == 'model_aided':
+        results['inertia_true'] = true_inertia.copy()
+        results['inertia_hat'] = np.zeros((n_steps, 3, 3))
     
     # Star tracker update tracking
     for i in range(n_steps):
@@ -224,6 +230,8 @@ def run_simulation(config: SimulationConfig,
         results['b_hat'][i] = filter_result['b_hat']
         results['P'][i] = filter_result['P']
         results['omega_hat'][i] = mekf.get_estimated_omega(omega_m)
+        if 'inertia_hat' in results:
+            results['inertia_hat'][i] = mekf.I_model
         
         if filter_result['innovation'] is not None:
             results['innovation'][i] = filter_result['innovation']
@@ -233,7 +241,7 @@ def run_simulation(config: SimulationConfig,
         b_true = gyro.get_true_bias()
         results['b_true'][i] = b_true
         results['bias_error'][i] = b_true - filter_result['b_hat']
-        nees = mekf.compute_nees(q_true, b_true, omega_true)
+        nees = mekf.compute_nees(q_true, b_true, omega_true, true_inertia)
         results['NEES'][i] = nees
         
         # Controller
@@ -244,6 +252,7 @@ def run_simulation(config: SimulationConfig,
         tau_rw = rwa.compute_torque(tau_cmd)
         results['tau_rw'][i] = tau_rw
         rwa.update_momentum(config.dt)
+        results['wheel_momentum'][i] = rwa.get_momentum()
         
         # Spacecraft dynamics
         spacecraft.step(tau_rw, config.dt)
@@ -290,6 +299,18 @@ def compute_performance_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
             np.mean(torque >= results['max_torque'] * (1.0 - 1e-9))
         ),
     }
+    if 'wheel_momentum' in results:
+        wheel_utilization = (
+            np.abs(results['wheel_momentum']) / results['max_wheel_momentum']
+        )
+        metrics['peak_wheel_momentum_utilization'] = float(np.max(wheel_utilization))
+        metrics['wheel_momentum_near_limit_fraction'] = float(
+            np.mean(wheel_utilization >= 0.95)
+        )
+    if metrics['control_effort_nm2_s'] > 0.0:
+        metrics['achieved_effort_fraction'] = float(
+            metrics['achieved_control_effort_nm2_s'] / metrics['control_effort_nm2_s']
+        )
     if 'attitude_estimation_error' in results:
         metrics['attitude_estimation_rmse_rad'] = float(
             np.sqrt(np.mean(results['attitude_estimation_error']**2))
@@ -297,6 +318,14 @@ def compute_performance_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
     if 'omega_hat' in results and 'omega_true' in results:
         metrics['angular_rate_estimation_rmse_rad_s'] = float(
             np.sqrt(np.mean((results['omega_hat'] - results['omega_true'])**2))
+        )
+    if 'inertia_hat' in results and 'inertia_true' in results:
+        inertia_error = results['inertia_hat'] - results['inertia_true']
+        inertia_scale = np.sqrt(
+            np.outer(np.diag(results['inertia_true']), np.diag(results['inertia_true']))
+        )
+        metrics['inertia_relative_rmse'] = float(
+            np.sqrt(np.mean((inertia_error / inertia_scale) ** 2))
         )
     if 'bias_error' in results:
         metrics['bias_estimation_rmse_rad_s'] = float(
@@ -463,7 +492,7 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
     }
     aggregated = {
         'time': time,
-        'nees_dof': 9 if config.filter['variant'] == 'model_aided' else 6,
+        'nees_dof': 15 if config.filter['variant'] == 'model_aided' else 6,
         **means,
         'NEES_std': stds['NEES_mean'],
         'pointing_error_std': stds['pointing_error_mean'],

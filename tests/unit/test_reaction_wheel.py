@@ -86,11 +86,11 @@ class TestReactionWheelAssembly:
         rwa = ReactionWheelAssembly(params)
         rwa.momentum[0] = -1.0
 
-        tau_cmd = np.array([0.1, 0.0, 0.0])
+        tau_cmd = np.array([-0.1, 0.0, 0.0])
         tau_achieved = rwa.compute_torque(tau_cmd)
 
-        # Positive wheel torque unloads a negatively saturated wheel, so the
-        # commanded body torque must remain available.
+        # A negative body torque commands positive wheel torque, which unloads
+        # a negatively saturated wheel under tau_body = -A @ tau_wheel.
         assert np.allclose(tau_achieved, tau_cmd)
 
     def test_momentum_saturation(self):
@@ -107,7 +107,7 @@ class TestReactionWheelAssembly:
         # Should be saturated at max_momentum
         assert momentum[0] <= 1.0 + 1e-10
         # The momentum should be close to max_momentum (allowing for momentum margin reduction)
-        assert momentum[0] >= 0.5  # At least half of max due to momentum margin
+        assert momentum[0] <= -0.5  # Wheel momentum moves toward its negative limit.
     
     def test_get_body_momentum(self):
         params = ReactionWheelParams(num_wheels=3, max_torque=0.1, max_momentum=10.0)

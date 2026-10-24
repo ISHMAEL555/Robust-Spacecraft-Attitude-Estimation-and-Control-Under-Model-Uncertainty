@@ -41,6 +41,9 @@ class MEKFParams:
     nis_gate_enabled: bool = False
     # Inertia matrix (for model-aided variant)
     inertia_model: Optional[np.ndarray] = None
+    # One-sigma relative prior uncertainty for the six independent elements of
+    # the symmetric inertia tensor. Used by the augmented model-aided MEKF.
+    inertia_relative_sigma: float = 0.05
 
 
 class MEKF:
@@ -48,7 +51,7 @@ class MEKF:
     Multiplicative Extended Kalman Filter for attitude estimation.
     
     Variant A error state: [delta_theta, delta_bias]^T (6x1)
-    Variant B error state: [delta_theta, delta_omega, delta_bias]^T (9x1)
+    Variant B error state: [delta_theta, delta_omega, delta_bias, delta_inertia]^T (15x1)
     
     Propagation:
     - Variant A: q_hat propagated with measured omega_m - b_hat
@@ -82,9 +85,12 @@ class MEKF:
         self.dt_gyro = 1.0 / self.gyro_params.rate
         self.dt_st = 1.0 / self.star_tracker_params.rate
         
-        self.state_dim = 9 if self.variant == 'model_aided' else 6
+        if params.inertia_relative_sigma < 0.0:
+            raise ValueError("inertia_relative_sigma must be non-negative")
+        self.state_dim = 15 if self.variant == 'model_aided' else 6
         self.nees_dof = self.state_dim
         self.bias_slice = slice(6, 9) if self.variant == 'model_aided' else slice(3, 6)
+        self.inertia_slice = slice(9, 15) if self.variant == 'model_aided' else slice(0, 0)
 
         # State
         self.q_hat = np.array([0.0, 0.0, 0.0, 1.0])  # Estimated quaternion (I->B)
@@ -104,8 +110,11 @@ class MEKF:
         if self.variant == 'model_aided':
             if params.inertia_model is None:
                 raise ValueError("Model-aided variant requires inertia_model")
-            self.I_model = params.inertia_model
+            self.I_model = np.asarray(params.inertia_model, dtype=float).copy()
             self.I_model_inv = np.linalg.inv(self.I_model)
+            self._inertia_basis = self._build_inertia_basis()
+            self._initialize_inertia_scales()
+            self._initialize_inertia_covariance()
             self.omega_hat = np.zeros(3)  # Estimated angular velocity
             self._omega_initialized = False
             self._initialize_model_aided_covariance()
@@ -141,6 +150,35 @@ class MEKF:
         )
         self.P[rate_slice, self.bias_slice] = -bias_covariance
         self.P[self.bias_slice, rate_slice] = -bias_covariance
+
+    @staticmethod
+    def _build_inertia_basis() -> Tuple[np.ndarray, ...]:
+        """Return basis tensors for [Ixx, Iyy, Izz, Ixy, Ixz, Iyz]."""
+        return (
+            np.diag([1.0, 0.0, 0.0]),
+            np.diag([0.0, 1.0, 0.0]),
+            np.diag([0.0, 0.0, 1.0]),
+            np.array([[0.0, 1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+            np.array([[0.0, 0.0, 1.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0, 0.0]]),
+        )
+
+    def _initialize_inertia_covariance(self) -> None:
+        """Set an isotropic prior on dimensionless inertia-element errors."""
+        relative_sigma = max(self.params.inertia_relative_sigma, 1e-8)
+        self.P[self.inertia_slice, self.inertia_slice] = (
+            np.eye(6) * relative_sigma**2
+        )
+
+    def _initialize_inertia_scales(self) -> None:
+        """Scale the six inertia errors by nominal tensor magnitudes."""
+        diagonal = np.diag(self.I_model)
+        self._inertia_scales = np.array([
+            diagonal[0], diagonal[1], diagonal[2],
+            np.sqrt(diagonal[0] * diagonal[1]),
+            np.sqrt(diagonal[0] * diagonal[2]),
+            np.sqrt(diagonal[1] * diagonal[2]),
+        ])
     
     def _build_measurement_noise(self) -> np.ndarray:
         """Build measurement noise covariance."""
@@ -213,8 +251,8 @@ class MEKF:
         
         Error state: [delta_theta, delta_omega, delta_bias].
         """
-        F = np.zeros((9, 9))
-        G = np.zeros((9, 9))
+        F = np.zeros((15, 15))
+        G = np.zeros((15, 15))
         
         # Attitude error dynamics
         omega_skew = np.array([
@@ -236,6 +274,21 @@ class MEKF:
             inertia_rate_skew - omega_skew @ self.I_model
         )
         G[6:9, 6:9] = np.eye(3)
+
+        # Linearize Euler's equation with respect to the six independent
+        # inertia elements. If f = I^-1 (tau - omega x I omega), then
+        # df/dI_j = -I^-1 E_j f - I^-1 [omega]x E_j omega.
+        # The inertia error is a constant parameter state, so its process
+        # noise is zero; its uncertainty enters rate covariance through F.
+        torque = getattr(self, "_propagation_torque", np.zeros(3))
+        omega_dot = self.I_model_inv @ (
+            torque - np.cross(omega_hat, self.I_model @ omega_hat)
+        )
+        for index, basis in enumerate(self._inertia_basis):
+            F[3:6, 9 + index] = (
+                -self.I_model_inv @ basis @ omega_dot
+                -self.I_model_inv @ omega_skew @ basis @ omega_hat
+            ) * self._inertia_scales[index]
         
         return F, G
     
@@ -295,6 +348,7 @@ class MEKF:
         self.q_hat = normalize(self.q_hat + q_dot * dt)
         
         # Error state transition (using estimated omega)
+        self._propagation_torque = tau_cmd
         F, G = self._compute_F_G_model_aided(self.omega_hat)
         Phi, Qd = self._van_loan_discretization(F, G, self.Q, dt)
         
@@ -342,6 +396,7 @@ class MEKF:
         self.q_hat = box_plus(self.q_hat, delta_theta)
         if self.variant == 'model_aided':
             self.omega_hat += delta_x[3:6]
+            self._inject_inertia_correction(delta_x[9:15])
         self.b_hat += delta_bias
         
         # Covariance update (Joseph form for numerical stability)
@@ -354,7 +409,7 @@ class MEKF:
 
     def update_gyro(self, omega_m: np.ndarray) -> None:
         """Update model-aided rate and bias from the gyro measurement."""
-        H = np.zeros((3, 9))
+        H = np.zeros((3, self.state_dim))
         H[:, 3:6] = np.eye(3)
         H[:, 6:9] = np.eye(3)
         innovation = omega_m - (self.omega_hat + self.b_hat)
@@ -366,11 +421,23 @@ class MEKF:
         self.q_hat = box_plus(self.q_hat, delta_x[:3])
         self.omega_hat += delta_x[3:6]
         self.b_hat += delta_x[6:9]
+        self._inject_inertia_correction(delta_x[9:15])
 
-        I_KH = np.eye(9) - K @ H
+        I_KH = np.eye(self.state_dim) - K @ H
         self.P = I_KH @ self.P @ I_KH.T + K @ R_gyro @ K.T
         self.P = (self.P + self.P.T) / 2
         self._reset_attitude_error_covariance(delta_x[:3])
+
+    def _inject_inertia_correction(self, delta_parameters: np.ndarray) -> None:
+        """Apply a dimensionless EKF correction while keeping inertia positive definite."""
+        delta_inertia = sum(
+            delta_parameters[index] * self._inertia_scales[index] * basis
+            for index, basis in enumerate(self._inertia_basis)
+        )
+        candidate_inertia = self.I_model + delta_inertia
+        if np.min(np.linalg.eigvalsh(candidate_inertia)) > 0.0:
+            self.I_model = candidate_inertia
+            self.I_model_inv = np.linalg.inv(self.I_model)
 
     def _reset_attitude_error_covariance(self, delta_theta: np.ndarray) -> None:
         reset = np.eye(self.state_dim)
@@ -398,15 +465,17 @@ class MEKF:
         Returns:
             Dictionary with filter outputs
         """
-        was_omega_initialized = (
-            self._omega_initialized if self.variant == 'model_aided' else False
-        )
-
-        # Propagate
-        self.propagate(omega_m, tau_cmd, dt)
-
-        if self.variant == 'model_aided' and was_omega_initialized:
-            self.update_gyro(omega_m)
+        if self.variant == 'model_aided' and not self._omega_initialized:
+            # The first gyro sample initializes the rate at the current epoch.
+            # Do not also propagate it forward and then reuse that same sample
+            # as a measurement; later calls propagate the prior epoch to this
+            # epoch before applying the current gyro update.
+            self.omega_hat = omega_m - self.b_hat
+            self._omega_initialized = True
+        else:
+            self.propagate(omega_m, tau_cmd, dt)
+            if self.variant == 'model_aided':
+                self.update_gyro(omega_m)
         
         # Update if measurement available
         innovation = None
@@ -447,6 +516,7 @@ class MEKF:
         q_true: np.ndarray,
         b_true: np.ndarray,
         omega_true: Optional[np.ndarray] = None,
+        inertia_true: Optional[np.ndarray] = None,
     ) -> float:
         """
         Compute Normalized Estimation Error Squared (NEES).
@@ -455,6 +525,7 @@ class MEKF:
             q_true: True quaternion
             b_true: True gyro bias
             omega_true: True angular velocity, required for the model-aided variant
+            inertia_true: True inertia tensor, optional for the model-aided variant
             
         Returns:
             NEES value
@@ -467,12 +538,21 @@ class MEKF:
             if omega_true is None:
                 raise ValueError("Model-aided NEES requires true angular velocity")
             delta_omega = omega_true - self.omega_hat
-            error = np.concatenate([delta_theta, delta_omega, delta_bias])
+            if inertia_true is None:
+                inertia_true = self.I_model
+            delta_inertia = np.asarray(inertia_true) - self.I_model
+            inertia_error = np.array([
+                delta_inertia[0, 0], delta_inertia[1, 1], delta_inertia[2, 2],
+                delta_inertia[0, 1], delta_inertia[0, 2], delta_inertia[1, 2],
+            ]) / self._inertia_scales
+            error = np.concatenate([
+                delta_theta, delta_omega, delta_bias, inertia_error
+            ])
         else:
             error = np.concatenate([delta_theta, delta_bias])
         
         # NEES = e^T P^{-1} e
-        NEES = error @ np.linalg.inv(self.P) @ error
+        NEES = error @ np.linalg.solve(self.P, error)
         self.history['NEES'].append(NEES)
         return NEES
     
@@ -499,7 +579,11 @@ class MEKF:
             self.P[:3, :3] *= self.params.P0_attitude
             self.P[self.bias_slice, self.bias_slice] *= self.params.P0_bias
             if self.variant == 'model_aided':
+                self.I_model = np.asarray(self.params.inertia_model, dtype=float).copy()
+                self.I_model_inv = np.linalg.inv(self.I_model)
+                self._initialize_inertia_scales()
                 self._initialize_model_aided_covariance()
+                self._initialize_inertia_covariance()
         if self.variant == 'model_aided':
             self.omega_hat = np.zeros(3)
             self._omega_initialized = False
@@ -510,7 +594,8 @@ def create_mekf_nominal(variant: str = 'gyro_driven',
                          gyro_sigma_v: float = 1e-4,
                          gyro_sigma_u: float = 1e-6,
                          st_sigma_theta: float = 10.0 * np.pi / 180.0 / 3600.0,
-                         inertia: Optional[np.ndarray] = None) -> MEKF:
+                         inertia: Optional[np.ndarray] = None,
+                         inertia_relative_sigma: float = 0.05) -> MEKF:
     """Create MEKF with nominal parameters."""
     gyro_params = GyroParams(sigma_v=gyro_sigma_v, sigma_u=gyro_sigma_u)
     st_params = StarTrackerParams(sigma_theta=st_sigma_theta)
@@ -519,7 +604,8 @@ def create_mekf_nominal(variant: str = 'gyro_driven',
         variant=variant,
         gyro_params=gyro_params,
         star_tracker_params=st_params,
-        inertia_model=inertia
+        inertia_model=inertia,
+        inertia_relative_sigma=inertia_relative_sigma,
     )
     return MEKF(params)
 

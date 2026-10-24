@@ -37,8 +37,8 @@ class TestMEKF:
         assert mekf.I_model is not None
         assert mekf.omega_hat is not None
         assert np.allclose(mekf.omega_hat, 0.0)
-        assert mekf.P.shape == (9, 9)
-        assert mekf.nees_dof == 9
+        assert mekf.P.shape == (15, 15)
+        assert mekf.nees_dof == 15
     
     def test_model_aided_requires_inertia(self):
         params = MEKFParams(variant='model_aided', inertia_model=None)
@@ -304,11 +304,25 @@ class TestMEKFVariants:
 
         assert nees >= 0.0
 
+    def test_model_aided_inertia_prior_is_included_in_nees(self):
+        inertia = np.diag([100.0, 80.0, 60.0])
+        mekf = create_mekf_nominal(
+            'model_aided', inertia=inertia, inertia_relative_sigma=0.1
+        )
+        nees = mekf.compute_nees(
+            mekf.q_hat, np.zeros(3), np.zeros(3), 1.1 * inertia
+        )
+
+        # A 10% error in each principal moment is a one-sigma error for each
+        # independent diagonal inertia parameter.
+        assert np.isclose(nees, 3.0, rtol=0.05)
+
     def test_model_aided_rate_jacobian_matches_finite_difference(self):
         inertia = np.diag([100.0, 80.0, 60.0])
         mekf = create_mekf_nominal('model_aided', inertia=inertia)
         omega = np.array([0.02, -0.01, 0.005])
         torque = np.array([0.01, -0.02, 0.005])
+        mekf._propagation_torque = torque
         F, _ = mekf._compute_F_G_model_aided(omega)
 
         def rate_dynamics(rate):
@@ -326,6 +340,27 @@ class TestMEKFVariants:
         ])
 
         assert np.allclose(F[3:6, 3:6], numerical, atol=1e-10)
+
+        epsilon_inertia = 1e-4
+        numerical_inertia = np.column_stack([
+            (
+                np.linalg.solve(
+                    inertia + epsilon_inertia * basis,
+                    torque - np.cross(
+                        omega, (inertia + epsilon_inertia * basis) @ omega
+                    ),
+                )
+                - np.linalg.solve(
+                    inertia - epsilon_inertia * basis,
+                    torque - np.cross(
+                        omega, (inertia - epsilon_inertia * basis) @ omega
+                    ),
+                )
+            ) / (2.0 * epsilon_inertia)
+            for basis in mekf._inertia_basis
+        ]) * mekf._inertia_scales
+
+        assert np.allclose(F[3:6, 9:15], numerical_inertia, rtol=1e-6, atol=1e-11)
 
 
 if __name__ == "__main__":
