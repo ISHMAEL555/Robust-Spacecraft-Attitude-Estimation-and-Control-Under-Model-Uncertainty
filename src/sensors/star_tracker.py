@@ -87,14 +87,20 @@ class StarTracker:
             (q_measured, valid) where q_measured is None if no measurement (outage)
             and valid indicates if measurement is valid (not outlier/outage)
         """
+        if dt <= 0.0:
+            raise ValueError("dt must be positive")
         self.elapsed_time += dt
         self.time_since_update += dt
         
         # Check if it's time for an update
-        if self.time_since_update < self.dt:
+        if self.time_since_update + 1e-12 < self.dt:
             return None, False
         
-        self.time_since_update = 0.0
+        # Preserve fractional phase so non-integer ratios between sensor and
+        # simulation rates do not accumulate scheduling drift.
+        self.time_since_update -= self.dt
+        if self.time_since_update < 1e-12:
+            self.time_since_update = 0.0
         
         # Check for outage
         if self.in_outage:

@@ -150,6 +150,19 @@ class TestStarTracker:
         q_meas3, valid3 = tracker.measure(q_true, 0.5)
         assert q_meas3 is not None
         assert valid3
+
+    def test_noninteger_sample_period_does_not_drift(self):
+        tracker = StarTracker(StarTrackerParams(sigma_theta=1e-3, rate=3.0), seed=7)
+        q_true = np.array([0.0, 0.0, 0.0, 1.0])
+        availability = [
+            tracker.measure(q_true, 0.01)[0] is not None
+            for _ in range(100)
+        ]
+
+        # Three 3 Hz samples fit in one second; resetting the fractional
+        # scheduler phase would yield only two.
+        assert sum(availability) == 3
+        assert 0.0 <= tracker.time_since_update < tracker.dt
     
     def test_outlier(self):
         params = StarTrackerParams(sigma_theta=1e-3, rate=1.0, outlier_prob=1.0, outlier_magnitude=1.0)

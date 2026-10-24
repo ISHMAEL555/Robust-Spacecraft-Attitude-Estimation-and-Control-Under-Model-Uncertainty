@@ -37,6 +37,7 @@ filter:
   Q_scale: 1.0
   R_scale: 1.0
   inertia_relative_sigma: 0.25  # 1-sigma prior for the model-aided inertia state
+  sigma_omega_process: 1.0e-7  # unmodeled angular-rate process noise, (rad/s)/sqrt(s)
 
 controller:
   K_q: 1.0

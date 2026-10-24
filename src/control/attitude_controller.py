@@ -1,16 +1,13 @@
-"""
-Attitude controller for spacecraft attitude control.
+"""Spacecraft attitude controller with body-frame quaternion feedback.
 
-Quaternion feedback control law:
-tau_c = -K_q * q_e_v - K_omega * omega_hat
-
-where q_e_v is the vector part of the error quaternion.
+The correction quaternion is q_current^{-1} * q_desired, and the rate
+error and commanded torque are both expressed in the current body frame.
 """
 
 import numpy as np
 from typing import Optional, Literal, Tuple
 from dataclasses import dataclass
-from src.dynamics.quaternion import normalize, multiply, conjugate, error_quat, error_quat_to_vec
+from src.dynamics.quaternion import normalize, multiply, conjugate, rotate_vector
 
 
 @dataclass
@@ -28,12 +25,10 @@ class ControllerParams:
 
 class AttitudeController:
     """
-    Quaternion feedback attitude controller.
-    
-    Control law: tau_c = -K_q * q_e_v - K_omega * omega
-    
-    where q_e = q_desired^* ⊗ q_current (error from current to desired)
-    and q_e_v is the vector part of q_e.
+    Quaternion feedback controller.
+
+    The right-relative attitude correction and body-rate error are expressed in
+    current-body coordinates so their feedback terms can be combined directly.
     """
     
     def __init__(self, params: ControllerParams):
@@ -71,9 +66,8 @@ class AttitudeController:
         Returns:
             Commanded torque (N*m) in body frame
         """
-        # Error quaternion: q_e = q_desired^* ⊗ q_current
-        # This represents rotation from desired to current
-        q_error = multiply(conjugate(self.q_desired), q_current)
+        # Right-relative correction is expressed in current-body coordinates.
+        q_error = multiply(conjugate(normalize(q_current)), self.q_desired)
         q_error = normalize(q_error)
         
         # Ensure shortest path (positive scalar part)
@@ -84,14 +78,15 @@ class AttitudeController:
         q_e_v = q_error[:3]
         
         # Rate error
-        omega_error = omega_current - self.omega_desired
+        omega_desired_current = rotate_vector(q_error, self.omega_desired)
+        omega_error = omega_current - omega_desired_current
         
         # Control law
         if self.params.control_type == 'quaternion_feedback':
-            tau_cmd = -self.K_q * q_e_v - self.K_omega * omega_error
+            tau_cmd = self.K_q * q_e_v - self.K_omega * omega_error
         else:  # PD
             # For small angles, q_e_v ≈ 0.5 * theta_e
-            tau_cmd = -2 * self.K_q * q_e_v - self.K_omega * omega_error
+            tau_cmd = 2 * self.K_q * q_e_v - self.K_omega * omega_error
         
         # Torque saturation
         tau_norm = np.linalg.norm(tau_cmd)

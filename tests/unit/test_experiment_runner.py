@@ -12,10 +12,13 @@ from scripts.run_experiment import (
     compute_performance_metrics,
     compute_consistency_stats,
     load_config,
+    multivariate_ljung_box,
+    evaluate_e6_project_benchmark,
     run_monte_carlo,
     run_simulation,
     save_results,
 )
+from src.dynamics.quaternion import right_box_plus
 from scripts.run_research_campaigns import build_campaign_cases
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -303,3 +306,86 @@ def test_control_metrics_distinguish_commanded_from_applied_torque():
     assert metrics["achieved_control_effort_nm2_s"] == 1.25
     assert metrics["peak_commanded_torque_nm"] == 2.0
     assert metrics["peak_achieved_torque_nm"] == 1.0
+
+
+def test_multivariate_ljung_box_detects_colored_innovations():
+    rng = np.random.default_rng(129)
+    white = rng.normal(size=(2000, 3))
+    colored = np.empty_like(white)
+    colored[0] = white[0]
+    for index in range(1, len(white)):
+        colored[index] = 0.9 * colored[index - 1] + white[index]
+
+    _, white_p, lags = multivariate_ljung_box(white)
+    _, colored_p, _ = multivariate_ljung_box(colored)
+
+    assert lags == 10
+    assert white_p > 0.01
+    assert colored_p < 1e-6
+
+
+def test_e6_project_benchmark_requires_closed_loop_settling_and_margin():
+    benchmark = evaluate_e6_project_benchmark({
+        "settling_time_2pct_s": 177.0,
+        "settling_hold_duration_s": 23.0,
+        "pointing_peak_final_20s_rad": np.deg2rad(1.3),
+        "final_angular_rate_norm_rad_s": 5e-4,
+        "peak_wheel_momentum_utilization": 0.5,
+        "achieved_effort_fraction": 1.0,
+        "peak_commanded_torque_nm": 0.1,
+        "max_torque_nm": 0.1,
+        "peak_wheel_torque_nm": 0.1,
+        "max_wheel_torque_nm": 0.1,
+    })
+
+    assert benchmark["passed"]
+    assert "not a mission requirement" in benchmark["label"]
+
+
+def test_simulation_records_measurement_epochs_and_wheel_torque_limits():
+    config = load_config(str(PROJECT_ROOT / "config" / "closed_loop.yaml"))
+    results = run_simulation(replace(config, duration=2.1))
+
+    available = results["measurement_available"]
+    assert np.allclose(
+        results["measurement_time_s"][available], results["time"][available]
+    )
+    assert np.max(np.abs(results["wheel_torque"])) <= (
+        results["max_wheel_torque"] + 1e-12
+    )
+    assert results["innovation_covariance"].shape == (210, 3, 3)
+
+
+def test_asynchronous_star_tracker_absence_does_not_skip_filter_propagation():
+    config = load_config(str(PROJECT_ROOT / "config" / "nominal.yaml"))
+    results = run_simulation(replace(config, duration=0.5))
+
+    assert not np.any(results["measurement_available"])
+    assert np.all(np.isnan(results["measurement_time_s"]))
+    assert results["P"][-1, 0, 0] > results["P"][0, 0, 0]
+
+
+def test_filter_output_is_recorded_at_the_current_simulation_epoch():
+    config = load_config(str(PROJECT_ROOT / "config" / "nominal.yaml"))
+    initial_attitude = np.asarray(config.spacecraft["initial_attitude"])
+    config = replace(
+        config,
+        duration=config.dt,
+        spacecraft={
+            **config.spacecraft,
+            "initial_omega": [0.4, 0.0, 0.0],
+        },
+        star_tracker={**config.star_tracker, "rate": 1.0},
+    )
+
+    # Star-tracker construction seeds the shared RNG immediately before the
+    # runner draws its initial attitude error. With no tracker sample at t=0,
+    # the recorded estimate must remain that initial state, before propagation.
+    np.random.seed(config.seed + 2)
+    expected_q_hat = right_box_plus(
+        initial_attitude, np.random.randn(3) * 0.01
+    )
+    results = run_simulation(config)
+
+    assert not results["measurement_available"][0]
+    assert np.allclose(results["q_hat"][0], expected_q_hat, atol=1e-14)

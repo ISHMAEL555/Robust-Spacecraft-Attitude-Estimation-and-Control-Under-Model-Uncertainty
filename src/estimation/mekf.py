@@ -41,6 +41,9 @@ class MEKFParams:
     nis_gate_enabled: bool = False
     # Inertia matrix (for model-aided variant)
     inertia_model: Optional[np.ndarray] = None
+    # Continuous-time unmodeled rate-process spectral density amplitude
+    # ((rad/s)/sqrt(s)); represents torque/model uncertainty in model-aided use.
+    sigma_omega_process: float = 0.0
     # One-sigma relative prior uncertainty for the six independent elements of
     # the symmetric inertia tensor. Used by the augmented model-aided MEKF.
     inertia_relative_sigma: float = 0.05
@@ -87,6 +90,8 @@ class MEKF:
         
         if params.inertia_relative_sigma < 0.0:
             raise ValueError("inertia_relative_sigma must be non-negative")
+        if params.sigma_omega_process < 0.0:
+            raise ValueError("sigma_omega_process must be non-negative")
         self.state_dim = 15 if self.variant == 'model_aided' else 6
         self.nees_dof = self.state_dim
         self.bias_slice = slice(6, 9) if self.variant == 'model_aided' else slice(3, 6)
@@ -136,6 +141,10 @@ class MEKF:
         # Van Loan discretization integrates continuous-time noise spectral densities.
         if self.variant == 'gyro_driven':
             Q[:3, :3] = np.eye(3) * self.gyro_params.sigma_v**2 * self.params.Q_scale
+        elif self.variant == 'model_aided':
+            Q[3:6, 3:6] = (
+                np.eye(3) * self.params.sigma_omega_process**2 * self.params.Q_scale
+            )
         Q[self.bias_slice, self.bias_slice] = (
             np.eye(3) * self.gyro_params.sigma_u**2 * self.params.Q_scale
         )
@@ -273,6 +282,7 @@ class MEKF:
         F[3:6, 3:6] = self.I_model_inv @ (
             inertia_rate_skew - omega_skew @ self.I_model
         )
+        G[3:6, 3:6] = np.eye(3)
         G[6:9, 6:9] = np.eye(3)
 
         # Linearize Euler's equation with respect to the six independent
@@ -442,11 +452,25 @@ class MEKF:
 
     def _reset_attitude_error_covariance(self, delta_theta: np.ndarray) -> None:
         reset = np.eye(self.state_dim)
-        reset[:3, :3] -= 0.5 * np.array([
+        theta_sq = float(delta_theta @ delta_theta)
+        theta = np.sqrt(theta_sq)
+        skew = np.array([
             [0.0, -delta_theta[2], delta_theta[1]],
             [delta_theta[2], 0.0, -delta_theta[0]],
             [-delta_theta[1], delta_theta[0], 0.0],
         ])
+        if theta < 1e-5:
+            theta_fourth = theta_sq * theta_sq
+            first = 0.5 - theta_sq / 24.0 + theta_fourth / 720.0
+            second = 1.0 / 6.0 - theta_sq / 120.0 + theta_fourth / 5040.0
+        else:
+            first = (1.0 - np.cos(theta)) / theta_sq
+            second = (theta - np.sin(theta)) / (theta_sq * theta)
+        # Exact SO(3) right Jacobian for the reset map
+        # Log(Exp(-delta_theta) Exp(delta_theta + error)).
+        reset[:3, :3] = (
+            np.eye(3) - first * skew + second * (skew @ skew)
+        )
         self.P = reset @ self.P @ reset.T
         self.P = (self.P + self.P.T) / 2
     
@@ -531,7 +555,49 @@ class MEKF:
         Returns:
             NEES value
         """
-        # Error state
+        error = self._compute_error_state(
+            q_true, b_true, omega_true, inertia_true
+        )
+        # NEES = e^T P^{-1} e
+        NEES = error @ np.linalg.solve(self.P, error)
+        self.history['NEES'].append(NEES)
+        return NEES
+
+    def compute_nees_components(
+        self,
+        q_true: np.ndarray,
+        b_true: np.ndarray,
+        omega_true: Optional[np.ndarray] = None,
+        inertia_true: Optional[np.ndarray] = None,
+    ) -> dict[str, float]:
+        """Return marginal NEES by state group; these do not sum to full NEES."""
+        error = self._compute_error_state(
+            q_true, b_true, omega_true, inertia_true
+        )
+        groups = {'attitude': slice(0, 3)}
+        if self.variant == 'model_aided':
+            groups.update({
+                'rate': slice(3, 6),
+                'bias': slice(6, 9),
+                'inertia': slice(9, 15),
+            })
+        else:
+            groups['bias'] = slice(3, 6)
+        return {
+            name: float(error[group] @ np.linalg.solve(
+                self.P[group, group], error[group]
+            ))
+            for name, group in groups.items()
+        }
+
+    def _compute_error_state(
+        self,
+        q_true: np.ndarray,
+        b_true: np.ndarray,
+        omega_true: Optional[np.ndarray],
+        inertia_true: Optional[np.ndarray],
+    ) -> np.ndarray:
+        """Build the true-minus-estimated error in the filter's tangent frame."""
         delta_q = right_error_quat(q_true, self.q_hat)
         delta_theta = error_quat_to_vec(delta_q)
         delta_bias = b_true - self.b_hat
@@ -551,11 +617,7 @@ class MEKF:
             ])
         else:
             error = np.concatenate([delta_theta, delta_bias])
-        
-        # NEES = e^T P^{-1} e
-        NEES = error @ np.linalg.solve(self.P, error)
-        self.history['NEES'].append(NEES)
-        return NEES
+        return error
     
     def get_estimated_omega(self, omega_m: np.ndarray) -> np.ndarray:
         """Get bias-corrected angular velocity estimate."""
@@ -596,7 +658,8 @@ def create_mekf_nominal(variant: str = 'gyro_driven',
                          gyro_sigma_u: float = 1e-6,
                          st_sigma_theta: float = 10.0 * np.pi / 180.0 / 3600.0,
                          inertia: Optional[np.ndarray] = None,
-                         inertia_relative_sigma: float = 0.05) -> MEKF:
+                         inertia_relative_sigma: float = 0.05,
+                         sigma_omega_process: float = 0.0) -> MEKF:
     """Create MEKF with nominal parameters."""
     gyro_params = GyroParams(sigma_v=gyro_sigma_v, sigma_u=gyro_sigma_u)
     st_params = StarTrackerParams(sigma_theta=st_sigma_theta)
@@ -607,6 +670,7 @@ def create_mekf_nominal(variant: str = 'gyro_driven',
         star_tracker_params=st_params,
         inertia_model=inertia,
         inertia_relative_sigma=inertia_relative_sigma,
+        sigma_omega_process=sigma_omega_process,
     )
     return MEKF(params)
 

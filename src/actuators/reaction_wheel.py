@@ -22,6 +22,8 @@ class ReactionWheelParams:
     max_momentum: float = 10.0
     # Wheel inertia (kg*m^2)
     wheel_inertia: float = 0.01
+    # First-order motor torque response time constant (s); zero is ideal torque.
+    motor_time_constant_s: float = 0.0
     # Number of wheels (typically 3 or 4)
     num_wheels: int = 3
     # Wheel axis directions (body frame) - 3xN matrix
@@ -39,11 +41,13 @@ class ReactionWheelAssembly:
     def __init__(self, params: ReactionWheelParams):
         """
         Initialize reaction wheel assembly.
-        
+
         Args:
             params: ReactionWheelParams
         """
         self.params = params
+        if params.motor_time_constant_s < 0.0:
+            raise ValueError("motor_time_constant_s must be non-negative")
         
         # Default to orthogonal axes
         if params.axes is not None:
@@ -65,13 +69,17 @@ class ReactionWheelAssembly:
         # Wheel states
         self.momentum = np.zeros(params.num_wheels)  # N*m*s per wheel
         self.torque = np.zeros(params.num_wheels)    # N*m per wheel
+        self.motor_torque = np.zeros(params.num_wheels)  # N*m motor state
     
-    def compute_torque(self, tau_cmd: np.ndarray) -> np.ndarray:
+    def compute_torque(self, tau_cmd: np.ndarray, dt: Optional[float] = None) -> np.ndarray:
         """
         Compute achievable reaction wheel torque from commanded torque.
         
         Args:
             tau_cmd: Commanded body torque (N*m) - 3-vector
+            dt: Actuation interval (s). When supplied, wheel torque is limited
+                exactly so the next momentum state cannot cross its hard limit;
+                it also advances the configured first-order motor response.
             
         Returns:
             Achieved body torque (N*m) - 3-vector
@@ -82,26 +90,54 @@ class ReactionWheelAssembly:
         A_pinv = np.linalg.pinv(A)
         tau_wheel_cmd = -A_pinv @ tau_cmd
         
-        # Apply torque saturation
-        tau_wheel_sat = np.clip(tau_wheel_cmd, -self.params.max_torque, self.params.max_torque)
-        
-        # Check momentum saturation. Only torque that drives a wheel farther
-        # toward its current momentum limit is attenuated; unloading torque is
-        # preserved so a wheel can recover from saturation.
-        momentum_margin = 1.0 - np.abs(self.momentum) / self.params.max_momentum
-        momentum_margin = np.clip(momentum_margin, 0.0, 1.0)
-        drives_toward_limit = self.momentum * tau_wheel_sat > 0.0
-        tau_wheel_final = np.where(
-            drives_toward_limit,
-            tau_wheel_sat * momentum_margin,
-            tau_wheel_sat,
+        # Apply torque saturation, then advance the first-order motor model.
+        tau_wheel_sat = np.clip(
+            tau_wheel_cmd, -self.params.max_torque, self.params.max_torque
         )
+        if dt is not None and dt <= 0.0:
+            raise ValueError("dt must be positive when provided")
+        if dt is not None and self.params.motor_time_constant_s > 0.0:
+            response = 1.0 - np.exp(-dt / self.params.motor_time_constant_s)
+            tau_wheel_applied = self.motor_torque + response * (
+                tau_wheel_sat - self.motor_torque
+            )
+        else:
+            tau_wheel_applied = tau_wheel_sat.copy()
+
+        # Enforce the hard wheel-momentum limit without derating torque merely
+        # because a wheel is approaching the limit. Linear derating makes the
+        # available torque vanish asymptotically and can prevent momentum
+        # unloading maneuvers from completing.
+        limit = float(self.params.max_momentum)
+        if limit <= 0.0:
+            raise ValueError("max_momentum must be positive")
+        if dt is not None:
+            predicted = self.momentum + tau_wheel_applied * dt
+            over_positive = predicted > limit
+            over_negative = predicted < -limit
+            tau_wheel_applied[over_positive] = (
+                limit - self.momentum[over_positive]
+            ) / dt
+            tau_wheel_applied[over_negative] = (
+                -limit - self.momentum[over_negative]
+            ) / dt
+        else:
+            # Without a timestep, block only commands that push an already
+            # saturated wheel farther beyond its hard limit.
+            outward = (
+                ((self.momentum >= limit) & (tau_wheel_applied > 0.0))
+                | ((self.momentum <= -limit) & (tau_wheel_applied < 0.0))
+            )
+            tau_wheel_applied[outward] = 0.0
+
+        tau_wheel_final = tau_wheel_applied
         
         # Project wheel momentum rate into body frame with equal-and-opposite sign.
         tau_body = -A @ tau_wheel_final
         
         # Update wheel states (simplified)
         self.torque = tau_wheel_final
+        self.motor_torque = tau_wheel_final.copy()
         # Momentum update would be done in integration step
         
         return tau_body
@@ -129,6 +165,7 @@ class ReactionWheelAssembly:
         """Reset wheel states."""
         self.momentum = np.zeros(self.params.num_wheels)
         self.torque = np.zeros(self.params.num_wheels)
+        self.motor_torque = np.zeros(self.params.num_wheels)
 
 
 def allocate_torque_3wheel(tau_cmd: np.ndarray, max_torque: float) -> np.ndarray:

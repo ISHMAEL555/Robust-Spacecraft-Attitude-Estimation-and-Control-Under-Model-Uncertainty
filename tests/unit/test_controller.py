@@ -8,7 +8,7 @@ from src.control.attitude_controller import (
     AttitudeController, ControllerParams, 
     compute_control_gains, quaternion_feedback_torque
 )
-from src.dynamics.quaternion import normalize
+from src.dynamics.quaternion import normalize, multiply, vec_to_error_quat, rotate_vector
 
 
 class TestAttitudeController:
@@ -80,6 +80,37 @@ class TestAttitudeController:
         
         # Should produce damping torque
         assert tau[0] < 0
+
+    def test_nonidentity_target_error_is_expressed_in_current_body_frame(self):
+        params = ControllerParams(K_q=0.8, K_omega=0.0, max_torque=10.0)
+        controller = AttitudeController(params)
+        q_desired = vec_to_error_quat(np.array([0.7, -0.4, 0.2]))
+        attitude_offset_body = np.array([0.2, -0.1, 0.05])
+        q_current = multiply(q_desired, vec_to_error_quat(attitude_offset_body))
+        controller.set_desired(q_desired)
+
+        torque = controller.compute_control(q_current, np.zeros(3))
+        expected = -params.K_q * vec_to_error_quat(attitude_offset_body)[:3]
+
+        assert np.allclose(torque, expected, atol=1e-12)
+
+    def test_desired_rate_is_rotated_into_current_body_frame(self):
+        params = ControllerParams(K_q=0.0, K_omega=2.0, max_torque=10.0)
+        controller = AttitudeController(params)
+        q_desired = vec_to_error_quat(np.array([0.6, 0.2, -0.3]))
+        q_current = multiply(q_desired, vec_to_error_quat(np.array([0.3, -0.2, 0.1])))
+        omega_desired = np.array([0.01, -0.02, 0.03])
+        omega_current = np.array([-0.02, 0.04, 0.01])
+        controller.set_desired(q_desired, omega_desired)
+        q_error = multiply(np.array([-q_current[0], -q_current[1], -q_current[2], q_current[3]]), q_desired)
+        q_error = normalize(q_error)
+
+        torque = controller.compute_control(q_current, omega_current)
+        expected = -params.K_omega * (
+            omega_current - rotate_vector(q_error, omega_desired)
+        )
+
+        assert np.allclose(torque, expected, atol=1e-12)
     
     def test_compute_control_saturation(self):
         params = ControllerParams(K_q=100.0, K_omega=1000.0, max_torque=0.1)

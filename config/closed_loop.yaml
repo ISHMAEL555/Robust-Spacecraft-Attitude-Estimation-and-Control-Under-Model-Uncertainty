@@ -1,5 +1,5 @@
 # Closed-Loop Experiment Configuration
-# E6: Closed-loop pointing performance vs estimator degradation
+# E6 project benchmark; thresholds are project criteria, not mission requirements.
 
 simulation:
   duration: 200.0
@@ -36,14 +36,15 @@ filter:
   R_scale: 1.0
 
 controller:
-  K_q: 2.0
+  K_q: 1.0
   K_omega: 20.0
   max_torque: 0.1
   control_type: "quaternion_feedback"
 
 reaction_wheels:
   max_torque: 0.1
-  max_momentum: 10.0
+  max_momentum: 20.0
+  motor_time_constant_s: 0.05
   num_wheels: 3
 
 analysis:

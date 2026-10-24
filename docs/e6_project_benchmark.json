@@ -1,0 +1,117 @@
+{
+  "benchmark": {
+    "label": "project benchmark; not a mission requirement",
+    "passed": true,
+    "checks": {
+      "settling_time_2pct_s": {
+        "measured": 176.58,
+        "operator": "<=",
+        "limit": 180.0,
+        "passed": true
+      },
+      "settling_hold_duration_s": {
+        "measured": 23.409999999999997,
+        "operator": ">=",
+        "limit": 20.0,
+        "passed": true
+      },
+      "pointing_peak_final_20s_rad": {
+        "measured": 0.018896143797555925,
+        "operator": "<=",
+        "limit": 0.03490658503988659,
+        "passed": true
+      },
+      "final_angular_rate_norm_rad_s": {
+        "measured": 0.00028147141317971634,
+        "operator": "<=",
+        "limit": 0.001,
+        "passed": true
+      },
+      "peak_wheel_momentum_utilization": {
+        "measured": 0.49859609048161085,
+        "operator": "<=",
+        "limit": 0.8,
+        "passed": true
+      },
+      "achieved_effort_fraction": {
+        "measured": 0.8792614584233739,
+        "operator": ">=",
+        "limit": 0.85,
+        "passed": true
+      },
+      "peak_commanded_torque_nm": {
+        "measured": 0.10000000000000003,
+        "operator": "<=",
+        "limit": 0.1,
+        "passed": true
+      },
+      "peak_wheel_torque_nm": {
+        "measured": 0.09999779681542403,
+        "operator": "<=",
+        "limit": 0.1,
+        "passed": true
+      }
+    }
+  },
+  "scenario": {
+    "duration_s": 200.0,
+    "dt_s": 0.01,
+    "initial_attitude_deg": 60.0,
+    "initial_rate_rad_s": [
+      0.1,
+      0.0,
+      0.0
+    ],
+    "controller_gains": {
+      "K_q": 1.0,
+      "K_omega": 20.0
+    },
+    "body_torque_limit_nm": 0.1,
+    "wheel_torque_limit_nm": 0.1,
+    "wheel_momentum_limit_nms": 20.0,
+    "wheel_motor_time_constant_s": 0.05,
+    "star_tracker_rate_hz": 1.0,
+    "gyro_rate_hz": 100.0,
+    "assumptions": [
+      "rigid body and ideal reaction-wheel torque response",
+      "zero disturbance torque and no actuator latency",
+      "sensor measurements are applied at their simulation-grid epochs",
+      "project benchmark values are not mission requirements"
+    ]
+  },
+  "metrics": {
+    "pointing_rms_rad": 1.1948645112024765,
+    "pointing_peak_rad": 3.141253653442889,
+    "pointing_final_rad": 0.010237461368609896,
+    "settling_time_2pct_s": 176.58,
+    "settling_time_2deg_s": 158.56,
+    "settling_hold_duration_s": 23.409999999999997,
+    "pointing_rms_final_20s_rad": 0.014404653809004006,
+    "pointing_peak_final_20s_rad": 0.018896143797555925,
+    "control_effort_nm2_s": 1.0571631370525665,
+    "achieved_control_effort_nm2_s": 0.9295228016762687,
+    "peak_commanded_torque_nm": 0.10000000000000003,
+    "peak_achieved_torque_nm": 0.09999832585355975,
+    "max_torque_nm": 0.1,
+    "command_torque_saturation_fraction": 0.4439,
+    "peak_wheel_momentum_utilization": 0.49859609048161085,
+    "wheel_momentum_near_limit_fraction": 0.0,
+    "peak_wheel_torque_nm": 0.09999779681542403,
+    "max_wheel_torque_nm": 0.1,
+    "wheel_torque_saturation_fraction": 0.0,
+    "final_angular_rate_norm_rad_s": 0.00028147141317971634,
+    "peak_angular_rate_norm_rad_s": 0.1,
+    "achieved_effort_fraction": 0.8792614584233739,
+    "attitude_estimation_rmse_rad": 0.0013886940393130927,
+    "angular_rate_estimation_rmse_rad_s": 0.0009983005181144746,
+    "bias_estimation_rmse_rad_s": 2.0743528871668045e-05,
+    "attitude_3sigma_component_coverage": 0.9975666666666667,
+    "bias_3sigma_component_coverage": 1.0,
+    "innovation_whitened_lag1_autocorrelation_rms": 0.06208041103833483,
+    "innovation_whiteness_ljung_box_q": 93.23792752818491,
+    "innovation_whiteness_ljung_box_pvalue": 0.3866444281394668,
+    "innovation_whiteness_lags": 10,
+    "innovation_whiteness_pass_95": 1.0
+  },
+  "figure": "docs\\figures\\e6_project_benchmark.png"
+}

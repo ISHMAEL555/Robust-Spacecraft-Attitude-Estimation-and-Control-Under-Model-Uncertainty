@@ -1,0 +1,67 @@
+{
+  "scenario": "matched inertia, model-aided MEKF",
+  "n_runs": 10,
+  "duration_s": 100.0,
+  "dt_s": 0.01,
+  "seeds": [
+    42,
+    1042,
+    2042,
+    3042,
+    4042,
+    5042,
+    6042,
+    7042,
+    8042,
+    9042
+  ],
+  "inertia_relative_prior_sigma": 0.05,
+  "sigma_omega_process": 1e-07,
+  "nees_dof": 15,
+  "nis_dof": 3,
+  "mean_nees": 15.04728661028633,
+  "run_mean_nees_ci95": [
+    12.529874137187166,
+    17.564699083385495
+  ],
+  "mean_nis": 2.9577946794353718,
+  "mean_run_nis": 2.9577946794353718,
+  "run_mean_nis_ci95": [
+    2.7600329945231934,
+    3.15555636434755
+  ],
+  "run_mean_nis_ci_contains_3_dof": true,
+  "nis_epoch_means_inside_pointwise_mc_bounds_fraction": 0.97,
+  "mean_nees_inside_pointwise_mc_bounds_fraction": 0.8496,
+  "marginal_nees_by_state_group": {
+    "attitude": {
+      "mean": 3.2976390249385057,
+      "dof": 3,
+      "run_mean_ci95_lower": 2.659830068779324,
+      "run_mean_ci95_upper": 3.9354479810976875,
+      "n_runs": 10
+    },
+    "rate": {
+      "mean": 2.6620039302927365,
+      "dof": 3,
+      "run_mean_ci95_lower": 2.3146491990814435,
+      "run_mean_ci95_upper": 3.0093586615040295,
+      "n_runs": 10
+    },
+    "bias": {
+      "mean": 2.9017091364793304,
+      "dof": 3,
+      "run_mean_ci95_lower": 1.8384939133763025,
+      "run_mean_ci95_upper": 3.9649243595823584,
+      "n_runs": 10
+    },
+    "inertia": {
+      "mean": 5.829630189777569,
+      "dof": 6,
+      "run_mean_ci95_lower": 4.65792847198678,
+      "run_mean_ci95_upper": 7.001331907568357,
+      "n_runs": 10
+    }
+  },
+  "interpretation": "Exploratory matched-inertia ensemble check. Pointwise epoch fractions are descriptive because each run is temporally correlated."
+}

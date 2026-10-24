@@ -73,7 +73,7 @@ class TestReactionWheelAssembly:
         rwa = ReactionWheelAssembly(params)
         
         tau_cmd = np.array([0.05, 0.03, 0.02])
-        rwa.compute_torque(tau_cmd)
+        rwa.compute_torque(tau_cmd, 1.0)
         rwa.update_momentum(1.0)
         
         # Momentum should equal torque * dt
@@ -100,14 +100,45 @@ class TestReactionWheelAssembly:
         # Apply torque for long time to saturate momentum
         tau_cmd = np.array([0.1, 0.0, 0.0])
         for _ in range(20):
-            rwa.compute_torque(tau_cmd)
+            rwa.compute_torque(tau_cmd, 1.0)
             rwa.update_momentum(1.0)
         
         momentum = rwa.get_momentum()
         # Should be saturated at max_momentum
         assert momentum[0] <= 1.0 + 1e-10
-        # The momentum should be close to max_momentum (allowing for momentum margin reduction)
-        assert momentum[0] <= -0.5  # Wheel momentum moves toward its negative limit.
+        assert np.isclose(momentum[0], -1.0)
+        assert np.isclose(rwa.get_torque()[0], 0.0)
+
+    def test_momentum_limit_is_hard_and_predictive(self):
+        params = ReactionWheelParams(num_wheels=3, max_torque=0.1, max_momentum=1.0)
+        rwa = ReactionWheelAssembly(params)
+        rwa.momentum[0] = -0.999
+
+        # A 0.1 s command would cross the lower limit; clip only the final
+        # increment needed to reach the hard bound, preserving exact balance.
+        tau_body = rwa.compute_torque(np.array([0.1, 0.0, 0.0]), dt=0.1)
+        rwa.update_momentum(0.1)
+
+        assert np.isclose(tau_body[0], 0.01)
+        assert np.isclose(rwa.get_momentum()[0], -1.0)
+
+    def test_first_order_motor_torque_response(self):
+        params = ReactionWheelParams(
+            num_wheels=3,
+            max_torque=0.1,
+            max_momentum=1.0,
+            motor_time_constant_s=0.05,
+        )
+        rwa = ReactionWheelAssembly(params)
+        dt = 0.01
+
+        tau_body = rwa.compute_torque(np.array([0.1, 0.0, 0.0]), dt=dt)
+        expected_motor_torque = -0.1 * (1.0 - np.exp(-dt / 0.05))
+        rwa.update_momentum(dt)
+
+        assert np.isclose(tau_body[0], -expected_motor_torque)
+        assert np.isclose(rwa.get_torque()[0], expected_motor_torque)
+        assert np.isclose(rwa.get_momentum()[0], expected_motor_torque * dt)
     
     def test_get_body_momentum(self):
         params = ReactionWheelParams(num_wheels=3, max_torque=0.1, max_momentum=10.0)

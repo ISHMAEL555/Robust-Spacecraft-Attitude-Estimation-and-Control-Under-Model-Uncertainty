@@ -7,7 +7,9 @@ import pytest
 from src.estimation.mekf import MEKF, MEKFParams, create_mekf_nominal
 from src.sensors.gyro import GyroParams
 from src.sensors.star_tracker import StarTrackerParams
-from src.dynamics.quaternion import normalize, error_quat, error_quat_to_vec, box_plus
+from src.dynamics.quaternion import (
+    normalize, error_quat, error_quat_to_vec, box_plus, right_box_plus
+)
 
 
 class TestMEKF:
@@ -28,6 +30,19 @@ class TestMEKF:
 
         assert np.allclose(mekf.Q[:3, :3], (2e-4) ** 2 * np.eye(3))
         assert np.allclose(mekf.Q[3:, 3:], (3e-6) ** 2 * np.eye(3))
+
+    def test_model_aided_rate_process_noise_is_continuous_spectral_density(self):
+        sigma_omega = 3e-8
+        mekf = create_mekf_nominal(
+            'model_aided',
+            inertia=np.diag([100.0, 80.0, 60.0]),
+            sigma_omega_process=sigma_omega,
+        )
+
+        assert np.allclose(
+            mekf.Q[3:6, 3:6], sigma_omega**2 * np.eye(3)
+        )
+        assert np.allclose(mekf.Q[6:9, 6:9], 1e-12 * np.eye(3))
     
     def test_initialization_model_aided(self):
         I = np.diag([100.0, 80.0, 60.0])
@@ -233,11 +248,17 @@ class TestMEKFVariants:
         mekf.P = np.eye(mekf.state_dim)
         delta_theta = np.array([0.1, -0.2, 0.05])
         reset = np.eye(mekf.state_dim)
-        reset[:3, :3] -= 0.5 * np.array([
+        skew = np.array([
             [0.0, -delta_theta[2], delta_theta[1]],
             [delta_theta[2], 0.0, -delta_theta[0]],
             [-delta_theta[1], delta_theta[0], 0.0],
         ])
+        theta = np.linalg.norm(delta_theta)
+        reset[:3, :3] = (
+            np.eye(3)
+            - ((1.0 - np.cos(theta)) / theta**2) * skew
+            + ((theta - np.sin(theta)) / theta**3) * (skew @ skew)
+        )
 
         mekf._reset_attitude_error_covariance(delta_theta)
 
@@ -316,6 +337,30 @@ class TestMEKFVariants:
         # A 10% error in each principal moment is a one-sigma error for each
         # independent diagonal inertia parameter.
         assert np.isclose(nees, 3.0, rtol=0.05)
+
+    def test_marginal_nees_reports_each_model_aided_state_group(self):
+        inertia = np.diag([100.0, 80.0, 60.0])
+        mekf = create_mekf_nominal('model_aided', inertia=inertia)
+        mekf.P = np.eye(15)
+        delta_theta = np.array([0.01, -0.02, 0.03])
+        delta_omega = np.array([0.004, -0.005, 0.006])
+        delta_bias = np.array([1e-4, -2e-4, 3e-4])
+        q_true = right_box_plus(mekf.q_hat, delta_theta)
+        mekf.omega_hat = np.array([0.02, -0.01, 0.005])
+        mekf.b_hat = np.array([0.001, -0.002, 0.0005])
+        inertia_true = inertia + np.diag([1.0, -2.0, 3.0])
+
+        components = mekf.compute_nees_components(
+            q_true,
+            mekf.b_hat + delta_bias,
+            mekf.omega_hat + delta_omega,
+            inertia_true,
+        )
+
+        assert set(components) == {'attitude', 'rate', 'bias', 'inertia'}
+        assert np.isclose(components['attitude'], delta_theta @ delta_theta)
+        assert np.isclose(components['rate'], delta_omega @ delta_omega)
+        assert np.isclose(components['bias'], delta_bias @ delta_bias)
 
     def test_model_aided_rate_jacobian_matches_finite_difference(self):
         inertia = np.diag([100.0, 80.0, 60.0])

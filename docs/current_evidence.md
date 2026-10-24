@@ -1,6 +1,6 @@
 # Current simulation evidence
 
-This page records the regenerated E0–E7 results after aligning the MEKF error-state implementation with its right-multiplicative, body-frame covariance linearization. The campaign is reproducible simulation evidence for this repository's idealized model; it is not hardware or mission validation. Historical outputs in `reports/` predate this correction and remain provenance only.
+The E0–E7 tables below are the original campaign snapshot after aligning the MEKF error-state convention. Their E6 cases use 100 s runs and the earlier ideal wheel setup; they do not represent the updated E6 project benchmark. The post-review evidence at the end of this page records the current reset Jacobian, motor and hard-limit model, benchmark results, and model-aided covariance findings. All results remain simulation evidence for this repository's idealized model, not hardware or mission validation.
 
 ## Run conditions and statistics
 
@@ -107,3 +107,38 @@ Ten 100 s nominal runs produce mean NEES 5.986 (6 DOF), mean NIS 2.971 (3 DOF), 
 - Time-sample fractions inside single-sample chi-square bounds do not account for temporal correlation.
 - The model is a rigid body with simplified wheels, one star tracker, and zero nominal disturbance torque. Flexible dynamics, fuel slosh, detailed hardware effects, orbit/environment models, physical validation, and mission acceptance criteria are absent.
 - The data characterize only the documented simulation cases. They establish neither a safe operating envelope nor flight readiness.
+
+## Post-review verification and updated project evidence
+
+### MEKF math and covariance
+
+`tests/unit/test_mekf_linearization.py` finite-difference checks the gyro-driven and model-aided continuous error dynamics, including every model-aided inertia coordinate. It also checks the star-tracker local residual Jacobian and the exact SO(3) right-error reset. Van Loan Qd is compared with independent Gauss-Legendre quadrature. The reset implementation now uses the full right Jacobian instead of the first-order approximation.
+
+The model-aided rate error was the dominant marginal contribution in the earlier matched-inertia ensemble. Adding the explicit `sigma_omega_process = 1e-7 (rad/s)/sqrt(s)` channel to both G and Q gives the following ten-run matched-inertia result (100 s per run, seeds 42 through 9042 in increments of 1000):
+
+| State group | Mean marginal NEES | DOF | Run-level 95% t interval |
+|---|---:|---:|---:|
+| Attitude | 3.298 | 3 | [2.660, 3.935] |
+| Rate | 2.662 | 3 | [2.315, 3.009] |
+| Bias | 2.902 | 3 | [1.838, 3.965] |
+| Inertia | 5.830 | 6 | [4.658, 7.001] |
+
+Full-state mean NEES is 15.047 (15 DOF), with a run-mean 95% t interval of [12.530, 17.565]. Mean NIS is 2.958 (3 DOF), with an independent-run 95% t interval of [2.760, 3.156]. Both intervals include their respective DOF references. The across-run mean is inside its pointwise 95% chi-square bounds at 84.96% of epochs; 97% of pointwise NIS means are within their ensemble bounds. These time fractions are descriptive because each run is temporally correlated. The process-noise amplitude is tuned to the simulation and is not hardware-characterized. See [the machine-readable run summary](model_aided_consistency.json) and [NEES plot](figures/model_aided_nees_groups.png).
+
+### E6 project benchmark
+
+This benchmark uses the updated `config/closed_loop.yaml`: 60 deg initial attitude error, 0.1 rad/s initial body rate, 0.1 N m wheel torque, 20 N m s per-wheel momentum, and a 50 ms first-order motor response. Project criteria are settling within 2% of initial error by 180 s, at least 20 s hold, final-20-second peak pointing <=2 deg, final rate <=1e-3 rad/s, peak wheel utilization <=80%, and achieved/requested squared-torque effort >=85%.
+
+Seed 42 settles at 176.58 s and holds for 23.41 s. Final-20-second peak pointing is 1.083 deg; final angular-rate norm is 2.81e-4 rad/s; peak wheel utilization is 49.9%; achieved effort fraction is 87.9%. All torque and momentum checks pass. The full-run pointing RMS is 1.195 rad because the initial spin creates a long acquisition transient. These thresholds are labeled project benchmarks, not mission requirements.
+
+The earlier smooth momentum derating was replaced with predictive hard limiting at the momentum boundary. Approaching the limit no longer reduces torque asymptotically. The optional first-order torque response preserves a shared wheel torque between wheel momentum integration and spacecraft dynamics.
+
+![Updated E6 benchmark pointing and wheel momentum usage](figures/e6_project_benchmark.png)
+
+### Innovation whiteness and sample timing
+
+The updated E6 seed-42 run has covariance-normalized, accepted star-tracker innovations with a 10-lag multivariate Ljung-Box statistic Q = 93.24 (30 DOF), p = 0.387. This is a single-run nominal result. The star-tracker scheduler now retains fractional sample phase; a 3 Hz tracker on a 100 Hz simulation grid produces three updates per simulated second without cumulative drift. Simulation output records each measurement's grid epoch. Delivery latency and out-of-sequence replay remain out of scope.
+
+### Controller and software verification
+
+The controller now forms its attitude correction in current-body coordinates and rotates the desired body rate into that same frame. Regression tests cover non-identity desired attitudes. Wheel tests cover torque/momentum hard limits and motor lag. The automated suite and CI are summarized in the repository README and the risk/traceability document.
