@@ -4,10 +4,11 @@
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.12-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A simulation study of **multiplicative extended Kalman filtering (MEKF)**, **covariance consistency**, and **reaction-wheel attitude control** when the spacecraft model and sensors are wrong. The study answers two separate questions:
+A simulation study of **spacecraft state-estimation errors and their effect on attitude-control and mission performance**. The project uses multiplicative extended Kalman filters (MEKFs) in closed loop with a reaction-wheel attitude controller, then degrades the estimator's knowledge on purpose: inertia mismatch, mistuned noise models, star-tracker outliers and outages. It asks three questions:
 
 1. **Estimation:** does the filter's reported covariance describe its actual error, and when does it stop doing so?
-2. **Control:** can the spacecraft acquire and hold its target with finite wheel torque and momentum?
+2. **Propagation:** how do those estimation errors reach the controller, and what do they cost in pointing?
+3. **Performance:** can the spacecraft still acquire and hold its target with finite wheel torque and momentum?
 
 > **Scope.** These are simulation results for this repository's models. They are not hardware validation, qualification, mission acceptance, or flight-readiness evidence.
 
@@ -108,6 +109,17 @@ To regenerate all published evidence (about 30 minutes on 16 cores), follow [Res
 - **Statistics:** ten runs per campaign case and five per robustness slice, with one-factor-at-a-time variations and diagonal inertia mismatch only. This is enough for the large effects reported, not for an operating envelope.
 - **Open risks:** model-aided consistency under mismatch (R-01), the rate-process noise is a tuning parameter (R-06), and large slews with stored momentum (R-07). See the [risk register](docs/requirements_traceability.md#3-risk-register).
 - The E6 thresholds are **project benchmarks**, not mission requirements.
+
+## Roadmap
+
+The next step closes the main gap between estimation evidence and control evidence: separating the pointing error *caused by* estimation from the control floor.
+
+- **Perfect-knowledge baseline:** rerun each scenario with the controller fed the true state, using the same seeds. The difference isolates the estimation-induced pointing error.
+- **Steady-state metrics:** measure absolute and relative pointing error (APE/RPE) after acquisition, where estimation effects are not masked by the acquisition transient. Move the E5 tracker outages into that window.
+- **Error decomposition:** report pointing error as control tracking error plus estimation error, including how gyro noise in the rate feedback becomes pointing error, and compare the gyro-driven and model-aided filters on that basis.
+- **Mission-level metric:** time inside a stated pointing requirement for each estimation fault.
+
+Until that work is done and verified, the results above characterize estimator consistency and closed-loop acquisition separately.
 
 ## License
 
