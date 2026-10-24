@@ -55,14 +55,16 @@ class StarTracker:
     def __init__(
         self,
         params: StarTrackerParams,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        rng: Optional[np.random.Generator] = None,
     ):
         """
         Initialize star tracker.
         
         Args:
             params: StarTrackerParams with noise and degradation characteristics
-            seed: Random seed for reproducibility
+            seed: Seed for this sensor's private random generator
+            rng: Explicit random generator; takes precedence over seed
         """
         self.params = params
         self.dt = 1.0 / params.rate
@@ -71,9 +73,7 @@ class StarTracker:
         self.in_outage = False
         self.outage_counter = 0
         self.scheduled_outage_started = False
-        
-        if seed is not None:
-            np.random.seed(seed)
+        self.rng = rng if rng is not None else np.random.default_rng(seed)
     
     def measure(self, q_true: np.ndarray, dt: float) -> Tuple[Optional[np.ndarray], bool]:
         """
@@ -123,21 +123,21 @@ class StarTracker:
             return None, False
         
         # Check for new outage
-        if self.params.outage_prob > 0 and np.random.rand() < self.params.outage_prob:
+        if self.params.outage_prob > 0 and self.rng.random() < self.params.outage_prob:
             self.in_outage = True
             self.outage_counter = max(self.params.outage_duration - 1, 0)
             return None, False
         
         # Generate measurement noise
-        noise = np.random.randn(3) * self.params.sigma_theta
+        noise = self.rng.standard_normal(3) * self.params.sigma_theta
         delta_q_noise = vec_to_error_quat(noise)
         q_meas = multiply(q_true, delta_q_noise)
         q_meas = normalize(q_meas)
         
         # Check for outlier
-        if self.params.outlier_prob > 0 and np.random.rand() < self.params.outlier_prob:
+        if self.params.outlier_prob > 0 and self.rng.random() < self.params.outlier_prob:
             # Add large outlier
-            outlier_dir = np.random.randn(3)
+            outlier_dir = self.rng.standard_normal(3)
             outlier_dir = outlier_dir / np.linalg.norm(outlier_dir)
             outlier_noise = outlier_dir * self.params.outlier_magnitude
             delta_q_outlier = vec_to_error_quat(outlier_noise)
@@ -170,9 +170,14 @@ def star_tracker_noise_covariance(params: StarTrackerParams) -> np.ndarray:
     return (params.sigma_theta**2) * np.eye(3)
 
 
-def generate_outlier_measurement(q_true: np.ndarray, magnitude: float) -> np.ndarray:
+def generate_outlier_measurement(
+    q_true: np.ndarray,
+    magnitude: float,
+    rng: Optional[np.random.Generator] = None,
+) -> np.ndarray:
     """Generate an outlier measurement with specified magnitude."""
-    outlier_dir = np.random.randn(3)
+    rng = np.random.default_rng() if rng is None else rng
+    outlier_dir = rng.standard_normal(3)
     outlier_dir = outlier_dir / np.linalg.norm(outlier_dir)
     outlier_noise = outlier_dir * magnitude
     delta_q_outlier = vec_to_error_quat(outlier_noise)
@@ -196,54 +201,3 @@ def nis_threshold(dof: int = 3, confidence: float = 0.95) -> Tuple[float, float]
     lower = stats.chi2.ppf(alpha / 2, dof)
     upper = stats.chi2.ppf(1 - alpha / 2, dof)
     return lower, upper
-
-
-# Test functions
-def test_star_tracker():
-    """Run basic star tracker tests."""
-    params = StarTrackerParams(
-        sigma_theta=10.0 * np.pi / 180.0 / 3600.0,  # 10 arcsec
-        rate=1.0,
-        outlier_prob=0.0,
-        outage_prob=0.0
-    )
-    
-    tracker = StarTracker(params, seed=42)
-    
-    q_true = np.array([0.1, 0.2, 0.3, 0.9])
-    q_true = normalize(q_true)
-    
-    measurements = []
-    for i in range(100):
-        q_meas, valid = tracker.measure(q_true, 1.0)
-        if q_meas is not None:
-            measurements.append(q_meas)
-    
-    measurements = np.array(measurements)
-    
-    # Compute error statistics
-    errors = []
-    for q_meas in measurements:
-        delta_q = right_error_quat(q_meas, q_true)
-        delta_theta = error_quat_to_vec(delta_q)
-        errors.append(delta_theta)
-    
-    errors = np.array(errors)
-    print(f"Number of measurements: {len(measurements)}")
-    print(f"Mean error: {np.mean(errors, axis=0)}")
-    print(f"Std error: {np.std(errors, axis=0)}")
-    print(f"Expected std: {params.sigma_theta:.2e}")
-    
-    # Test covariance
-    R = star_tracker_noise_covariance(params)
-    print(f"R (measurement noise):\n{R}")
-    
-    # Test NIS threshold
-    lower, upper = nis_threshold(3, 0.95)
-    print(f"NIS 95% bounds: [{lower:.3f}, {upper:.3f}]")
-    
-    print("Star tracker tests passed!")
-
-
-if __name__ == "__main__":
-    test_star_tracker()

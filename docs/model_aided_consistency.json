@@ -19,47 +19,47 @@
   "sigma_omega_process": 1e-07,
   "nees_dof": 15,
   "nis_dof": 3,
-  "mean_nees": 15.04728661028633,
+  "mean_nees": 13.281288163060983,
   "run_mean_nees_ci95": [
-    12.529874137187166,
-    17.564699083385495
+    10.280622892235654,
+    16.281953433886322
   ],
-  "mean_nis": 2.9577946794353718,
-  "mean_run_nis": 2.9577946794353718,
+  "mean_nis": 3.033762861671822,
+  "mean_run_nis": 3.0337628616718217,
   "run_mean_nis_ci95": [
-    2.7600329945231934,
-    3.15555636434755
+    2.8280219056675944,
+    3.239503817676049
   ],
   "run_mean_nis_ci_contains_3_dof": true,
-  "nis_epoch_means_inside_pointwise_mc_bounds_fraction": 0.97,
-  "mean_nees_inside_pointwise_mc_bounds_fraction": 0.8496,
+  "nis_epoch_means_inside_pointwise_mc_bounds_fraction": 0.96,
+  "mean_nees_inside_pointwise_mc_bounds_fraction": 0.6607,
   "marginal_nees_by_state_group": {
     "attitude": {
-      "mean": 3.2976390249385057,
+      "mean": 2.4791712728430726,
       "dof": 3,
-      "run_mean_ci95_lower": 2.659830068779324,
-      "run_mean_ci95_upper": 3.9354479810976875,
+      "run_mean_ci95_lower": 2.0842707333112185,
+      "run_mean_ci95_upper": 2.8740718123749267,
       "n_runs": 10
     },
     "rate": {
-      "mean": 2.6620039302927365,
+      "mean": 2.2372646204625015,
       "dof": 3,
-      "run_mean_ci95_lower": 2.3146491990814435,
-      "run_mean_ci95_upper": 3.0093586615040295,
+      "run_mean_ci95_lower": 1.6295724135727225,
+      "run_mean_ci95_upper": 2.8449568273522807,
       "n_runs": 10
     },
     "bias": {
-      "mean": 2.9017091364793304,
+      "mean": 2.784705712663614,
       "dof": 3,
-      "run_mean_ci95_lower": 1.8384939133763025,
-      "run_mean_ci95_upper": 3.9649243595823584,
+      "run_mean_ci95_lower": 1.991105241908545,
+      "run_mean_ci95_upper": 3.5783061834186833,
       "n_runs": 10
     },
     "inertia": {
-      "mean": 5.829630189777569,
+      "mean": 5.599552312982186,
       "dof": 6,
-      "run_mean_ci95_lower": 4.65792847198678,
-      "run_mean_ci95_upper": 7.001331907568357,
+      "run_mean_ci95_lower": 3.5818338338264706,
+      "run_mean_ci95_upper": 7.6172707921379015,
       "n_runs": 10
     }
   },

@@ -46,7 +46,8 @@ class Gyroscope:
         self,
         params: GyroParams,
         initial_bias: Optional[np.ndarray] = None,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        rng: Optional[np.random.Generator] = None,
     ):
         """
         Initialize gyroscope.
@@ -54,19 +55,21 @@ class Gyroscope:
         Args:
             params: GyroParams with noise characteristics
             initial_bias: Initial bias vector (rad/s), random if None
-            seed: Random seed for reproducibility
+            seed: Seed for this sensor's private random generator
+            rng: Explicit random generator; takes precedence over seed
+
+        The sensor never touches NumPy's global random state, so noise streams
+        of different sensors are independent and reproducible.
         """
         self.params = params
         self.dt = 1.0 / params.rate
-        
-        if seed is not None:
-            np.random.seed(seed)
-        
+        self.rng = rng if rng is not None else np.random.default_rng(seed)
+
         if initial_bias is not None:
             self.bias = np.array(initial_bias, dtype=float)
         else:
             # Random initial bias
-            self.bias = np.random.randn(3) * params.sigma_b0
+            self.bias = self.rng.standard_normal(3) * params.sigma_b0
         
         # True bias (for simulation truth)
         self.true_bias = self.bias.copy()
@@ -82,10 +85,10 @@ class Gyroscope:
             Measured angular velocity (rad/s)
         """
         # Propagate true bias (random walk)
-        self.true_bias += np.random.randn(3) * self.params.sigma_u * np.sqrt(self.dt)
+        self.true_bias += self.rng.standard_normal(3) * self.params.sigma_u * np.sqrt(self.dt)
         
         # Measurement noise (angle random walk)
-        noise = np.random.randn(3) * self.params.sigma_v / np.sqrt(self.dt)
+        noise = self.rng.standard_normal(3) * self.params.sigma_v / np.sqrt(self.dt)
         
         # Measurement: omega_m = omega_true + bias + noise
         omega_measured = omega_true + self.true_bias + noise
@@ -102,7 +105,7 @@ class Gyroscope:
             self.bias = np.array(bias, dtype=float)
             self.true_bias = self.bias.copy()
         else:
-            self.bias = np.random.randn(3) * self.params.sigma_b0
+            self.bias = self.rng.standard_normal(3) * self.params.sigma_b0
             self.true_bias = self.bias.copy()
 
 
@@ -157,46 +160,3 @@ def continuous_to_discrete_gyro_noise(sigma_v: float, sigma_u: float, dt: float)
     R = (sigma_v**2 / dt) * np.eye(3)
     Q_b = (sigma_u**2 * dt) * np.eye(3)
     return R, Q_b
-
-
-# Test functions
-def test_gyro():
-    """Run basic gyroscope tests."""
-    params = GyroParams(
-        sigma_v=1e-4,
-        sigma_u=1e-6,
-        sigma_b0=1e-3,
-        rate=100.0
-    )
-    
-    gyro = Gyroscope(params, seed=42)
-    
-    # Test measurement
-    omega_true = np.array([0.1, 0.05, 0.02])
-    measurements = []
-    for _ in range(1000):
-        meas = gyro.measure(omega_true)
-        measurements.append(meas)
-    
-    measurements = np.array(measurements)
-    mean_meas = np.mean(measurements, axis=0)
-    std_meas = np.std(measurements, axis=0)
-    
-    # Mean should be close to omega_true + bias
-    print(f"True omega: {omega_true}")
-    print(f"True bias: {gyro.get_true_bias()}")
-    print(f"Mean measurement: {mean_meas}")
-    print(f"Std measurement: {std_meas}")
-    print(f"Expected noise std: {params.sigma_v / np.sqrt(params.dt):.2e}")
-    
-    # Test covariance functions
-    R = gyro_noise_covariance(params)
-    Q_b = gyro_bias_process_noise(params)
-    print(f"R (measurement noise):\n{R}")
-    print(f"Q_b (bias process noise):\n{Q_b}")
-    
-    print("Gyro tests passed!")
-
-
-if __name__ == "__main__":
-    test_gyro()

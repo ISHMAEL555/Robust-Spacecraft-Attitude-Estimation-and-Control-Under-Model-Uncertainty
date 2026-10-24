@@ -408,5 +408,35 @@ class TestMEKFVariants:
         assert np.allclose(F[3:6, 9:15], numerical_inertia, rtol=1e-6, atol=1e-11)
 
 
+class TestModelAidedWheelMomentum:
+    """The model-aided rate model must include the measured wheel momentum."""
+
+    @staticmethod
+    def _rate_error(include_wheel_momentum: bool) -> float:
+        from src.dynamics.rigid_body import RigidBody
+
+        inertia = np.diag([100.0, 80.0, 60.0])
+        omega0 = np.array([0.02, -0.01, 0.03])
+        wheel_momentum = np.array([8.0, -5.0, 6.0])
+        body = RigidBody(inertia, np.array([0.0, 0.0, 0.0, 1.0]), omega0)
+        mekf = create_mekf_nominal('model_aided', inertia=inertia)
+        mekf.omega_hat = omega0.copy()
+        mekf._omega_initialized = True
+        dt = 0.01
+        for _ in range(2000):
+            body.step(np.zeros(3), dt, wheel_momentum, np.zeros(3))
+            mekf.propagate(
+                np.zeros(3), np.zeros(3), dt,
+                wheel_momentum if include_wheel_momentum else None,
+            )
+        return float(np.linalg.norm(mekf.omega_hat - body.omega))
+
+    def test_open_loop_rate_prediction_tracks_truth_with_wheel_momentum(self):
+        assert self._rate_error(include_wheel_momentum=True) < 1e-7
+
+    def test_omitting_wheel_momentum_gives_large_prediction_error(self):
+        assert self._rate_error(include_wheel_momentum=False) > 1e-3
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

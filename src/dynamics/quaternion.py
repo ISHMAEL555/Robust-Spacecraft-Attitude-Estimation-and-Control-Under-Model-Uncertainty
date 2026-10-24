@@ -160,6 +160,25 @@ def vec_to_error_quat(delta_theta: np.ndarray) -> np.ndarray:
         return np.array([0.0, 0.0, 0.0, 1.0])
 
 
+def skew(v: np.ndarray) -> np.ndarray:
+    """Return the cross-product matrix [v]x such that [v]x u = v x u."""
+    return np.array([
+        [0.0, -v[2], v[1]],
+        [v[2], 0.0, -v[0]],
+        [-v[1], v[0], 0.0],
+    ])
+
+
+def propagate_quaternion(q: np.ndarray, omega: np.ndarray, dt: float) -> np.ndarray:
+    """
+    Propagate body-to-inertial attitude over dt with a constant body rate.
+
+    Uses the exact zeroth-order-hold solution q(t+dt) = q(t) ⊗ Exp(omega dt),
+    which preserves the unit norm and matches the right-error covariance model.
+    """
+    return normalize(right_box_plus(q, np.asarray(omega, dtype=float) * dt))
+
+
 def quat_derivative(q: np.ndarray, omega: np.ndarray) -> np.ndarray:
     """
     Body-to-inertial quaternion kinematics: q_dot = 0.5 * q ⊗ [omega, 0]
@@ -233,55 +252,3 @@ def slerp(q1: np.ndarray, q2: np.ndarray, t: float) -> np.ndarray:
     s2 = sin_theta / sin_theta_0
     
     return normalize(s1 * q1 + s2 * q2)
-
-
-# Test functions
-def test_quaternion_algebra():
-    """Run basic quaternion algebra tests."""
-    # Test identity
-    q_id = np.array([0.0, 0.0, 0.0, 1.0])
-    assert is_unit(q_id)
-    
-    # Test normalization
-    q = np.array([1.0, 2.0, 3.0, 4.0])
-    q_norm = normalize(q)
-    assert is_unit(q_norm)
-    
-    # Test conjugate/inverse
-    q = np.array([0.1, 0.2, 0.3, 0.9])
-    q = normalize(q)
-    q_inv = inverse(q)
-    q_mult = multiply(q, q_inv)
-    assert np.allclose(q_mult, q_id, atol=1e-10)
-    
-    # Test rotation
-    v = np.array([1.0, 0.0, 0.0])
-    q_90z = np.array([0.0, 0.0, np.sin(np.pi/4), np.cos(np.pi/4)])  # 90 deg about z
-    v_rot = rotate_vector(q_90z, v)
-    assert np.allclose(v_rot, [0.0, 1.0, 0.0], atol=1e-10)
-    
-    # Test rotmat conversion
-    R = quat_to_rotmat(q_90z)
-    q_back = rotmat_to_quat(R)
-    assert np.allclose(np.abs(q_back), np.abs(q_90z), atol=1e-10)
-    
-    # Test box_plus/box_minus
-    q1 = normalize(np.array([0.1, 0.2, 0.3, 0.9]))
-    delta = np.array([0.01, -0.02, 0.005])
-    q2 = box_plus(q1, delta)
-    delta_back = box_minus(q2, q1)
-    assert np.allclose(delta, delta_back, atol=1e-10)
-    
-    # Test error quaternion
-    q_true = normalize(np.array([0.2, 0.1, -0.1, 0.97]))
-    q_est = normalize(np.array([0.19, 0.11, -0.09, 0.97]))
-    delta_q = error_quat(q_true, q_est)
-    delta_theta = error_quat_to_vec(delta_q)
-    q_reconstructed = box_plus(q_est, delta_theta)
-    assert np.allclose(np.abs(q_reconstructed), np.abs(q_true), atol=1e-10)
-    
-    print("All quaternion tests passed!")
-
-
-if __name__ == "__main__":
-    test_quaternion_algebra()

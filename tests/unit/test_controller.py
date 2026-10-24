@@ -126,80 +126,115 @@ class TestAttitudeController:
         # Should be saturated
         assert np.linalg.norm(tau) <= 0.1 + 1e-10
     
-    def test_compute_control_with_feedforward(self):
+    def test_compute_control_with_feedforward_saturates_once(self):
         params = ControllerParams(K_q=1.0, K_omega=10.0, max_torque=0.1)
         controller = AttitudeController(params)
         controller.set_desired(np.array([0.0, 0.0, 0.0, 1.0]))
-        
+
         I = np.diag([100.0, 80.0, 60.0])
         q_current = np.array([0.0, 0.0, 0.0, 1.0])
         omega_current = np.array([0.1, 0.05, 0.02])
-        
+
         tau = controller.compute_control_with_feedforward(q_current, omega_current, I)
-        
-        # Feedforward should add omega x I*omega term
-        omega_cross_Iomega = np.cross(omega_current, I @ omega_current)
-        tau_fb = controller.compute_control(q_current, omega_current)
-        expected = tau_fb + omega_cross_Iomega
-        expected_norm = np.linalg.norm(expected)
-        if expected_norm > params.max_torque:
-            expected *= params.max_torque / expected_norm
-        
-        assert np.allclose(tau, expected, atol=1e-10)
-    
-    def test_compute_control_with_disturbance(self):
+
+        # The unsaturated feedback and gyroscopic feedforward are summed and
+        # then limited once; the feedforward is not lost when feedback alone
+        # would already saturate.
+        tau_fb = -params.K_omega * omega_current
+        expected = tau_fb + np.cross(omega_current, I @ omega_current)
+        expected *= params.max_torque / np.linalg.norm(expected)
+        assert np.allclose(tau, expected, atol=1e-12)
+        assert np.linalg.norm(tau) <= params.max_torque + 1e-12
+
+    def test_feedforward_includes_wheel_momentum(self):
+        params = ControllerParams(K_q=1.0, K_omega=0.0, max_torque=10.0)
+        controller = AttitudeController(params)
+        I = np.diag([100.0, 80.0, 60.0])
+        omega = np.array([0.0, 0.0, 0.01])
+        h_w = np.array([2.0, 0.0, 0.0])
+
+        tau = controller.compute_control_with_feedforward(
+            np.array([0.0, 0.0, 0.0, 1.0]), omega, I, wheel_momentum=h_w
+        )
+
+        assert np.allclose(tau, np.cross(omega, I @ omega + h_w), atol=1e-14)
+
+    def test_feedforward_cancels_estimated_disturbance(self):
         params = ControllerParams(K_q=1.0, K_omega=10.0, max_torque=0.1)
         controller = AttitudeController(params)
         controller.set_desired(np.array([0.0, 0.0, 0.0, 1.0]))
-        
+
         I = np.diag([100.0, 80.0, 60.0])
         tau_dist = np.array([0.001, 0.002, 0.003])
-        
-        q_current = np.array([0.0, 0.0, 0.0, 1.0])
-        omega_current = np.zeros(3)
-        
-        tau = controller.compute_control_with_feedforward(q_current, omega_current, I, tau_dist)
-        
-        tau_fb = controller.compute_control(q_current, omega_current)
-        expected = tau_fb + tau_dist
-        
-        assert np.allclose(tau, expected, atol=1e-10)
+
+        tau = controller.compute_control_with_feedforward(
+            np.array([0.0, 0.0, 0.0, 1.0]), np.zeros(3), I, tau_dist
+        )
+
+        # A disturbance acting on the bus is cancelled by commanding its negative.
+        assert np.allclose(tau, -tau_dist, atol=1e-14)
+
+    def test_rejects_unknown_control_type(self):
+        with pytest.raises(ValueError):
+            AttitudeController(ControllerParams(control_type="lqr"))
 
 
 class TestControlGains:
     """Test control gain computation."""
-    
-    def test_compute_control_gains(self):
+
+    def test_compute_control_gains_formula(self):
         I = np.diag([100.0, 80.0, 60.0])
         settling_time = 100.0
         damping_ratio = 0.7
-        
+
         K_q, K_omega = compute_control_gains(settling_time, damping_ratio, I)
-        
-        # Check positive gains
-        assert K_q > 0
-        assert K_omega > 0
-        
-        # Check approximate values
-        omega_n = 4.0 / settling_time
+
+        omega_n = 4.0 / (damping_ratio * settling_time)
         I_avg = np.mean(np.diag(I))
-        expected_K_q = I_avg * omega_n**2
-        expected_K_omega = 2 * damping_ratio * I_avg * omega_n
-        
-        assert np.allclose(K_q, expected_K_q, rtol=0.01)
-        assert np.allclose(K_omega, expected_K_omega, rtol=0.01)
-    
-    def test_quaternion_feedback_torque(self):
-        q_error = np.array([0.01, -0.02, 0.005, 0.999])
-        q_error = normalize(q_error)
+        assert np.isclose(K_q, I_avg * omega_n**2)
+        assert np.isclose(K_omega, 2 * damping_ratio * I_avg * omega_n)
+
+        K_q_qf, K_omega_qf = compute_control_gains(
+            settling_time, damping_ratio, I, control_type="quaternion_feedback"
+        )
+        # q_e,v ≈ theta / 2 halves the stiffness, so the gain is doubled.
+        assert np.isclose(K_q_qf, 2.0 * K_q)
+        assert np.isclose(K_omega_qf, K_omega)
+
+    @pytest.mark.parametrize("control_type", ["pd", "quaternion_feedback"])
+    def test_designed_gains_meet_settling_time(self, control_type):
+        """Small-angle single-axis response settles near the design time."""
+        inertia = 80.0
+        settling_time, damping_ratio = 60.0, 0.8
+        K_q, K_omega = compute_control_gains(
+            settling_time, damping_ratio, np.eye(3) * inertia, control_type
+        )
+        controller = AttitudeController(ControllerParams(
+            K_q=K_q, K_omega=K_omega, max_torque=1e3, control_type=control_type
+        ))
+        theta0, theta, rate, dt = 0.01, 0.01, 0.0, 0.01
+        times, errors = [], []
+        for step in range(int(2 * settling_time / dt)):
+            q = np.array([np.sin(theta / 2), 0.0, 0.0, np.cos(theta / 2)])
+            torque = controller.compute_control(q, np.array([rate, 0.0, 0.0]))[0]
+            rate += torque / inertia * dt
+            theta += rate * dt
+            times.append(step * dt)
+            errors.append(abs(theta))
+        errors = np.asarray(errors)
+        outside = np.flatnonzero(errors > 0.02 * theta0)
+        measured_settling = times[outside[-1] + 1]
+        assert abs(measured_settling - settling_time) / settling_time < 0.25
+
+    def test_quaternion_feedback_torque_sign(self):
+        q_error = normalize(np.array([0.01, -0.02, 0.005, 0.999]))
         omega_error = np.array([0.001, -0.002, 0.0005])
-        K_q = 1.0
-        K_omega = 10.0
-        
-        tau = quaternion_feedback_torque(q_error, omega_error, K_q, K_omega)
-        
-        expected = -K_q * q_error[:3] - K_omega * omega_error
-        assert np.allclose(tau, expected)
+
+        tau = quaternion_feedback_torque(q_error, omega_error, 1.0, 10.0)
+
+        # q_error = q_current^-1 ⊗ q_desired points toward the target, so the
+        # attitude term is positive; the rate term damps the rate error.
+        assert np.allclose(tau, q_error[:3] - 10.0 * omega_error)
 
 
 if __name__ == "__main__":

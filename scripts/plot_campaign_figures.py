@@ -136,7 +136,9 @@ def save_estimator_consistency(rows: list[dict[str, str]], output: Path) -> None
     axes[0].legend(frameon=False, fontsize=8, loc="upper left")
 
     axes[1].set_ylabel("Attitude-estimation RMSE (deg)")
-    axes[1].set_ylim(0.07, 0.12)
+    # Scale from the data: RMSE is non-negative, and a fixed window clips the
+    # run-level intervals whenever the results move.
+    axes[1].set_ylim(bottom=0.0)
     axes[1].set_title("Attitude accuracy")
     axes[1].legend(frameon=False, fontsize=8, loc="best")
 

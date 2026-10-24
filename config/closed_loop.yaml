@@ -46,6 +46,7 @@ reaction_wheels:
   max_momentum: 20.0
   motor_time_constant_s: 0.05
   num_wheels: 3
+  gyroscopic_coupling: true  # include omega x h_w in the truth model
 
 analysis:
   monte_carlo_runs: 50

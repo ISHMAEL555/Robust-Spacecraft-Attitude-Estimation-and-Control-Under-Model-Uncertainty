@@ -3,11 +3,15 @@ Multiplicative Extended Kalman Filter (MEKF) for spacecraft attitude estimation.
 
 Two variants:
 - Variant A (gyro-driven): Uses measured rate for kinematic propagation. Filter does not depend on inertia.
-- Variant B (model-aided): Propagates angular rate using Euler's equations with model inertia.
+- Variant B (model-aided): Propagates angular rate using Euler's equations with an
+  estimated inertia tensor, the applied wheel torque, and the measured wheel momentum.
 
 Variant A error state: [delta_theta (3), delta_bias (3)]
-Variant B error state: [delta_theta (3), delta_omega (3), delta_bias (3)]
-Nominal state: [q_hat (4), optional omega_hat (3), b_hat (3)]
+Variant B error state: [delta_theta (3), delta_omega (3), delta_bias (3), delta_inertia (6)]
+Nominal state: [q_hat (4), optional omega_hat (3), b_hat (3), optional I_hat (3x3)]
+
+All attitude errors are right-multiplicative body-frame errors,
+q_true = q_hat ⊗ Exp(delta_theta); see docs/conventions.md.
 """
 
 import numpy as np
@@ -16,7 +20,8 @@ from scipy.stats import chi2
 from typing import Optional, Tuple, Literal
 from dataclasses import dataclass
 from src.dynamics.quaternion import (
-    normalize, quat_derivative, right_box_plus, right_error_quat, error_quat_to_vec
+    normalize, propagate_quaternion, right_box_plus, right_error_quat,
+    error_quat_to_vec, skew,
 )
 from src.sensors.gyro import GyroParams, gyro_noise_covariance
 from src.sensors.star_tracker import StarTrackerParams, star_tracker_noise_covariance
@@ -240,14 +245,7 @@ class MEKF:
         F = np.zeros((6, 6))
         G = np.zeros((6, 6))
         
-        # Skew-symmetric matrix
-        omega_skew = np.array([
-            [0, -omega[2], omega[1]],
-            [omega[2], 0, -omega[0]],
-            [-omega[1], omega[0], 0]
-        ])
-        
-        F[:3, :3] = -omega_skew
+        F[:3, :3] = -skew(omega)
         F[:3, 3:] = -np.eye(3)
         G[:3, :3] = np.eye(3)
         G[3:, 3:] = np.eye(3)
@@ -258,29 +256,24 @@ class MEKF:
         """
         Compute F and G for model-aided variant (Variant B).
         
-        Error state: [delta_theta, delta_omega, delta_bias].
+        Error state: [delta_theta, delta_omega, delta_bias, delta_inertia].
+
+        Rate dynamics: f(omega, I) = I^-1 (tau - omega x (I omega + h_w)),
+        with tau the applied wheel torque and h_w the measured wheel momentum
+        held over the propagation interval.
         """
         F = np.zeros((15, 15))
         G = np.zeros((15, 15))
-        
-        # Attitude error dynamics
-        omega_skew = np.array([
-            [0, -omega_hat[2], omega_hat[1]],
-            [omega_hat[2], 0, -omega_hat[0]],
-            [-omega_hat[1], omega_hat[0], 0]
-        ])
-        
+
+        omega_skew = skew(omega_hat)
         F[:3, :3] = -omega_skew
         F[:3, 3:6] = np.eye(3)
 
-        inertia_rate = self.I_model @ omega_hat
-        inertia_rate_skew = np.array([
-            [0.0, -inertia_rate[2], inertia_rate[1]],
-            [inertia_rate[2], 0.0, -inertia_rate[0]],
-            [-inertia_rate[1], inertia_rate[0], 0.0],
-        ])
+        torque = getattr(self, "_propagation_torque", np.zeros(3))
+        wheel_momentum = getattr(self, "_propagation_wheel_momentum", np.zeros(3))
+        # df/domega = I^-1 ([I omega + h_w]x - [omega]x I)
         F[3:6, 3:6] = self.I_model_inv @ (
-            inertia_rate_skew - omega_skew @ self.I_model
+            skew(self.I_model @ omega_hat + wheel_momentum) - omega_skew @ self.I_model
         )
         G[3:6, 3:6] = np.eye(3)
         G[6:9, 6:9] = np.eye(3)
@@ -290,10 +283,7 @@ class MEKF:
         # df/dI_j = -I^-1 E_j f - I^-1 [omega]x E_j omega.
         # The inertia error is a constant parameter state, so its process
         # noise is zero; its uncertainty enters rate covariance through F.
-        torque = getattr(self, "_propagation_torque", np.zeros(3))
-        omega_dot = self.I_model_inv @ (
-            torque - np.cross(omega_hat, self.I_model @ omega_hat)
-        )
+        omega_dot = self._rate_derivative(omega_hat, torque, wheel_momentum)
         for index, basis in enumerate(self._inertia_basis):
             F[3:6, 9 + index] = (
                 -self.I_model_inv @ basis @ omega_dot
@@ -302,64 +292,84 @@ class MEKF:
         
         return F, G
     
-    def propagate(self, omega_m: np.ndarray, tau_cmd: Optional[np.ndarray] = None, dt: Optional[float] = None):
+    def _rate_derivative(
+        self, omega: np.ndarray, torque: np.ndarray, wheel_momentum: np.ndarray
+    ) -> np.ndarray:
+        """Euler's equation with the current inertia estimate and wheel momentum."""
+        gyroscopic = np.cross(omega, self.I_model @ omega + wheel_momentum)
+        return self.I_model_inv @ (torque - gyroscopic)
+
+    def propagate(
+        self,
+        omega_m: np.ndarray,
+        tau_cmd: Optional[np.ndarray] = None,
+        dt: Optional[float] = None,
+        wheel_momentum: Optional[np.ndarray] = None,
+    ):
         """
         Propagate filter state and covariance.
-        
+
         Args:
             omega_m: Measured angular velocity (rad/s)
             tau_cmd: Applied body torque (N*m) - required for model-aided variant
             dt: Time step (s), defaults to gyro rate
+            wheel_momentum: Measured wheel momentum in body axes (N*m*s),
+                representative of the interval; used by the model-aided
+                variant only. Zero if None.
         """
         if dt is None:
             dt = self.dt_gyro
-        
+
         if self.variant == 'gyro_driven':
             self._propagate_gyro_driven(omega_m, dt)
         else:
             if tau_cmd is None:
                 raise ValueError("Model-aided variant requires tau_cmd")
-            self._propagate_model_aided(omega_m, tau_cmd, dt)
-    
+            h_w = (
+                np.zeros(3) if wheel_momentum is None
+                else np.asarray(wheel_momentum, dtype=float)
+            )
+            self._propagate_model_aided(omega_m, np.asarray(tau_cmd, dtype=float), dt, h_w)
+
     def _propagate_gyro_driven(self, omega_m: np.ndarray, dt: float):
         """Variant A: Gyro-driven propagation."""
-        # Nominal quaternion propagation
+        # Exact zeroth-order-hold attitude propagation about the same held
+        # rate used to linearize the covariance.
         omega_est = omega_m - self.b_hat
-        q_dot = quat_derivative(self.q_hat, omega_est)
-        self.q_hat = normalize(self.q_hat + q_dot * dt)
-        
-        # Error state transition
+        self.q_hat = propagate_quaternion(self.q_hat, omega_est, dt)
+
         F, G = self._compute_F_G(omega_est)
         Phi, Qd = self._van_loan_discretization(F, G, self.Q, dt)
-        
-        # Covariance propagation
         self.P = Phi @ self.P @ Phi.T + Qd
-        
-        # Ensure symmetry and positive definiteness
         self.P = (self.P + self.P.T) / 2
-        eigvals = np.linalg.eigvals(self.P)
-        if np.any(eigvals < 0):
-            self.P += np.eye(6) * 1e-12
-    
-    def _propagate_model_aided(self, omega_m: np.ndarray, tau_cmd: np.ndarray, dt: float):
+
+    def _propagate_model_aided(
+        self,
+        omega_m: np.ndarray,
+        tau_cmd: np.ndarray,
+        dt: float,
+        wheel_momentum: np.ndarray,
+    ):
         """Variant B: Model-aided propagation."""
         if not self._omega_initialized:
             self.omega_hat = omega_m - self.b_hat
             self._omega_initialized = True
 
-        # Propagate estimated angular velocity using Euler's equations
-        # I * omega_dot + omega x (I * omega) = applied body torque.
-        omega_cross_Iomega = np.cross(self.omega_hat, self.I_model @ self.omega_hat)
-        omega_dot = self.I_model_inv @ (tau_cmd - omega_cross_Iomega)
-        self.omega_hat += omega_dot * dt
-        
-        # Nominal quaternion propagation with estimated omega
-        q_dot = quat_derivative(self.q_hat, self.omega_hat)
-        self.q_hat = normalize(self.q_hat + q_dot * dt)
-        
-        # Error state transition (using estimated omega)
+        # Linearize at the start-of-interval rate, then advance the nominal
+        # state with a midpoint (RK2) step of Euler's equation and an exact
+        # quaternion exponential at the midpoint rate.
         self._propagation_torque = tau_cmd
+        self._propagation_wheel_momentum = wheel_momentum
         F, G = self._compute_F_G_model_aided(self.omega_hat)
+
+        omega_start = self.omega_hat.copy()
+        omega_mid = omega_start + 0.5 * dt * self._rate_derivative(
+            omega_start, tau_cmd, wheel_momentum
+        )
+        self.omega_hat = omega_start + dt * self._rate_derivative(
+            omega_mid, tau_cmd, wheel_momentum
+        )
+        self.q_hat = propagate_quaternion(self.q_hat, omega_mid, dt)
         Phi, Qd = self._van_loan_discretization(F, G, self.Q, dt)
         
         # Covariance propagation
@@ -454,11 +464,7 @@ class MEKF:
         reset = np.eye(self.state_dim)
         theta_sq = float(delta_theta @ delta_theta)
         theta = np.sqrt(theta_sq)
-        skew = np.array([
-            [0.0, -delta_theta[2], delta_theta[1]],
-            [delta_theta[2], 0.0, -delta_theta[0]],
-            [-delta_theta[1], delta_theta[0], 0.0],
-        ])
+        theta_skew = skew(delta_theta)
         if theta < 1e-5:
             theta_fourth = theta_sq * theta_sq
             first = 0.5 - theta_sq / 24.0 + theta_fourth / 720.0
@@ -469,14 +475,15 @@ class MEKF:
         # Exact SO(3) right Jacobian for the reset map
         # Log(Exp(-delta_theta) Exp(delta_theta + error)).
         reset[:3, :3] = (
-            np.eye(3) - first * skew + second * (skew @ skew)
+            np.eye(3) - first * theta_skew + second * (theta_skew @ theta_skew)
         )
         self.P = reset @ self.P @ reset.T
         self.P = (self.P + self.P.T) / 2
     
     def step(self, omega_m: np.ndarray, q_meas: Optional[np.ndarray], 
              tau_cmd: Optional[np.ndarray] = None, dt: Optional[float] = None,
-             time: float = 0.0) -> dict:
+             time: float = 0.0,
+             wheel_momentum: Optional[np.ndarray] = None) -> dict:
         """
         Complete filter step: propagate and optionally update.
         
@@ -486,7 +493,8 @@ class MEKF:
             tau_cmd: Applied body torque (for model-aided)
             dt: Time step
             time: Current simulation time
-            
+            wheel_momentum: Measured wheel momentum in body axes (model-aided)
+
         Returns:
             Dictionary with filter outputs
         """
@@ -498,7 +506,7 @@ class MEKF:
             self.omega_hat = omega_m - self.b_hat
             self._omega_initialized = True
         else:
-            self.propagate(omega_m, tau_cmd, dt)
+            self.propagate(omega_m, tau_cmd, dt, wheel_momentum)
             if self.variant == 'model_aided':
                 self.update_gyro(omega_m)
         
@@ -673,49 +681,3 @@ def create_mekf_nominal(variant: str = 'gyro_driven',
         sigma_omega_process=sigma_omega_process,
     )
     return MEKF(params)
-
-
-# Test functions
-def test_mekf():
-    """Run basic MEKF tests."""
-    # Create nominal filter
-    mekf = create_mekf_nominal('gyro_driven')
-    
-    # Initial true state
-    q_true = np.array([0.1, 0.2, 0.3, 0.9])
-    q_true = normalize(q_true)
-    b_true = np.array([0.001, -0.002, 0.0005])
-    omega_true = np.array([0.01, 0.005, 0.002])
-    
-    # Simulate for a few steps
-    dt = 0.01
-    for i in range(100):
-        # Gyro measurement
-        omega_m = omega_true + b_true + np.random.randn(3) * 1e-4
-        
-        # Star tracker measurement every 10 steps
-        q_meas = None
-        if i % 10 == 0:
-            noise = np.random.randn(3) * 10.0 * np.pi / 180.0 / 3600.0
-            from src.dynamics.quaternion import vec_to_error_quat, multiply
-            delta_q = vec_to_error_quat(noise)
-            q_meas = multiply(q_true, delta_q)
-            q_meas = normalize(q_meas)
-        
-        # Filter step
-        mekf.step(omega_m, q_meas, dt=dt, time=i*dt)
-    
-    # Check results
-    print(f"Final q_hat: {mekf.q_hat}")
-    print(f"Final b_hat: {mekf.b_hat}")
-    print(f"Final P diag: {np.diag(mekf.P)}")
-    
-    # Compute NEES
-    nees = mekf.compute_nees(q_true, b_true)
-    print(f"NEES: {nees:.3f}")
-    
-    print("MEKF tests passed!")
-
-
-if __name__ == "__main__":
-    test_mekf()

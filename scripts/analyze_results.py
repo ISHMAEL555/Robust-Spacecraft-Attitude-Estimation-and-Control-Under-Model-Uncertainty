@@ -11,6 +11,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.dynamics.quaternion import right_error_quat, error_quat_to_vec
+from scripts.run_experiment import bias_covariance_index
 
 
 def load_results(filepath: str) -> Dict[str, Any]:
@@ -136,7 +137,7 @@ def plot_covariance(results: Dict[str, Any], save_path: Optional[Union[str, Path
     
     # 3-sigma bounds
     sigma_att = 3 * np.sqrt(P[:, :3, :3].diagonal(axis1=1, axis2=2))
-    bias_start = 6 if P.shape[1] == 9 else 3
+    bias_start = bias_covariance_index(results)
     sigma_bias = 3 * np.sqrt(
         P[:, bias_start:bias_start + 3, bias_start:bias_start + 3].diagonal(
             axis1=1, axis2=2
@@ -496,7 +497,7 @@ def generate_report(results: Dict[str, Any], output_path: Union[str, Path]):
             P_final = covariance[-1]
             f.write("Final Covariance (3-sigma):\n")
             attitude_bound = 3 * np.sqrt(np.diag(P_final[:3, :3])) * 180 / np.pi * 3600
-            bias_start = 6 if P_final.shape[0] == 9 else 3
+            bias_start = bias_covariance_index(results)
             bias_bound = 3 * np.sqrt(
                 np.diag(P_final[bias_start:bias_start + 3, bias_start:bias_start + 3])
             ) * 1000

@@ -19,18 +19,31 @@ ROOT = Path(__file__).resolve().parents[1]
 CAMPAIGNS = ("E0", "E1", "E2", "E3", "E4", "E5", "E6", "E7")
 SOURCE_PATHS = (
     "README.md",
+    "CHANGELOG.md",
     "scripts/run_research_campaigns.py",
     "scripts/run_experiment.py",
     "scripts/plot_campaign_figures.py",
     "scripts/export_campaign_evidence.py",
+    "scripts/evaluate_e6_benchmark.py",
+    "scripts/verify_model_aided_consistency.py",
+    "scripts/verify_robustness_slices.py",
+    "scripts/verify_innovation_whiteness.py",
+    "scripts/verify_wheel_coupling.py",
     "config/nominal.yaml",
     "config/model_uncertainty.yaml",
     "config/sensor_degradation.yaml",
     "config/closed_loop.yaml",
     "config/monte_carlo.yaml",
+    "docs/system_description.md",
+    "docs/conventions.md",
     "docs/e0_e7_campaign.md",
     "docs/current_evidence.md",
     "docs/requirements_traceability.md",
+    "docs/e6_project_benchmark.json",
+    "docs/model_aided_consistency.json",
+    "docs/robustness_slices.json",
+    "docs/innovation_whiteness.json",
+    "docs/wheel_coupling_effect.json",
 )
 
 
@@ -99,7 +112,11 @@ def main() -> None:
     _write_csv(rows, args.summary_output)
 
     campaign_counts = Counter(row["campaign"] for row in rows)
-    source_paths = [ROOT / item for item in SOURCE_PATHS]
+    # Hash every simulation source module, not only the scripts and configs,
+    # so the manifest identifies the exact code that produced the evidence.
+    source_paths = [ROOT / item for item in SOURCE_PATHS] + sorted(
+        (ROOT / "src").rglob("*.py")
+    )
     figure_paths = sorted(path for path in args.figure_dir.glob("*.png") if path.is_file())
     try:
         git_head = subprocess.run(

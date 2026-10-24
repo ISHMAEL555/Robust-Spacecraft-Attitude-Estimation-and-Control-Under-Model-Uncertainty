@@ -1,25 +1,32 @@
 """
 Rigid body dynamics for spacecraft attitude simulation.
 
-Truth model: nonlinear rigid body dynamics with reaction wheel torque and disturbances.
-I * omega_dot + omega x (I * omega) = tau_rw + tau_d
-q_dot = 0.5 * q ⊗ [omega_body, 0]
+Truth model: nonlinear rigid-body dynamics of a spacecraft bus carrying
+reaction wheels, with the wheel angular momentum included in the gyroscopic
+term:
+
+    J omega_dot + omega x (J omega + h_w) = tau_rw + tau_d
+    q_dot = 0.5 q ⊗ [omega_body, 0]
+
+J is the bus inertia (including the wheels' transverse inertia), h_w is the
+total wheel angular momentum relative to the body expressed in body axes, and
+tau_rw = -dh_w/dt is the reaction torque applied to the bus by the wheel motors.
 """
 
 import numpy as np
 from typing import Tuple, Optional
 from src.dynamics.quaternion import (
-    normalize, quat_derivative, quat_to_rotmat, rotate_vector
+    normalize, quat_derivative, quat_to_rotmat
 )
 
 
 class RigidBody:
     """
     Nonlinear rigid body dynamics for spacecraft attitude.
-    
+
     State: [q (4), omega (3)] - body-to-inertial quaternion and body angular velocity
     """
-    
+
     def __init__(
         self,
         inertia: np.ndarray,
@@ -29,7 +36,7 @@ class RigidBody:
     ):
         """
         Initialize rigid body.
-        
+
         Args:
             inertia: 3x3 inertia matrix (kg*m^2) in body frame
             initial_q: Initial body-to-inertial quaternion [x, y, z, w]
@@ -37,75 +44,107 @@ class RigidBody:
             disturbance_torque: Constant disturbance torque (N*m) in body frame
         """
         self.I = np.array(inertia, dtype=float)
-        self.I_inv = np.linalg.inv(self.I)
         self.q = normalize(np.array(initial_q, dtype=float))
         self.omega = np.array(initial_omega, dtype=float)
         self.tau_d = np.zeros(3) if disturbance_torque is None else np.array(disturbance_torque, dtype=float)
-        
-        # Validate inertia matrix
-        assert self.I.shape == (3, 3), "Inertia must be 3x3"
-        assert np.allclose(self.I, self.I.T), "Inertia must be symmetric"
-        eigvals = np.linalg.eigvals(self.I)
-        assert np.all(eigvals > 0), "Inertia must be positive definite"
-    
-    def dynamics(self, tau_rw: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+
+        if self.I.shape != (3, 3):
+            raise ValueError("Inertia must be 3x3")
+        if not np.allclose(self.I, self.I.T):
+            raise ValueError("Inertia must be symmetric")
+        if not np.all(np.linalg.eigvalsh(self.I) > 0):
+            raise ValueError("Inertia must be positive definite")
+        self.I_inv = np.linalg.inv(self.I)
+
+    def dynamics(
+        self,
+        tau_rw: np.ndarray,
+        wheel_momentum: Optional[np.ndarray] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Compute state derivatives.
-        
+        Compute state derivatives at the current state.
+
         Args:
-            tau_rw: Reaction wheel torque in body frame (N*m)
-            
+            tau_rw: Reaction wheel torque on the bus, body frame (N*m)
+            wheel_momentum: Total wheel momentum in body axes (N*m*s); zero if None
+
         Returns:
             q_dot: Quaternion derivative
             omega_dot: Angular acceleration
         """
-        # Euler's equation: I * omega_dot + omega x (I * omega) = tau_rw + tau_d
-        omega_cross_Iomega = np.cross(self.omega, self.I @ self.omega)
-        omega_dot = self.I_inv @ (tau_rw + self.tau_d - omega_cross_Iomega)
-        
-        # Quaternion kinematics
-        q_dot = quat_derivative(self.q, self.omega)
-        
-        return q_dot, omega_dot
-    
-    def step(self, tau_rw: np.ndarray, dt: float) -> Tuple[np.ndarray, np.ndarray]:
+        h_w = np.zeros(3) if wheel_momentum is None else wheel_momentum
+        return self._derivatives(self.q, self.omega, tau_rw, h_w)
+
+    def step(
+        self,
+        tau_rw: np.ndarray,
+        dt: float,
+        wheel_momentum: Optional[np.ndarray] = None,
+        wheel_momentum_rate: Optional[np.ndarray] = None,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Integrate dynamics using RK4.
-        
+        Integrate dynamics over one step using RK4.
+
+        The bus torque is held constant over the step (zeroth-order hold). The
+        wheel momentum evolves linearly over the step as
+        h_w(s) = wheel_momentum + wheel_momentum_rate * s, which is exact for a
+        held wheel torque.
+
         Args:
-            tau_rw: Reaction wheel torque (N*m)
+            tau_rw: Reaction wheel torque on the bus, body frame (N*m)
             dt: Time step (s)
-            
+            wheel_momentum: Wheel momentum in body axes at the start of the step
+                (N*m*s). None neglects wheel gyroscopic coupling.
+            wheel_momentum_rate: Body-axis wheel momentum rate over the step
+                (N*m). Defaults to -tau_rw when wheel_momentum is given.
+
         Returns:
             Updated quaternion and angular velocity
         """
-        # RK4 integration
-        def f(state, tau):
-            q, omega = state[:4], state[4:]
-            q_dot, omega_dot = self._derivatives(q, omega, tau)
+        tau_rw = np.asarray(tau_rw, dtype=float)
+        if wheel_momentum is None:
+            h0 = np.zeros(3)
+            h_dot = np.zeros(3)
+        else:
+            h0 = np.asarray(wheel_momentum, dtype=float)
+            h_dot = (
+                -tau_rw if wheel_momentum_rate is None
+                else np.asarray(wheel_momentum_rate, dtype=float)
+            )
+
+        def f(state, s):
+            q_dot, omega_dot = self._derivatives(
+                state[:4], state[4:], tau_rw, h0 + h_dot * s
+            )
             return np.concatenate([q_dot, omega_dot])
-        
+
         state = np.concatenate([self.q, self.omega])
-        
-        k1 = f(state, tau_rw)
-        k2 = f(state + 0.5 * dt * k1, tau_rw)
-        k3 = f(state + 0.5 * dt * k2, tau_rw)
-        k4 = f(state + dt * k3, tau_rw)
-        
+
+        k1 = f(state, 0.0)
+        k2 = f(state + 0.5 * dt * k1, 0.5 * dt)
+        k3 = f(state + 0.5 * dt * k2, 0.5 * dt)
+        k4 = f(state + dt * k3, dt)
+
         state_new = state + (dt / 6.0) * (k1 + 2*k2 + 2*k3 + k4)
-        
+
         self.q = normalize(state_new[:4])
         self.omega = state_new[4:]
-        
+
         return self.q.copy(), self.omega.copy()
-    
-    def _derivatives(self, q: np.ndarray, omega: np.ndarray, tau_rw: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Compute derivatives for given state."""
-        omega_cross_Iomega = np.cross(omega, self.I @ omega)
-        omega_dot = self.I_inv @ (tau_rw + self.tau_d - omega_cross_Iomega)
+
+    def _derivatives(
+        self,
+        q: np.ndarray,
+        omega: np.ndarray,
+        tau_rw: np.ndarray,
+        wheel_momentum: np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Compute derivatives for a given state and wheel momentum."""
+        gyroscopic = np.cross(omega, self.I @ omega + wheel_momentum)
+        omega_dot = self.I_inv @ (tau_rw + self.tau_d - gyroscopic)
         q_dot = quat_derivative(q, omega)
         return q_dot, omega_dot
-    
+
     def get_state(self) -> Tuple[np.ndarray, np.ndarray]:
         """Get current state."""
         return self.q.copy(), self.omega.copy()
@@ -119,14 +158,15 @@ class RigidBody:
         """Compute rotational kinetic energy."""
         return 0.5 * self.omega @ self.I @ self.omega
     
-    def angular_momentum(self) -> np.ndarray:
-        """Compute angular momentum in body frame."""
-        return self.I @ self.omega
-    
-    def angular_momentum_inertial(self) -> np.ndarray:
-        """Compute angular momentum in inertial frame."""
+    def angular_momentum(self, wheel_momentum: Optional[np.ndarray] = None) -> np.ndarray:
+        """Compute system angular momentum (bus plus wheels) in the body frame."""
+        h_w = np.zeros(3) if wheel_momentum is None else np.asarray(wheel_momentum)
+        return self.I @ self.omega + h_w
+
+    def angular_momentum_inertial(self, wheel_momentum: Optional[np.ndarray] = None) -> np.ndarray:
+        """Compute system angular momentum in the inertial frame."""
         R = quat_to_rotmat(self.q)
-        return R @ (self.I @ self.omega)
+        return R @ self.angular_momentum(wheel_momentum)
 
 
 def inertia_matrix_from_principal(Ixx: float, Iyy: float, Izz: float, 
@@ -144,13 +184,18 @@ def add_inertia_uncertainty(I_nominal: np.ndarray, delta_I: np.ndarray) -> np.nd
     return I_nominal + delta_I
 
 
-def random_inertia_uncertainty(I_nominal: np.ndarray, max_rel_error: float = 0.1) -> np.ndarray:
+def random_inertia_uncertainty(
+    I_nominal: np.ndarray,
+    max_rel_error: float = 0.1,
+    rng: Optional[np.random.Generator] = None,
+) -> np.ndarray:
     """
     Generate random inertia uncertainty.
     
     Args:
         I_nominal: Nominal inertia matrix
         max_rel_error: Maximum relative error (e.g., 0.1 for 10%)
+        rng: Random generator; a fresh unseeded generator is used if None
         
     Returns:
         Uncertainty matrix delta_I
@@ -159,57 +204,10 @@ def random_inertia_uncertainty(I_nominal: np.ndarray, max_rel_error: float = 0.1
         raise ValueError("max_rel_error must be non-negative")
 
     # Generate a symmetric uncertainty matrix bounded by max_rel_error.
-    delta = np.random.uniform(-max_rel_error, max_rel_error, size=(3, 3))
+    rng = np.random.default_rng() if rng is None else rng
+    delta = rng.uniform(-max_rel_error, max_rel_error, size=(3, 3))
     delta = (delta + delta.T) / 2  # Make symmetric
     # Scale by nominal inertia magnitudes
     scale = np.sqrt(np.diag(I_nominal))
     delta = delta * scale[:, None] * scale[None, :]
     return delta
-
-
-# Test functions
-def test_rigid_body():
-    """Run basic rigid body dynamics tests."""
-    # Test torque-free motion (conservation of energy and momentum)
-    I = np.diag([100.0, 80.0, 60.0])  # kg*m^2
-    q0 = np.array([0.0, 0.0, 0.0, 1.0])
-    omega0 = np.array([0.1, 0.05, 0.02])  # rad/s
-    
-    body = RigidBody(I, q0, omega0)
-    
-    # Simulate torque-free motion
-    dt = 0.1
-    steps = 1000
-    energy_initial = body.kinetic_energy()
-    momentum_initial = body.angular_momentum_inertial()
-    
-    for _ in range(steps):
-        body.step(np.zeros(3), dt)
-    
-    energy_final = body.kinetic_energy()
-    momentum_final = body.angular_momentum_inertial()
-    
-    # Energy should be conserved (within numerical error)
-    energy_error = abs(energy_final - energy_initial) / energy_initial
-    momentum_error = np.linalg.norm(momentum_final - momentum_initial) / np.linalg.norm(momentum_initial)
-    
-    print(f"Energy conservation error: {energy_error:.2e}")
-    print(f"Momentum conservation error: {momentum_error:.2e}")
-    
-    assert energy_error < 1e-6, f"Energy not conserved: {energy_error}"
-    assert momentum_error < 1e-6, f"Momentum not conserved: {momentum_error}"
-    
-    # Test with constant torque
-    body2 = RigidBody(I, q0, np.zeros(3))
-    tau = np.array([0.1, 0.0, 0.0])
-    body2.step(tau, 1.0)
-    q, omega = body2.get_state()
-    
-    # Should have accelerated about x-axis
-    assert omega[0] > 0, "Should accelerate with applied torque"
-    
-    print("All rigid body tests passed!")
-
-
-if __name__ == "__main__":
-    test_rigid_body()

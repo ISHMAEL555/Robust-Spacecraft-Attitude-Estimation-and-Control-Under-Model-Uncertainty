@@ -73,7 +73,6 @@ def run_simulation(config: SimulationConfig,
     Returns:
         Dictionary with simulation results
     """
-    np.random.seed(config.seed)
     if config.dt <= 0 or config.duration <= 0:
         raise ValueError("Simulation duration and time step must be positive")
 
@@ -82,7 +81,14 @@ def run_simulation(config: SimulationConfig,
     if n_steps < 1:
         raise ValueError("Simulation duration must be at least one time step")
     time = np.arange(n_steps) * config.dt
-    
+
+    # Independent, reproducible random streams for the filter initialization
+    # error, the gyro, and the star tracker. No global RNG state is used.
+    init_rng, gyro_rng, tracker_rng = (
+        np.random.default_rng(stream)
+        for stream in np.random.SeedSequence(config.seed).spawn(3)
+    )
+
     # Spacecraft
     if true_inertia is None:
         true_inertia = np.array(config.spacecraft['inertia'])
@@ -103,7 +109,7 @@ def run_simulation(config: SimulationConfig,
     gyro = Gyroscope(
         gyro_params,
         initial_bias=np.array(config.gyroscope['initial_bias']),
-        seed=config.seed + 1
+        rng=gyro_rng,
     )
     
     # Star tracker
@@ -116,7 +122,7 @@ def run_simulation(config: SimulationConfig,
         outage_duration=config.star_tracker.get('outage_duration', 10),
         outage_start_time=config.star_tracker.get('outage_start_time'),
     )
-    star_tracker = StarTracker(st_params, seed=config.seed + 2)
+    star_tracker = StarTracker(st_params, rng=tracker_rng)
     
     # Filter
     filter_params = MEKFParams(
@@ -141,12 +147,16 @@ def run_simulation(config: SimulationConfig,
     filter_params.star_tracker_params = st_params
     mekf = MEKF(filter_params)
     
-    # Initialize filter with true state + small error
-    q_init = spacecraft.q.copy()
-    # Add small initial error
-    delta_init = np.random.randn(3) * 0.01
-    q_init = right_box_plus(q_init, delta_init)
-    b_init = gyro.get_true_bias() + np.random.randn(3) * 1e-4
+    # Initialize the filter with an error drawn from its own prior covariance,
+    # so the initial NEES is chi-square distributed with the state DOF:
+    # q_hat = q_true ⊗ Exp(-delta_theta_0) gives a true-minus-estimate error
+    # of +delta_theta_0 in the right-error convention.
+    delta_init = init_rng.standard_normal(3) * np.sqrt(filter_params.P0_attitude)
+    q_init = right_box_plus(spacecraft.q.copy(), -delta_init)
+    b_init = (
+        gyro.get_true_bias()
+        - init_rng.standard_normal(3) * np.sqrt(filter_params.P0_bias)
+    )
     mekf.reset(q_init, b_init)
     
     # Controller
@@ -167,7 +177,10 @@ def run_simulation(config: SimulationConfig,
         num_wheels=config.reaction_wheels['num_wheels']
     )
     rwa = ReactionWheelAssembly(rw_params)
-    
+    # Wheel gyroscopic coupling omega x h_w is part of the truth model by
+    # default; the model-aided filter receives the measured wheel momentum.
+    wheel_coupling = bool(config.reaction_wheels.get('gyroscopic_coupling', True))
+
     # Storage
     results = {
         'time': time,
@@ -179,6 +192,8 @@ def run_simulation(config: SimulationConfig,
         'omega_hat': np.zeros((n_steps, 3)),
         'P': np.zeros((n_steps, mekf.state_dim, mekf.state_dim)),
         'nees_dof': mekf.nees_dof,
+        'bias_index': int(mekf.bias_slice.start),
+        'wheel_gyroscopic_coupling': wheel_coupling,
         'tau_cmd': np.zeros((n_steps, 3)),
         'tau_rw': np.zeros((n_steps, 3)),
         'wheel_torque': np.zeros((n_steps, config.reaction_wheels['num_wheels'])),
@@ -279,20 +294,34 @@ def run_simulation(config: SimulationConfig,
         tau_cmd = controller.compute_control(q_hat, results['omega_hat'][i])
         results['tau_cmd'][i] = tau_cmd
         
-        # Reaction wheels
+        # Reaction wheels: the wheel torque is held over [t, t + dt], so the
+        # body-axis wheel momentum changes linearly from h_start to h_end.
+        h_start = rwa.get_body_momentum()
         tau_rw = rwa.compute_torque(tau_cmd, config.dt)
         results['tau_rw'][i] = tau_rw
         results['wheel_torque'][i] = rwa.get_torque()
         rwa.update_momentum(config.dt)
         results['wheel_momentum'][i] = rwa.get_momentum()
-        
-        # Spacecraft dynamics
-        spacecraft.step(tau_rw, config.dt)
+        h_end = rwa.get_body_momentum()
 
-        # Advance the estimator over [t, t + dt] with the gyro sample and
-        # body torque held over the same interval. The next loop then applies
-        # measurements at the matching t + dt epoch.
-        mekf.propagate(omega_m, tau_rw, config.dt)
+        # Spacecraft dynamics
+        if wheel_coupling:
+            spacecraft.step(
+                tau_rw, config.dt,
+                wheel_momentum=h_start,
+                wheel_momentum_rate=(h_end - h_start) / config.dt,
+            )
+        else:
+            spacecraft.step(tau_rw, config.dt)
+
+        # Advance the estimator over [t, t + dt] with the gyro sample, applied
+        # body torque, and interval-mean wheel momentum (tachometer data) held
+        # over the same interval. The next loop then applies measurements at
+        # the matching t + dt epoch.
+        mekf.propagate(
+            omega_m, tau_rw, config.dt,
+            wheel_momentum=0.5 * (h_start + h_end) if wheel_coupling else None,
+        )
         
         # Separate true spacecraft pointing from estimator attitude error.
         pointing_delta = right_error_quat(q_true, controller.q_desired)
@@ -305,6 +334,21 @@ def run_simulation(config: SimulationConfig,
         results['attitude_estimation_error_vector'][i] = attitude_error_vector
     
     return results
+
+
+def bias_covariance_index(results: Dict[str, Any]) -> int:
+    """
+    Return the first gyro-bias index of the error state.
+
+    Uses the recorded ``bias_index`` when available; otherwise infers it from
+    the covariance dimension (6-state gyro-driven: 3; 15-state model-aided and
+    legacy 9-state model-aided: 6).
+    """
+    if 'bias_index' in results:
+        return int(np.asarray(results['bias_index']))
+    covariance = results.get('P', results.get('P_mean'))
+    state_dim = int(np.asarray(covariance).shape[-1])
+    return 3 if state_dim == 6 else 6
 
 
 def compute_performance_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
@@ -402,7 +446,7 @@ def compute_performance_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
             np.abs(results['attitude_estimation_error_vector']) <= sigma_attitude
         ))
     if 'bias_error' in results and 'P' in results:
-        bias_start = 6 if results['P'].shape[1] == 9 else 3
+        bias_start = bias_covariance_index(results)
         bias_covariance = results['P'][
             :, bias_start:bias_start + 3, bias_start:bias_start + 3
         ]
@@ -456,6 +500,22 @@ def compute_performance_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
     if 'star_tracker_outage' in results and np.any(results['star_tracker_outage']):
         outage_indices = np.flatnonzero(results['star_tracker_outage'])
         outage_end_index = int(outage_indices[-1])
+        # Estimator-focused outage evidence: covariance growth and the actual
+        # attitude-estimation error from outage start through 30 s after the
+        # outage ends (or the end of the run).
+        window_end = min(
+            len(time), int(np.searchsorted(time, time[outage_end_index] + 30.0)) + 1
+        )
+        window = slice(int(outage_indices[0]), window_end)
+        if 'attitude_estimation_error' in results:
+            metrics['outage_peak_attitude_error_rad'] = float(
+                np.max(results['attitude_estimation_error'][window])
+            )
+        if 'P' in results:
+            attitude_sigma = np.sqrt(np.max(
+                np.diagonal(results['P'][window, :3, :3], axis1=1, axis2=2), axis=1
+            ))
+            metrics['outage_peak_attitude_3sigma_rad'] = float(3.0 * np.max(attitude_sigma))
         pre_outage_error = pointing[:outage_indices[0]]
         if pre_outage_error.size and float(np.max(pre_outage_error)) > 0.0:
             threshold = 0.02 * float(np.max(pre_outage_error))
@@ -643,6 +703,7 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
     aggregated = {
         'time': time,
         'nees_dof': 15 if config.filter['variant'] == 'model_aided' else 6,
+        'bias_index': 6 if config.filter['variant'] == 'model_aided' else 3,
         **means,
         'NEES_std': stds['NEES_mean'],
         'pointing_error_std': stds['pointing_error_mean'],

@@ -186,5 +186,27 @@ class TestSlerp:
         assert np.allclose(np.abs(q_mid), np.abs(expected), atol=1e-10)
 
 
+class TestPropagation:
+    """Exact zeroth-order-hold attitude propagation."""
+
+    def test_constant_rate_propagation_is_exact_and_composable(self):
+        from src.dynamics.quaternion import propagate_quaternion, right_box_minus
+
+        q0 = normalize(np.array([0.1, -0.2, 0.3, 0.9]))
+        omega = np.array([0.3, -0.2, 0.5])
+        q_one_step = propagate_quaternion(q0, omega, 1.0)
+        q_many = q0
+        for _ in range(1000):
+            q_many = propagate_quaternion(q_many, omega, 1e-3)
+        assert np.allclose(right_box_minus(q_many, q_one_step), 0.0, atol=1e-12)
+        assert np.allclose(right_box_minus(q_one_step, q0), omega, atol=1e-12)
+
+    def test_skew_matches_cross_product(self):
+        from src.dynamics.quaternion import skew
+
+        a, b = np.array([0.3, -1.2, 2.0]), np.array([-0.7, 0.4, 1.1])
+        assert np.allclose(skew(a) @ b, np.cross(a, b))
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

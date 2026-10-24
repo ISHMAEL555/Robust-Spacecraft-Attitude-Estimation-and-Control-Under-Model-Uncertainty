@@ -407,14 +407,85 @@ def test_filter_output_is_recorded_at_the_current_simulation_epoch():
         star_tracker={**config.star_tracker, "rate": 1.0},
     )
 
-    # Star-tracker construction seeds the shared RNG immediately before the
-    # runner draws its initial attitude error. With no tracker sample at t=0,
+    # The runner draws the initial attitude error from the first SeedSequence
+    # child stream, scaled by the filter prior. With no tracker sample at t=0,
     # the recorded estimate must remain that initial state, before propagation.
-    np.random.seed(config.seed + 2)
-    expected_q_hat = right_box_plus(
-        initial_attitude, np.random.randn(3) * 0.01
-    )
+    init_rng = np.random.default_rng(np.random.SeedSequence(config.seed).spawn(3)[0])
+    delta_init = init_rng.standard_normal(3) * np.sqrt(config.filter["P0_attitude"])
+    expected_q_hat = right_box_plus(initial_attitude, -delta_init)
     results = run_simulation(config)
 
     assert not results["measurement_available"][0]
     assert np.allclose(results["q_hat"][0], expected_q_hat, atol=1e-14)
+
+
+def test_model_aided_bias_coverage_uses_bias_covariance_block():
+    """Regression: the 15-state bias block starts at index 6, not 3 (rate)."""
+    from scripts.run_experiment import bias_covariance_index
+
+    config = load_config(str(PROJECT_ROOT / "config" / "model_uncertainty.yaml"))
+    config = replace(
+        config, duration=5.0, filter={**config.filter, "variant": "model_aided"}
+    )
+    results = run_simulation(config)
+    assert results["P"].shape[1:] == (15, 15)
+    assert bias_covariance_index(results) == 6
+
+    sigma = 3.0 * np.sqrt(np.diagonal(results["P"][:, 6:9, 6:9], axis1=1, axis2=2))
+    expected = float(np.mean(np.abs(results["bias_error"]) <= sigma))
+    metrics = compute_performance_metrics(results)
+    assert metrics["bias_3sigma_component_coverage"] == expected
+
+
+def test_bias_index_inference_without_recorded_index():
+    from scripts.run_experiment import bias_covariance_index
+
+    for dim, expected in ((6, 3), (9, 6), (15, 6)):
+        assert bias_covariance_index({"P": np.zeros((2, dim, dim))}) == expected
+
+
+def test_initial_estimation_error_is_drawn_from_filter_prior():
+    """Across seeds, the initial NEES averages to the state dimension."""
+    config = load_config(str(PROJECT_ROOT / "config" / "nominal.yaml"))
+    config = replace(config, duration=config.dt)
+    nees = []
+    for seed in range(200):
+        nees.append(run_simulation(replace(config, seed=seed))["NEES"][0])
+    # Mean of 200 chi-square(6) samples: standard error sqrt(12/200) ~ 0.24.
+    assert abs(np.mean(nees) - 6.0) < 1.0
+
+
+def test_wheel_gyroscopic_coupling_can_be_disabled_for_comparison():
+    config = load_config(str(PROJECT_ROOT / "config" / "closed_loop.yaml"))
+    config = replace(config, duration=20.0)
+    coupled = run_simulation(config)
+    uncoupled = run_simulation(replace(
+        config,
+        reaction_wheels={**config.reaction_wheels, "gyroscopic_coupling": False},
+    ))
+    assert coupled["wheel_gyroscopic_coupling"]
+    assert not uncoupled["wheel_gyroscopic_coupling"]
+    assert not np.allclose(coupled["omega_true"], uncoupled["omega_true"])
+
+
+def test_outage_metrics_report_estimator_covariance_growth():
+    config = load_config(str(PROJECT_ROOT / "config" / "sensor_degradation.yaml"))
+    config = replace(
+        config,
+        duration=40.0,
+        star_tracker={
+            **config.star_tracker,
+            "outage_prob": 0.0,
+            "outage_start_time": 5.0,
+            "outage_duration": 10,
+        },
+    )
+    results = run_simulation(config)
+    metrics = compute_performance_metrics(results)
+
+    outage = np.flatnonzero(results["star_tracker_outage"])
+    pre_outage_sigma = 3.0 * np.sqrt(np.max(np.diag(results["P"][outage[0] - 1][:3, :3])))
+    # Without tracker updates the attitude covariance must grow, and the
+    # actual error during the outage window must remain inside a few sigma.
+    assert metrics["outage_peak_attitude_3sigma_rad"] > pre_outage_sigma
+    assert 0.0 < metrics["outage_peak_attitude_error_rad"] < 2.0 * metrics["outage_peak_attitude_3sigma_rad"]

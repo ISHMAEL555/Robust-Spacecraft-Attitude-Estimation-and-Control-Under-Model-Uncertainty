@@ -1,0 +1,63 @@
+{
+  "scope": "Deterministic seed-42 closed-loop runs; simulation evidence only.",
+  "max_torque_nm": 0.1,
+  "runs": [
+    {
+      "scenario": "e6_60deg_about_x",
+      "gyroscopic_coupling": true,
+      "duration_s": 200.0,
+      "seed": 42,
+      "total_momentum_nms": 10.0,
+      "max_relative_momentum_drift": 7.10569486257849e-15,
+      "peak_wheel_gyroscopic_torque_nm": 0.0014532486540231905,
+      "settling_time_2pct_s": 174.51,
+      "final_pointing_deg": 0.5289965998155316,
+      "final_angular_rate_norm_rad_s": 0.0003003562262594068,
+      "command_torque_saturation_fraction": 0.44325,
+      "peak_wheel_momentum_utilization": 0.4986062824512021
+    },
+    {
+      "scenario": "e6_60deg_about_x",
+      "gyroscopic_coupling": false,
+      "duration_s": 200.0,
+      "seed": 42,
+      "total_momentum_nms": 10.0,
+      "max_relative_momentum_drift": 0.0014113736544806533,
+      "peak_wheel_gyroscopic_torque_nm": 0.0012831958663042024,
+      "settling_time_2pct_s": 174.52,
+      "final_pointing_deg": 0.529309911055578,
+      "final_angular_rate_norm_rad_s": 0.00030001568562947897,
+      "command_torque_saturation_fraction": 0.44325,
+      "peak_wheel_momentum_utilization": 0.49860629903750453
+    },
+    {
+      "scenario": "near_180deg_about_z",
+      "gyroscopic_coupling": true,
+      "duration_s": 400.0,
+      "seed": 42,
+      "total_momentum_nms": 10.000000000000002,
+      "max_relative_momentum_drift": 6.70138347615277e-14,
+      "peak_wheel_gyroscopic_torque_nm": 0.15165844416005572,
+      "settling_time_2pct_s": null,
+      "final_pointing_deg": 24.943473594932794,
+      "final_angular_rate_norm_rad_s": 0.008588919115553737,
+      "command_torque_saturation_fraction": 0.999975,
+      "peak_wheel_momentum_utilization": 0.5675706523684324
+    },
+    {
+      "scenario": "near_180deg_about_z",
+      "gyroscopic_coupling": false,
+      "duration_s": 400.0,
+      "seed": 42,
+      "total_momentum_nms": 10.000000000000002,
+      "max_relative_momentum_drift": 1.9714561740750027,
+      "peak_wheel_gyroscopic_torque_nm": 0.355560883487502,
+      "settling_time_2pct_s": 235.26,
+      "final_pointing_deg": 0.07281701282932324,
+      "final_angular_rate_norm_rad_s": 4.5317013879437266e-05,
+      "command_torque_saturation_fraction": 0.30615,
+      "peak_wheel_momentum_utilization": 0.4843744178411401
+    }
+  ],
+  "interpretation": "With coupling, total angular momentum is conserved to numerical precision. Without it, momentum is not conserved, and multi-axis slews with stored wheel momentum appear easier than they physically are."
+}

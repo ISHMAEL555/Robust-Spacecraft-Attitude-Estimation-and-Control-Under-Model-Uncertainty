@@ -237,5 +237,35 @@ class TestStarTracker:
         assert 9.0 < upper < 9.5
 
 
+class TestRandomStreams:
+    """Sensors own private generators and never touch NumPy's global RNG."""
+
+    def test_sensor_construction_does_not_reseed_global_rng(self):
+        np.random.seed(123)
+        expected = np.random.random_sample(3)
+        np.random.seed(123)
+        Gyroscope(GyroParams(), seed=1)
+        StarTracker(StarTrackerParams(), seed=2)
+        assert np.array_equal(np.random.random_sample(3), expected)
+
+    def test_tracker_stream_is_independent_of_gyro_stream(self):
+        params = StarTrackerParams(rate=1.0)
+        q = np.array([0.0, 0.0, 0.0, 1.0])
+        reference = StarTracker(params, seed=5).measure(q, 1.0)[0]
+
+        tracker = StarTracker(params, seed=5)
+        gyro = Gyroscope(GyroParams(), seed=99)
+        for _ in range(10):
+            gyro.measure(np.zeros(3))
+        assert np.array_equal(tracker.measure(q, 1.0)[0], reference)
+
+    def test_explicit_generator_is_used(self):
+        rng_a = np.random.default_rng(7)
+        rng_b = np.random.default_rng(7)
+        gyro_a = Gyroscope(GyroParams(), initial_bias=np.zeros(3), rng=rng_a)
+        gyro_b = Gyroscope(GyroParams(), initial_bias=np.zeros(3), rng=rng_b)
+        assert np.array_equal(gyro_a.measure(np.zeros(3)), gyro_b.measure(np.zeros(3)))
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

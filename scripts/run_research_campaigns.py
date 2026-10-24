@@ -6,6 +6,7 @@ import csv
 import hashlib
 import json
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Dict, List
@@ -218,6 +219,13 @@ def run_case(case: Dict[str, Any], n_runs: int) -> Dict[str, Any]:
     return results
 
 
+def _execute_case(case: Dict[str, Any], n_runs: int, output_dir: Path) -> Dict[str, Any]:
+    """Run one case, save its compressed traces, and return its summary row."""
+    results = run_case(case, n_runs)
+    save_results(results, str(output_dir / f"{case['campaign'].lower()}_{case['name']}.npz"))
+    return _summary_row(case, results)
+
+
 def _run_mean_ci95(values: List[float]) -> tuple[float | None, float | None, float | None]:
     """Return mean and Student-t interval over independent run summaries."""
     data = np.asarray(values, dtype=float)
@@ -235,10 +243,22 @@ def _run_mean_ci95(values: List[float]) -> tuple[float | None, float | None, flo
     return mean, mean - half_width, mean + half_width
 
 
+def _code_fingerprint() -> str:
+    """Hash the simulation source so rows from older code are never resumed."""
+    digest = hashlib.sha256()
+    paths = sorted((ROOT / "src").rglob("*.py")) + [ROOT / "scripts" / "run_experiment.py"]
+    for path in paths:
+        digest.update(path.relative_to(ROOT).as_posix().encode("utf-8"))
+        # Normalize line endings so the fingerprint is platform independent.
+        digest.update(path.read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()
+
+
 def _case_signature(case: Dict[str, Any]) -> str:
-    """Hash the scenario inputs so a resumed campaign cannot reuse stale rows."""
+    """Hash the scenario inputs and simulation code so resumes cannot reuse stale rows."""
     config = case["config"]
     payload = {
+        "code_sha256": _code_fingerprint(),
         "metadata": {key: value for key, value in case.items() if key != "config"},
         "config": {
             field: getattr(config, field)
@@ -373,9 +393,15 @@ def main() -> None:
         "--resume", action="store_true",
         help="Resume from matching completed rows in output-dir/summary.json.",
     )
+    parser.add_argument(
+        "--jobs", type=int, default=1,
+        help="Number of cases to run in parallel worker processes (default 1).",
+    )
     args = parser.parse_args()
     if args.runs < 1:
         parser.error("--runs must be at least one")
+    if args.jobs < 1:
+        parser.error("--jobs must be at least one")
     if args.duration is not None and args.duration <= 0:
         parser.error("--duration must be positive")
 
@@ -407,6 +433,7 @@ def main() -> None:
         saved_rows = json.loads((args.output_dir / "summary.json").read_text(encoding="utf-8"))
         rows_by_key = {(row["campaign"], row["case"]): row for row in saved_rows}
 
+    pending = []
     for index, case in enumerate(cases, start=1):
         key = (case["campaign"], case["name"])
         existing = rows_by_key.get(key)
@@ -424,11 +451,27 @@ def main() -> None:
             f"{args.runs} runs x {case['config'].duration:g} s",
             flush=True,
         )
-        results = run_case(case, args.runs)
-        save_results(results, str(args.output_dir / f"{case['campaign'].lower()}_{case['name']}.npz"))
-        rows_by_key[key] = _summary_row(case, results)
-        _write_summaries(list(rows_by_key.values()), args.output_dir)
-        del results
+        pending.append(case)
+
+    # Each case is seeded independently, so results do not depend on the
+    # number of worker processes or the order in which cases complete.
+    if args.jobs > 1 and len(pending) > 1:
+        with ProcessPoolExecutor(max_workers=args.jobs) as pool:
+            futures = {
+                pool.submit(_execute_case, case, args.runs, args.output_dir): case
+                for case in pending
+            }
+            for future in as_completed(futures):
+                case = futures[future]
+                rows_by_key[(case["campaign"], case["name"])] = future.result()
+                _write_summaries(list(rows_by_key.values()), args.output_dir)
+                print(f"completed {case['campaign']} {case['name']}", flush=True)
+    else:
+        for case in pending:
+            rows_by_key[(case["campaign"], case["name"])] = _execute_case(
+                case, args.runs, args.output_dir
+            )
+            _write_summaries(list(rows_by_key.values()), args.output_dir)
 
     rows = list(rows_by_key.values())
     _write_summaries(rows, args.output_dir)

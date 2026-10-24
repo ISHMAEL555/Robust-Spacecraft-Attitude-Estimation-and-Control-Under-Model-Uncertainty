@@ -1,6 +1,7 @@
 """Finite-difference and discretization checks for the MEKF error model."""
 
 import numpy as np
+import pytest
 from numpy.polynomial.legendre import leggauss
 from scipy.linalg import expm
 
@@ -47,17 +48,23 @@ def test_gyro_driven_error_dynamics_match_finite_difference():
     assert np.allclose(numerical, F, rtol=2e-5, atol=2e-6)
 
 
-def test_model_aided_full_error_dynamics_match_finite_difference():
+@pytest.mark.parametrize(
+    "wheel_momentum",
+    [np.zeros(3), np.array([4.0, -2.5, 7.0])],
+    ids=["no_wheel_momentum", "with_wheel_momentum"],
+)
+def test_model_aided_full_error_dynamics_match_finite_difference(wheel_momentum):
     inertia = np.array([[100.0, 2.0, -1.0], [2.0, 80.0, 1.5], [-1.0, 1.5, 60.0]])
     mekf = create_mekf_nominal("model_aided", inertia=inertia)
     omega = np.array([0.17, -0.09, 0.12])
     torque = np.array([0.01, -0.02, 0.015])
     dt = 2e-5
     mekf._propagation_torque = torque
+    mekf._propagation_wheel_momentum = wheel_momentum
     F, _ = mekf._compute_F_G_model_aided(omega)
     q_hat = right_box_plus(np.array([0.2, -0.1, 0.3, 0.9]), np.zeros(3))
     omega_dot_hat = np.linalg.solve(
-        inertia, torque - np.cross(omega, inertia @ omega)
+        inertia, torque - np.cross(omega, inertia @ omega + wheel_momentum)
     )
     q_hat_next = right_box_plus(q_hat, omega * dt)
     omega_hat_next = omega + omega_dot_hat * dt
@@ -76,7 +83,7 @@ def test_model_aided_full_error_dynamics_match_finite_difference():
         q_true_next = right_box_plus(q_true, omega_true * dt)
         omega_dot_true = np.linalg.solve(
             inertia_true,
-            torque - np.cross(omega_true, inertia_true @ omega_true),
+            torque - np.cross(omega_true, inertia_true @ omega_true + wheel_momentum),
         )
         omega_true_next = omega_true + omega_dot_true * dt
         inertia_error_next = np.array([

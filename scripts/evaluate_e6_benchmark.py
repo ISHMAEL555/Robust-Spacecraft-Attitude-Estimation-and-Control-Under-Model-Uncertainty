@@ -27,6 +27,14 @@ from scripts.run_experiment import (
 )
 
 
+def _display_path(path: Path) -> str:
+    """Repository-relative POSIX path when possible, otherwise absolute."""
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.resolve().as_posix()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=ROOT / "config" / "closed_loop.yaml")
@@ -103,15 +111,17 @@ def main() -> None:
             ),
             "star_tracker_rate_hz": config.star_tracker["rate"],
             "gyro_rate_hz": config.gyroscope["rate"],
+            "wheel_gyroscopic_coupling": bool(results["wheel_gyroscopic_coupling"]),
             "assumptions": [
-                "rigid body and ideal reaction-wheel torque response",
-                "zero disturbance torque and no actuator latency",
+                "rigid bus with wheel gyroscopic coupling omega x h_w",
+                "first-order wheel motor torque response with hard torque and momentum limits",
+                "zero environmental disturbance torque; no sensor or actuator transport latency",
                 "sensor measurements are applied at their simulation-grid epochs",
                 "project benchmark values are not mission requirements",
             ],
         },
         "metrics": metrics,
-        "figure": str(args.figure.relative_to(ROOT)),
+        "figure": _display_path(args.figure),
     }
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps(summary, indent=2, allow_nan=False) + "\n")

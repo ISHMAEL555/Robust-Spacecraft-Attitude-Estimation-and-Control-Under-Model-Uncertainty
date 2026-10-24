@@ -41,12 +41,12 @@ class TestRigidBody:
         
         # Non-symmetric inertia should fail
         I_bad = np.array([[100, 1, 0], [2, 80, 0], [0, 0, 60]])
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             RigidBody(I_bad, q0, omega0)
         
         # Non-positive definite should fail
         I_bad2 = np.diag([100, -80, 60])
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             RigidBody(I_bad2, q0, omega0)
     
     def test_dynamics_torque_free(self):
@@ -192,6 +192,49 @@ class TestInertiaFunctions:
         for i in range(3):
             rel_error = abs(delta_I[i, i]) / I_nom[i, i]
             assert rel_error < 0.2  # Allow some margin for random generation
+
+
+class TestWheelGyroscopicCoupling:
+    """The truth model must conserve bus-plus-wheel angular momentum."""
+
+    @staticmethod
+    def _simulate(coupled: bool):
+        inertia = np.diag([100.0, 80.0, 60.0])
+        body = RigidBody(inertia, np.array([0.0, 0.0, 0.0, 1.0]),
+                         np.array([0.02, -0.01, 0.015]))
+        wheel_momentum = np.array([3.0, -2.0, 1.0])
+        h_initial = body.angular_momentum_inertial(wheel_momentum)
+        dt = 0.05
+        for step in range(2000):
+            # Multi-axis wheel torque that varies over time; the bus receives
+            # the equal and opposite reaction torque.
+            wheel_rate = 0.02 * np.array([
+                np.sin(0.01 * step), np.cos(0.013 * step), np.sin(0.007 * step)
+            ])
+            if coupled:
+                body.step(-wheel_rate, dt, wheel_momentum, wheel_rate)
+            else:
+                body.step(-wheel_rate, dt)
+            wheel_momentum = wheel_momentum + wheel_rate * dt
+        h_final = body.angular_momentum_inertial(wheel_momentum)
+        return np.linalg.norm(h_final - h_initial) / np.linalg.norm(h_initial)
+
+    def test_total_inertial_momentum_is_conserved_with_coupling(self):
+        assert self._simulate(coupled=True) < 1e-8
+
+    def test_neglecting_coupling_violates_momentum_conservation(self):
+        # Documents why the omega x h_w term is required in the truth model.
+        assert self._simulate(coupled=False) > 1e-2
+
+    def test_wheel_momentum_rate_defaults_to_reaction_torque(self):
+        inertia = np.diag([100.0, 80.0, 60.0])
+        a = RigidBody(inertia, np.array([0.0, 0.0, 0.0, 1.0]), np.array([0.01, 0.02, 0.0]))
+        b = RigidBody(inertia, np.array([0.0, 0.0, 0.0, 1.0]), np.array([0.01, 0.02, 0.0]))
+        tau = np.array([0.01, -0.02, 0.03])
+        h0 = np.array([1.0, 2.0, -1.0])
+        a.step(tau, 0.1, h0)
+        b.step(tau, 0.1, h0, -tau)
+        assert np.allclose(a.omega, b.omega, atol=0.0)
 
 
 if __name__ == "__main__":

@@ -1,45 +1,93 @@
-# GNC Verification Requirements and Risk Register
+# Verification Requirements, Traceability, and Risk Register
 
-This document defines project-level verification targets for the repository's simulation. They are portfolio benchmarks, not mission requirements or hardware acceptance limits.
+**Release:** 1.0.0. This document defines the project's verification requirements, traces each to its implementation and evidence, and records open engineering risks. The requirements are **project benchmarks** for a simulation study, not mission requirements or hardware acceptance limits. Results are reported in [current_evidence.md](current_evidence.md); models are specified in [system_description.md](system_description.md).
 
-## Project benchmark requirements
+**Verification methods:** **T** = test (automated, in `tests/`), **A** = analysis (simulation campaign or statistical analysis, in `scripts/`), **I** = inspection.
 
-| ID | Requirement and pass criterion | Implementation / verification | Current result |
-|---|---|---|---|
-| GNC-PB-001 | From 60 deg attitude error and 0.1 rad/s body rate, settle to within 2% of initial error by 180 s; remain there for at least 20 s; final 20 s peak pointing error <= 2 deg; final body-rate norm <= 1e-3 rad/s. | `config/closed_loop.yaml`; `scripts/evaluate_e6_benchmark.py`; E6 regression and report. | Deterministic seed 42: 176.58 s settling, 23.41 s hold, 1.083 deg final-window peak, 2.81e-4 rad/s final rate. **Pass.** |
-| GNC-PB-002 | Keep body and wheel torque within 0.1 N m; keep peak wheel momentum below 80% of its 20 N m s limit; preserve at least 85% of requested squared-torque effort with the 50 ms motor response. | Predictive hard momentum limiting and first-order motor model in `src/actuators/reaction_wheel.py`; unit tests. | Peak wheel use 49.9%; effort fraction 87.9%; torque limits respected. **Pass.** |
-| EST-MATH-001 | Finite-difference gyro-driven and augmented model-aided continuous error Jacobians agree with the implemented F matrices to the test tolerances. | `tests/unit/test_mekf_linearization.py` | All tested columns pass, including six inertia sensitivities. |
-| EST-COV-001 | Van Loan Qd matches independent numerical quadrature; the right-error reset Jacobian matches finite differences at finite correction angles; measurement residual has identity local attitude Jacobian. | `tests/unit/test_mekf_linearization.py` | Pass. The reset uses the full SO(3) right Jacobian. |
-| EST-STAT-001 | For the matched-inertia project case, independent-run 95% t intervals for mean NEES and run-mean NIS contain 15 and 3 DOF respectively; marginal state-group NEES intervals contain their DOF references. | `scripts/verify_model_aided_consistency.py`; `docs/model_aided_consistency.json`; `docs/figures/model_aided_nees_groups.png`. | **Pass for this matched case (exploratory n=10).** Mean NEES 15.047; run-mean 95% t interval [12.530, 17.565]. Mean NIS 2.958; run-mean 95% t interval [2.760, 3.156]. Marginal means: attitude 3.298/3, rate 2.662/3, bias 2.902/3, inertia 5.830/6; every marginal run-level interval contains its DOF. 84.96% of epochs fall inside pointwise ensemble NEES bounds and 97% of pointwise NIS means fall inside their bounds; time fractions are descriptive because epochs are correlated. |
-| EST-MODEL-002 | Under a 25% diagonal inertia mismatch and fixed 25% one-sigma inertia prior, characterize sensitivity to the model-aided rate-process spectral-density amplitude; report full and marginal NEES with NIS. This is a sensitivity characterization, not a tuning acceptance criterion. | `scripts/verify_robustness_slices.py`; `docs/robustness_slices.json`; `docs/figures/inertia_mismatch_process_noise.png`; `tests/unit/test_mekf_linearization.py`. | Five runs per amplitude: at `sigma_omega_process` = 0, 1e-7, 1e-4, 1e-3, full mean NEES/DOF = 64.905, 20.358, 0.698, 0.884. At 1e-7, marginal rate/inertia NEES per DOF = 4.381/21.552; at 1e-3 they are 0.509/0.973. High-amplitude case contains one in its full-state run-mean interval [0.700, 1.068], but the amplitude is not hardware-characterized. |
-| EST-STAT-002 | Refresh E0-E7 with ten independent seeds per scenario and report run-level 95% intervals for normalized NEES and accepted NIS, alongside attitude and closed-loop performance. This is characterization, not a universal pass criterion. | `scripts/run_research_campaigns.py`; `docs/e0_e7_campaign_summary.csv`; `docs/e0_e7_campaign_metadata.json`; `docs/refreshed_campaign.md`; `docs/figures/refreshed_campaign/`. | 33 cases, 330 runs, 4.2 million propagation steps. E0 and matched-inertia baselines are statistically consistent in the tested runs; model-aided 25% inertia mismatch is inconsistent at mean NEES/DOF 17.132 (run-level 95% CI [6.064, 28.199]). Gating contains the injected 1 rad tracker outlier case. Exploratory simulation evidence only. |
-| ROBUST-CHAR-001 | Characterize selected inertia, process-noise, filter-noise, tracker-fault, and closed-loop initial-condition cases with repeated runs; report consistency and pointing together. This row is characterization, not a universal pass criterion. | `scripts/verify_robustness_slices.py`; `docs/robustness_slices.json`; `docs/figures/robustness_slices.png`; `docs/figures/inertia_mismatch_process_noise.png`. | Eleven selected conditions use five runs each; the near-180 deg acquisition runs for 400 s. The outlier gate rejects 25/500 one-radian injections and accepted NIS is 3.026; ungated mean NEES is 6.67 million. A 30-update outage recovers in 62.78 s. At the 25% inertia mismatch, baseline process noise gives NEES/DOF 20.358, dominated by inertia and rate marginal NEES; the 1e-3 noise-amplitude sensitivity case gives 0.884. The 170 deg case reaches its 2%-of-initial-error band at 234.976 s. All results are exploratory, not a validated operating envelope. |
-| INNOV-001 | Accepted, covariance-normalized star-tracker innovations show no significant multivariate autocorrelation at 10 lags using a 5% Ljung-Box threshold. | `multivariate_ljung_box` in `scripts/run_experiment.py`; `tests/unit/test_experiment_runner.py` | E6 seed 42: Q = 93.24, 30 DOF, p = 0.387. **Pass for this run only.** |
-| SENSOR-TS-001 | Non-integer tracker/simulation rate ratios retain phase without accumulating sample drift; updates are associated with the simulation-grid epoch at which the measurement is generated. | `src/sensors/star_tracker.py`; `measurement_time_s` in simulation output; sensor and runner tests. | 3 Hz tracker on a 100 Hz grid yields three samples per simulated second without phase loss. No transport latency or out-of-sequence measurement is modeled. |
+**Verdicts:** **Pass**, **Fail**, or **Characterized** (no pass/fail criterion; the behavior is measured and reported).
 
-## Verification command
+## 1. Requirements and verification matrix
+
+### 1.1 Truth model
+
+| ID | Requirement | Method | Verification artifact | Result |
+|---|---|:---:|---|:---:|
+| DYN-001 | With zero external torque, total inertial angular momentum `R(q)(Jω + h_w)` is conserved under arbitrary wheel torque, to relative error ≤ 1e-8. | T, A | `test_rigid_body.py::TestWheelGyroscopicCoupling`; [wheel_coupling_effect.json](wheel_coupling_effect.json) | **Pass**: < 1e-8 (test); 7.1e-15 (E6) and 6.7e-14 (170° slew) |
+| DYN-002 | Torque-free rigid-body motion conserves kinetic energy and angular momentum. | T | `test_rigid_body.py` | **Pass** |
+| ACT-001 | Body and per-wheel torque never exceed their limits; wheel momentum never exceeds its hard limit; torque is not derated approaching the limit. | T | `test_reaction_wheel.py` | **Pass** |
+
+### 1.2 Estimator mathematics
+
+| ID | Requirement | Method | Verification artifact | Result |
+|---|---|:---:|---|:---:|
+| EST-MATH-001 | Gyro-driven and model-aided continuous error Jacobians `F` agree with central finite differences of the exact right-error flow, including all six inertia sensitivities, with and without wheel momentum. | T | `test_mekf_linearization.py` | **Pass** |
+| EST-COV-001 | Van Loan `Q_d` matches independent quadrature; the attitude reset uses the exact SO(3) right Jacobian; the star-tracker residual has an identity local Jacobian. | T | `test_mekf_linearization.py` | **Pass** |
+| EST-MODEL-001 | The model-aided rate prediction includes the measured wheel momentum; open-loop prediction matches the coupled truth to ≤ 1e-7 rad/s over 20 s. | T | `test_mekf.py::TestModelAidedWheelMomentum` | **Pass** |
+| EST-INIT-001 | Initial estimation errors are drawn from the filter prior (mean initial NEES = state DOF over 200 seeds, within ±1). | T | `test_experiment_runner.py` | **Pass** |
+
+### 1.3 Statistical consistency
+
+| ID | Requirement | Method | Verification artifact | Result |
+|---|---|:---:|---|:---:|
+| EST-STAT-001 | For matched models, run-level 95% t intervals of NEES/DOF and accepted NIS/DOF contain 1 (E0 1,000 s; E1 matched, both filters; E7). | A | [campaign CSV](e0_e7_campaign_summary.csv) | **Pass**: E0 1.023 / 1.002; E1 gyro-driven 0.965 / 1.037; E1 model-aided 0.885 / 1.011; E7 0.965 / 1.037 |
+| EST-STAT-002 | Matched-inertia model-aided filter: full NEES (15 DOF), NIS (3 DOF), and every marginal state-group interval contain their DOF. | A | [model_aided_consistency.json](model_aided_consistency.json) | **Pass**: NEES 13.28 [10.28, 16.28]; NIS 3.03 [2.83, 3.24]; groups 2.48/3, 2.24/3, 2.79/3, 5.60/6 |
+| EST-MODEL-002 | Characterize model-aided consistency versus inertia mismatch (0/10/25%) and versus rate-process noise at 25% mismatch. | A | [campaign CSV](e0_e7_campaign_summary.csv); [robustness_slices.json](robustness_slices.json) | **Characterized**: NEES/DOF 0.89, 1.89, 25.98 at 0/10/25%; 44.5, 27.5, 0.68, 0.88 for σ_ω = 0, 1e-7, 1e-4, 1e-3 |
+| EST-TUNE-001 | Characterize sensitivity to Q and R mistuning (0.1×, 10×). | A | [campaign CSV](e0_e7_campaign_summary.csv) | **Characterized**: NEES/DOF 7.09 / 0.15 (Q), 1.39 / 0.72 (R) |
+| INNOV-001 | Accepted, whitened star-tracker innovations are consistent with white noise: the 12-seed E6 ensemble of 10-lag Ljung–Box p-values is indistinguishable from an empirical white-noise null of matched size (two-sample KS p ≥ 0.05). | A | `scripts/verify_innovation_whiteness.py`; [innovation_whiteness.json](innovation_whiteness.json) | **Pass**: KS p = 0.457. The seed-42 single-run p = 0.006 is within the test's 11.1% white-noise false-alarm rate |
+
+### 1.4 Fault response
+
+| ID | Requirement | Method | Verification artifact | Result |
+|---|---|:---:|---|:---:|
+| FAULT-001 | With 5% injected 0.1–1 rad tracker outliers, the NIS gate keeps NEES/DOF and accepted NIS/DOF intervals containing 1 and attitude RMSE within 10% of the fault-free case. | A | [campaign CSV](e0_e7_campaign_summary.csv) (E4) | **Pass**: NEES/DOF 0.974 [0.861, 1.087]; NIS/DOF 1.034 [0.967, 1.102]; RMSE 0.0851° vs 0.0810° (+5%); 58/1,000 rejected |
+| FAULT-002 | Through tracker outages of 1–30 samples, NEES/DOF intervals contain 1 and the peak attitude error stays below the peak 3σ. | A | [campaign CSV](e0_e7_campaign_summary.csv) (E5) | **Pass**: 30-sample outage NEES/DOF 0.960 [0.787, 1.132]; peak error 0.153° < 3σ 0.298° |
+
+### 1.5 Closed-loop project benchmark (E6)
+
+| ID | Requirement | Method | Verification artifact | Result |
+|---|---|:---:|---|:---:|
+| GNC-PB-001 | From 60° error and 0.1 rad/s: settle within 2% of initial error by 180 s, hold ≥ 20 s, final-20 s peak ≤ 2°, final rate ≤ 1e-3 rad/s. | A | `scripts/evaluate_e6_benchmark.py`; [e6_project_benchmark.json](e6_project_benchmark.json) | **Pass**: 174.51 s; 25.48 s; 1.014°; 3.00e-4 rad/s |
+| GNC-PB-002 | Body and wheel torque ≤ 0.1 N·m; peak wheel momentum ≤ 80% of 20 N·m·s; achieved/requested squared-torque effort ≥ 85% with a 50 ms motor lag. | A | same | **Pass**: 0.1000 / 0.1000 N·m; 49.9%; 87.9% |
+| GNC-CHAR-001 | Characterize closed-loop stress cases (authority, wheel limit, initial state, estimator tuning) and large-angle acquisition. | A | [campaign CSV](e0_e7_campaign_summary.csv) (E6); [robustness_slices.json](robustness_slices.json); [wheel_coupling_effect.json](wheel_coupling_effect.json) | **Characterized**: 60° from rest settles at 149.2 s; the 170° slew does not settle in 400 s (gyroscopic-torque limited; see R-07) |
+
+### 1.6 Software and reproducibility
+
+| ID | Requirement | Method | Verification artifact | Result |
+|---|---|:---:|---|:---:|
+| SW-001 | The regression suite passes on Python 3.10 and 3.12; the package installs and imports outside the checkout. | T | `.github/workflows/tests.yml` | **Pass** locally (156 tests, Python 3.11); CI configured |
+| SW-002 | Simulations are deterministic given a seed; sensor random streams are independent and do not use NumPy's global state; campaign results do not depend on the number of parallel workers. | T, A | `test_sensors.py::TestRandomStreams`; campaign rerun with 1 vs 4 workers | **Pass**: E4 summaries with 1 and 4 workers are identical field-for-field; a repeated full campaign reproduced identical NEES values |
+| SW-003 | Published evidence identifies the exact code that produced it: campaign rows carry a source fingerprint; the manifest hashes `src/`, scripts, configs, docs, and figures. | I | [e0_e7_campaign_metadata.json](e0_e7_campaign_metadata.json) | **Pass** |
+| SENSOR-TS-001 | Non-integer tracker/simulation rate ratios keep phase without drift; measurements are applied at their generation epoch. | T | `test_sensors.py`, `test_experiment_runner.py` | **Pass** |
+
+## 2. Verification commands
 
 ```powershell
 python -m pytest
 python scripts/evaluate_e6_benchmark.py
 python scripts/verify_model_aided_consistency.py
 python scripts/verify_robustness_slices.py
+python scripts/verify_innovation_whiteness.py
+python scripts/verify_wheel_coupling.py
 ```
 
-The GitHub Actions workflow runs the regression and integration tests on Python 3.10 and 3.12. Run the E1-E7 campaigns separately when refreshing the broader statistical evidence.
+The full campaign and evidence export are listed in [current_evidence.md §8](current_evidence.md#8-reproduction).
 
-## Risk register
+## 3. Risk register
 
-| ID | Risk | Status | Mitigation / next evidence |
-|---|---|---|---|
-| R-01 | Model-aided covariance consistency degrades under inertia mismatch; finite-difference agreement of the local Jacobian does not establish long-horizon consistency. | Open, high | The 25% diagonal mismatch sensitivity has full mean NEES/DOF 20.358 at the configured 1e-7 rate-noise amplitude, with marginal rate/inertia NEES per DOF 4.381/21.552. Zero process noise raises full NEES/DOF to 64.905; 1e-3 lowers it to 0.884, but this sensitivity is not a physical noise calibration. Expand full-tensor mismatch and excitation sweeps, and validate the torque/model-error spectrum before defining an envelope. |
-| R-02 | E6's long high-rate acquisition transient drives a large full-run pointing RMS even though the terminal pointing target is met. | Characterized | Report terminal-window peak, settling time, rate, and momentum together; do not present full-run RMS as steady-state accuracy. |
-| R-03 | Truth and actuator models omit flexible modes, wheel-rotor gyroscopic coupling, friction, thermal/electrical limits, desaturation logic, and environmental disturbance models. | Open, medium | Add one modeled effect at a time and rerun the benchmark; label parameters as illustrative until tied to hardware. |
-| R-04 | Sensor updates are current-epoch samples on the simulation grid; delivery latency, timestamp jitter, and delayed/out-of-sequence updates are absent. | Open, medium | Preserve measurement timestamps and add a delayed-measurement replay case before claiming asynchronous flight-software behavior. |
-| R-05 | The refreshed E0-E7 cases use ten runs, while selected robustness slices use five runs and fixed scenario values. The 25% mismatch grid changes diagonal inertia only. | Open, medium | Expand randomized initial attitude/rate, full inertia tensors including products of inertia, bias, disturbances, sensor timing/faults, and actuator distributions; retain run-level confidence intervals and pointwise ensemble bounds separately. |
-| R-06 | The model-aided angular-rate process-noise amplitude is tuned in simulation and has no hardware characterization. | Open, medium | The five-run sweep from 0 to 1e-3 shows strong consistency sensitivity, including over-conservative covariance at 1e-4. Treat `sigma_omega_process` as a sensitivity parameter; identify its spectral density from actuator and torque uncertainty before using it in a hardware estimator. |
-| R-07 | Near-180 deg acquisition is slower than the nominal 60 deg benchmark. | Characterized | The five-run 170 deg stress ensemble reaches the 2%-of-initial-error band at about 235 s and meets a low terminal error by 400 s. Define a separate large-angle acquisition benchmark only if the project scope requires it. |
+Likelihood and impact are qualitative and assessed for the purpose of this study.
 
-## Interpretation limits
+| ID | Risk | Status | Severity | Mitigation / next evidence |
+|---|---|---|---|---|
+| R-01 | Model-aided covariance becomes inconsistent under inertia mismatch (NEES/DOF 25.98 at 25%), even though attitude accuracy is unchanged. A user who reads RMSE alone would trust an over-confident rate and inertia covariance. | Open | High | Do not use the model-aided rate/inertia covariance downstream without mismatch-aware tuning. Next: full-tensor (off-diagonal) mismatch sweeps, excitation-dependent observability analysis of the inertia states, and a consider-state or Schmidt-Kalman treatment of inertia. |
+| R-02 | The E6 benchmark settling margin is thin: 174.51 s against 180 s (3%). Small parameter changes can flip the verdict. | Open | Medium | Report a seed ensemble for the benchmark metrics; consider gain re-design with `compute_control_gains` and gyroscopic feedforward. |
+| R-03 | The truth model omits flexible modes, slosh, environmental disturbance torques, wheel friction, motor electrical/thermal limits, and desaturation. | Open | Medium | Add one effect at a time and re-run the benchmark and campaign; label parameters as illustrative until tied to hardware. *Closed sub-item:* wheel gyroscopic coupling was added in 1.0.0. |
+| R-04 | Sensor updates are applied at their generation epoch on the simulation grid; latency, jitter, out-of-sequence measurements, gyro scale factor and misalignment are not modeled. | Open | Medium | Add delayed-measurement replay and gyro error terms before claiming flight-software timing behavior. |
+| R-05 | Campaigns use 10 runs per case (robustness slices 5) and one-factor-at-a-time variations with diagonal inertia only. | Open | Medium | Randomized dispersions (initial state, full inertia tensor, sensor parameters, disturbances) with larger ensembles; keep run-level intervals separate from pointwise bounds. |
+| R-06 | The model-aided rate-process noise `sigma_omega_process` is a simulation tuning parameter. Consistency under mismatch is highly sensitive to it (NEES/DOF 27.5 → 0.88 between 1e-7 and 1e-3). | Open | Medium | Identify the spectral density from torque and model-error budgets; until then treat it as a sensitivity parameter only. |
+| R-07 | Large-angle slews that rotate stored wheel momentum through the body frame need gyroscopic torque beyond the 0.1 N·m authority. The 170° case peaks at 0.152 N·m and does not settle in 400 s. | Open | High | Momentum management before large slews (unloading or desaturation), slew planning that accounts for `ω × h_w`, gyroscopic feedforward, or more authority. Define a large-angle acquisition requirement if the mission scope needs one. *The pre-1.0.0 "settles at 235 s" result was a modeling artifact (197% momentum non-conservation) and is withdrawn.* |
+| R-08 | The multivariate Ljung–Box test is liberal at the available sample size (11.1% false alarms at nominal 5%), so single-run whiteness verdicts are unreliable. | Mitigated | Low | INNOV-001 uses an ensemble compared with an empirically calibrated null. |
+| R-09 | Outliers below the gate threshold (about 5.5 innovation σ) are accepted and not characterized; gating is not a complete FDIR design. | Open | Medium | Sweep outlier magnitude through the gate threshold; evaluate persistent faults and FDIR logic. |
 
-The E6 pass is deterministic project evidence for the configured rigid-body model. The refreshed 10-run E0-E7 campaign, matched-inertia consistency check, and five-run long-duration stress slices are exploratory. None establishes hardware performance, mission acceptance, safe operating limits, ECSS compliance, or flight readiness. The model-aided covariance is demonstrably inconsistent in the tested 25% mismatch case; other mismatch levels and randomized tensor distributions remain uncharacterized. See the [refreshed campaign report](e0_e7_campaign.md) and [machine-readable summaries](e0_e7_campaign_summary.csv).
+## 4. Interpretation limits
+
+The E6 pass is deterministic project evidence for the configured model. Campaign and robustness results are exploratory statistical characterizations over fixed, one-at-a-time cases. None of the results establishes hardware performance, mission acceptance, safe operating limits, standards compliance, or flight readiness.

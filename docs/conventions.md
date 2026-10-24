@@ -23,10 +23,10 @@ Accordingly, the measurement innovation is `Log(q_hat⁻¹ ⊗ q_meas)` and corr
 
 ## Rigid body and wheel signs
 
-The body obeys Euler's rigid-body equation:
+The bus obeys Euler's equation with the wheel momentum in the gyroscopic term:
 
 ```text
-I ω_dot = τ_body + τ_disturbance − ω × (I ω)
+I ω_dot = τ_sc + τ_disturbance − ω × (I ω + H_w)
 ```
 
 For the wheel array, `A` maps wheel-axis components into body coordinates and `h_w` is wheel angular momentum along each wheel axis:
@@ -36,7 +36,7 @@ H_w  = A h_w
 τ_sc = −A h_w_dot
 ```
 
-Thus wheel momentum rate and spacecraft reaction torque have opposite signs. Wheel torque and wheel momentum limits are applied separately.
+Thus wheel momentum rate and spacecraft reaction torque have opposite signs, and total angular momentum `R(q)(I ω + H_w)` is conserved when `τ_disturbance = 0`. Wheel torque and wheel momentum limits are applied separately. The full model is in [system_description.md](system_description.md#2-truth-dynamics).
 
 ## Sensors and covariance units
 
@@ -71,7 +71,7 @@ The nominal rate is derived from the current gyro measurement minus estimated bi
 
 The six inertia parameters represent the symmetric tensor entries `[Ixx, Iyy, Izz, Ixy, Ixz, Iyz]`. Their error coordinates are dimensionless relative perturbations, scaled by the corresponding nominal matrix-entry magnitude. `inertia_relative_sigma` sets the 1σ prior for each parameter. The estimated inertia matrix is kept positive definite.
 
-The model-aided propagation uses Euler's equation with estimated inertia and the previous step's applied body torque. Gyro measurements update body rate and bias; tracker updates correct attitude and the coupled state. The first gyro sample initializes rate at its measurement epoch; it is not also used to propagate over an interval that has already elapsed.
+The model-aided propagation uses Euler's equation with the estimated inertia, the applied wheel torque held over the step, and the measured (tachometer) wheel momentum. Both variants propagate the nominal attitude with the exact quaternion exponential `q̂ ⊗ Exp(ω dt)`. Gyro measurements update body rate and bias; tracker updates correct attitude and the coupled state. The first gyro sample initializes rate at its measurement epoch; it is not also used to propagate over an interval that has already elapsed.
 
 ## Consistency statistics
 

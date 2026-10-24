@@ -1,0 +1,90 @@
+{
+  "scope": "E6 closed-loop scenario; simulation evidence only.",
+  "config": "config/closed_loop.yaml",
+  "method": "10-lag multivariate Ljung-Box on Cholesky-whitened accepted innovations; ensemble p-values compared with an empirical white-noise null of the same length and dimension (two-sample Kolmogorov-Smirnov).",
+  "runs": [
+    {
+      "seed": 42,
+      "ljung_box_q": 127.01162856033153,
+      "p_value": 0.006216443626928436,
+      "lags": 10
+    },
+    {
+      "seed": 1042,
+      "ljung_box_q": 87.37292656570335,
+      "p_value": 0.5587932773021179,
+      "lags": 10
+    },
+    {
+      "seed": 2042,
+      "ljung_box_q": 109.49599742654472,
+      "p_value": 0.07947125805740475,
+      "lags": 10
+    },
+    {
+      "seed": 3042,
+      "ljung_box_q": 94.27817989270117,
+      "p_value": 0.3581220981309535,
+      "lags": 10
+    },
+    {
+      "seed": 4042,
+      "ljung_box_q": 104.27333884150471,
+      "p_value": 0.1442510265865572,
+      "lags": 10
+    },
+    {
+      "seed": 5042,
+      "ljung_box_q": 110.57320254981758,
+      "p_value": 0.06958432846721659,
+      "lags": 10
+    },
+    {
+      "seed": 6042,
+      "ljung_box_q": 94.87311109341076,
+      "p_value": 0.3422387092987373,
+      "lags": 10
+    },
+    {
+      "seed": 7042,
+      "ljung_box_q": 72.89743838123516,
+      "p_value": 0.9057918436637504,
+      "lags": 10
+    },
+    {
+      "seed": 8042,
+      "ljung_box_q": 93.54124418418236,
+      "p_value": 0.3782347191093466,
+      "lags": 10
+    },
+    {
+      "seed": 9042,
+      "ljung_box_q": 105.10526286168063,
+      "p_value": 0.13189519070236244,
+      "lags": 10
+    },
+    {
+      "seed": 10042,
+      "ljung_box_q": 87.04903411573692,
+      "p_value": 0.5684972234685122,
+      "lags": 10
+    },
+    {
+      "seed": 11042,
+      "ljung_box_q": 122.89091130093529,
+      "p_value": 0.01215402297436439,
+      "lags": 10
+    }
+  ],
+  "ljung_box_degrees_of_freedom": 90,
+  "innovations_per_run": 200,
+  "null_samples": 4000,
+  "null_rejection_rate_at_nominal_5pct": 0.11075,
+  "ensemble_rejection_rate_at_nominal_5pct": 0.16666666666666666,
+  "ensemble_rejections": 2,
+  "binomial_p_at_least_observed_rejections_under_null": 0.39007967979169206,
+  "ks_statistic": 0.2345,
+  "ks_p_value": 0.45740630974001795,
+  "consistent_with_white_noise": true,
+  "interpretation": "A single-run Ljung-Box p-value below 0.05 is expected in a fraction of runs even for white innovations, and more often than 5% at this sample size. Whiteness is assessed on the ensemble against the calibrated null."
+}

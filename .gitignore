@@ -2,16 +2,15 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+build/
+dist/
 .venv/
 venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 
-# Generated simulation outputs
+# Generated simulation outputs (regenerate with the commands in README.md).
+# Curated, reviewable evidence is exported to docs/ instead.
 *.npz
-reports/*.npz
-
-# Generated plots/reports
-reports/nominal_analysis/
-reports/research_campaigns/
+reports/
