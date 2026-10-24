@@ -3,6 +3,7 @@
 
 import argparse
 import csv
+import hashlib
 import json
 import sys
 from dataclasses import replace
@@ -13,6 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import stats
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -25,7 +27,7 @@ from scripts.run_experiment import (
 
 
 ROOT = Path(__file__).resolve().parent.parent
-CAMPAIGNS = ("E1", "E2", "E3", "E4", "E5", "E6", "E7")
+CAMPAIGNS = ("E0", "E1", "E2", "E3", "E4", "E5", "E6", "E7")
 
 
 def _case(name: str, campaign: str, config_name: str, **parameters: Any) -> Dict[str, Any]:
@@ -57,7 +59,12 @@ def build_campaign_cases(campaign: str, duration: float | None = None) -> List[D
     campaigns = (CAMPAIGNS if campaign == "all" else (campaign,))
     cases: List[Dict[str, Any]] = []
     for selected in campaigns:
-        if selected == "E1":
+        if selected == "E0":
+            cases.append(_case(
+                "nominal_baseline", selected, "nominal.yaml",
+                baseline="nominal_1000s",
+            ))
+        elif selected == "E1":
             for variant in ("gyro_driven", "model_aided"):
                 for mismatch in (0.0, 0.1, 0.25):
                     cases.append(_case(
@@ -181,6 +188,10 @@ def build_campaign_cases(campaign: str, duration: float | None = None) -> List[D
 
     if duration is not None:
         for case in cases:
+            # The all-campaign refresh keeps E0's long nominal baseline while
+            # applying the requested shorter duration to the E1-E7 sweeps.
+            if campaign == "all" and case["campaign"] == "E0":
+                continue
             case["config"] = replace(case["config"], duration=duration)
     return cases
 
@@ -207,6 +218,40 @@ def run_case(case: Dict[str, Any], n_runs: int) -> Dict[str, Any]:
     return results
 
 
+def _run_mean_ci95(values: List[float]) -> tuple[float | None, float | None, float | None]:
+    """Return mean and Student-t interval over independent run summaries."""
+    data = np.asarray(values, dtype=float)
+    data = data[np.isfinite(data)]
+    if not data.size:
+        return None, None, None
+    mean = float(np.mean(data))
+    if data.size < 2:
+        return mean, None, None
+    half_width = float(
+        stats.t.ppf(0.975, data.size - 1)
+        * np.std(data, ddof=1)
+        / np.sqrt(data.size)
+    )
+    return mean, mean - half_width, mean + half_width
+
+
+def _case_signature(case: Dict[str, Any]) -> str:
+    """Hash the scenario inputs so a resumed campaign cannot reuse stale rows."""
+    config = case["config"]
+    payload = {
+        "metadata": {key: value for key, value in case.items() if key != "config"},
+        "config": {
+            field: getattr(config, field)
+            for field in (
+                "duration", "dt", "seed", "spacecraft", "gyroscope", "star_tracker",
+                "filter", "controller", "reaction_wheels", "analysis",
+            )
+        },
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
 def _summary_row(case: Dict[str, Any], results: Dict[str, Any]) -> Dict[str, Any]:
     consistency = results["consistency"]
 
@@ -215,16 +260,38 @@ def _summary_row(case: Dict[str, Any], results: Dict[str, Any]) -> Dict[str, Any
             return None
         return value
 
+    nees_run_means = [
+        float(np.mean(run["NEES"])) for run in results["all_runs"]
+    ]
+    nis_run_means = []
+    for run in results["all_runs"]:
+        accepted = run["measurement_available"] & run["measurement_accepted"]
+        nis = run["NIS"][accepted]
+        nis_run_means.append(float(np.mean(nis)) if nis.size else float("nan"))
+    nees_run_mean, nees_ci_lower, nees_ci_upper = _run_mean_ci95(nees_run_means)
+    nis_run_mean, nis_ci_lower, nis_ci_upper = _run_mean_ci95(nis_run_means)
+
     row: Dict[str, Any] = {
         "campaign": case["campaign"],
         "case": case["name"],
         "runs": results["n_runs"],
+        "base_seed": case["config"].seed,
+        "seed_stride": 1000,
+        "seeds": [case["config"].seed + 1000 * index for index in range(results["n_runs"])],
         "duration_s": case["config"].duration,
+        "dt_s": case["config"].dt,
+        "case_signature": _case_signature(case),
         "NEES_dof": consistency["dof_nees"],
         "NIS_dof": consistency["dof_nis"],
         "NEES_mean": finite_or_none(consistency["nees_mean"]),
+        "NEES_run_mean": finite_or_none(nees_run_mean),
+        "NEES_run_mean_ci95_lower": finite_or_none(nees_ci_lower),
+        "NEES_run_mean_ci95_upper": finite_or_none(nees_ci_upper),
         "NEES_in_bounds_pct": finite_or_none(100.0 * consistency["nees_in_bounds"]),
         "NIS_mean": finite_or_none(consistency["nis_mean"]),
+        "NIS_accepted_run_mean": finite_or_none(nis_run_mean),
+        "NIS_accepted_run_mean_ci95_lower": finite_or_none(nis_ci_lower),
+        "NIS_accepted_run_mean_ci95_upper": finite_or_none(nis_ci_upper),
         "NIS_in_bounds_pct": finite_or_none(100.0 * consistency["nis_in_bounds"]),
         "NIS_mean_accepted": finite_or_none(consistency["nis_mean_accepted"]),
         "NIS_accepted_in_bounds_pct": finite_or_none(
@@ -240,6 +307,26 @@ def _summary_row(case: Dict[str, Any], results: Dict[str, Any]) -> Dict[str, Any
         for field, value in summary.items():
             row[f"{metric}_{field}"] = finite_or_none(value)
     return row
+
+
+def _write_summaries(rows: List[Dict[str, Any]], output_dir: Path) -> None:
+    """Atomically checkpoint JSON and CSV after each completed case."""
+    rows = sorted(rows, key=lambda row: (CAMPAIGNS.index(row["campaign"]), row["case"]))
+    fields = sorted({key for row in rows for key in row})
+    csv_path = output_dir / "summary.csv"
+    csv_tmp = output_dir / "summary.csv.tmp"
+    with csv_tmp.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+    csv_tmp.replace(csv_path)
+
+    json_path = output_dir / "summary.json"
+    json_tmp = output_dir / "summary.json.tmp"
+    with json_tmp.open("w", encoding="utf-8") as stream:
+        json.dump(rows, stream, indent=2, allow_nan=False)
+        stream.write("\n")
+    json_tmp.replace(json_path)
 
 
 def _write_campaign_plot(rows: List[Dict[str, Any]], campaign: str, output_dir: Path) -> None:
@@ -273,8 +360,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--campaign", choices=(*CAMPAIGNS, "all"), default="all")
     parser.add_argument("--runs", type=int, default=10)
-    parser.add_argument("--duration", type=float, help="Override each case duration (seconds)")
+    parser.add_argument(
+        "--duration", type=float,
+        help="Override case duration in seconds; with --campaign all, E0 keeps its 1,000 s nominal duration.",
+    )
     parser.add_argument("--output-dir", type=Path, default=ROOT / "reports" / "research_campaigns")
+    parser.add_argument(
+        "--case", action="append",
+        help="Run only this case; use CAMPAIGN:case_name when a name is ambiguous. Repeat as needed.",
+    )
+    parser.add_argument(
+        "--resume", action="store_true",
+        help="Resume from matching completed rows in output-dir/summary.json.",
+    )
     args = parser.parse_args()
     if args.runs < 1:
         parser.error("--runs must be at least one")
@@ -283,25 +381,58 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     cases = build_campaign_cases(args.campaign, args.duration)
-    rows = []
+    if args.case:
+        requested = set()
+        for selector in args.case:
+            if ":" in selector:
+                campaign_name, case_name = selector.split(":", 1)
+                requested.add((campaign_name.upper(), case_name))
+            else:
+                matches = [(case["campaign"], case["name"]) for case in cases if case["name"] == selector]
+                if len(matches) != 1:
+                    parser.error(
+                        f"case {selector!r} is ambiguous or unknown; use CAMPAIGN:case_name"
+                    )
+                requested.add(matches[0])
+        known = {(case["campaign"], case["name"]) for case in cases}
+        unknown = requested - known
+        if unknown:
+            parser.error("unknown case selector(s): " + ", ".join(
+                f"{campaign}:{name}" for campaign, name in sorted(unknown)
+            ))
+        cases = [case for case in cases if (case["campaign"], case["name"]) in requested]
+
+    rows_by_key = {}
+    if args.resume and (args.output_dir / "summary.json").exists():
+        saved_rows = json.loads((args.output_dir / "summary.json").read_text(encoding="utf-8"))
+        rows_by_key = {(row["campaign"], row["case"]): row for row in saved_rows}
+
     for index, case in enumerate(cases, start=1):
+        key = (case["campaign"], case["name"])
+        existing = rows_by_key.get(key)
+        signature = _case_signature(case)
+        if (
+            args.resume
+            and existing is not None
+            and existing.get("case_signature") == signature
+            and int(existing.get("runs", 0)) == args.runs
+        ):
+            print(f"[{index}/{len(cases)}] {case['campaign']} {case['name']}: already complete; skipping")
+            continue
         print(
             f"[{index}/{len(cases)}] {case['campaign']} {case['name']}: "
-            f"{args.runs} runs x {case['config'].duration:g} s"
+            f"{args.runs} runs x {case['config'].duration:g} s",
+            flush=True,
         )
         results = run_case(case, args.runs)
         save_results(results, str(args.output_dir / f"{case['campaign'].lower()}_{case['name']}.npz"))
-        rows.append(_summary_row(case, results))
+        rows_by_key[key] = _summary_row(case, results)
+        _write_summaries(list(rows_by_key.values()), args.output_dir)
         del results
 
-    fields = sorted({key for row in rows for key in row})
-    with (args.output_dir / "summary.csv").open("w", newline="", encoding="utf-8") as stream:
-        writer = csv.DictWriter(stream, fieldnames=fields)
-        writer.writeheader()
-        writer.writerows(rows)
-    with (args.output_dir / "summary.json").open("w", encoding="utf-8") as stream:
-        json.dump(rows, stream, indent=2, allow_nan=False)
-    for campaign in sorted({row["campaign"] for row in rows}):
+    rows = list(rows_by_key.values())
+    _write_summaries(rows, args.output_dir)
+    for campaign in sorted({row["campaign"] for row in rows}, key=CAMPAIGNS.index):
         _write_campaign_plot(rows, campaign, args.output_dir)
     print(f"Campaign summaries and traces saved to {args.output_dir}")
 

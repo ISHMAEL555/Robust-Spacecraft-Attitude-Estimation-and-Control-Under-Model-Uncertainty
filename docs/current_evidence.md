@@ -1,6 +1,6 @@
 # Current simulation evidence
 
-The E0–E7 tables below are the original campaign snapshot after aligning the MEKF error-state convention. Their E6 cases use 100 s runs and the earlier ideal wheel setup; they do not represent the updated E6 project benchmark. The post-review evidence at the end of this page records the current reset Jacobian, motor and hard-limit model, benchmark results, and model-aided covariance findings. All results remain simulation evidence for this repository's idealized model, not hardware or mission validation.
+The E0–E7 tables below are the original campaign snapshot after aligning the MEKF error-state convention. The [refreshed E0–E7 campaign report](e0_e7_campaign.md) now contains 33 cases and 330 independent runs, with a machine-readable [summary CSV](e0_e7_campaign_summary.csv), [reproduction manifest](e0_e7_campaign_metadata.json), and current campaign figures. The historical E6 tables below use the earlier ideal wheel setup; the updated E6 project benchmark is reported separately. All results remain simulation evidence for this repository's idealized model, not hardware or mission validation.
 
 ## Run conditions and statistics
 

@@ -1,0 +1,786 @@
+{
+  "title": "Robust spacecraft attitude estimation and control: refreshed E0-E7 campaign",
+  "completed_at_utc": "2026-10-24T08:22:01+00:00",
+  "git_head_at_export": "5afa2b6cfab200dbee51ae9c24c20a22c87f44d3",
+  "scope": "Simulation characterization; not hardware, mission acceptance, qualification, or flight-readiness evidence.",
+  "campaign_design": {
+    "cases": 33,
+    "independent_runs_total": 330,
+    "propagation_step_s": 0.01,
+    "seed_rule": "seed_i = 42 + 1000*i, i=0..9, independently reset for each run",
+    "confidence_intervals": "Two-sided 95% Student-t intervals over independent run-level means. Time samples within a run are not treated as independent replicates.",
+    "nees_statistic": "Each run mean of the full-state NEES time history; confidence intervals are normalized by state degrees of freedom.",
+    "nis_statistic": "Each run mean over available and accepted tracker updates; confidence intervals are normalized by measurement degrees of freedom. With gating disabled, every available update is accepted.",
+    "campaigns": {
+      "E0": {
+        "case_count": 1,
+        "duration_s": [
+          1000.0
+        ],
+        "runs_per_case": [
+          10
+        ]
+      },
+      "E1": {
+        "case_count": 6,
+        "duration_s": [
+          100.0
+        ],
+        "runs_per_case": [
+          10
+        ]
+      },
+      "E2": {
+        "case_count": 3,
+        "duration_s": [
+          100.0
+        ],
+        "runs_per_case": [
+          10
+        ]
+      },
+      "E3": {
+        "case_count": 3,
+        "duration_s": [
+          100.0
+        ],
+        "runs_per_case": [
+          10
+        ]
+      },
+      "E4": {
+        "case_count": 6,
+        "duration_s": [
+          100.0
+        ],
+        "runs_per_case": [
+          10
+        ]
+      },
+      "E5": {
+        "case_count": 3,
+        "duration_s": [
+          100.0
+        ],
+        "runs_per_case": [
+          10
+        ]
+      },
+      "E6": {
+        "case_count": 10,
+        "duration_s": [
+          100.0
+        ],
+        "runs_per_case": [
+          10
+        ]
+      },
+      "E7": {
+        "case_count": 1,
+        "duration_s": [
+          100.0
+        ],
+        "runs_per_case": [
+          10
+        ]
+      }
+    },
+    "total_propagation_steps": 4200000
+  },
+  "reproduce": {
+    "install": "python -m pip install -r requirements.txt",
+    "campaign": "python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --output-dir reports/research_campaigns/e0_e7_refresh --resume",
+    "plots": "python scripts/plot_campaign_figures.py --input reports/research_campaigns/e0_e7_refresh/summary.csv --output-dir docs/figures/refreshed_campaign",
+    "export": "python scripts/export_campaign_evidence.py --input-dir reports/research_campaigns/e0_e7_refresh",
+    "duration_note": "With --campaign all, E0 retains nominal.yaml duration 1,000 s; --duration 100 applies to E1-E7."
+  },
+  "environment": {
+    "python": "3.12.8",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "matplotlib": "3.11.2",
+    "pyyaml": "6.0.3"
+  },
+  "scenario_inputs": [
+    {
+      "campaign": "E0",
+      "case": "nominal_baseline",
+      "runs": 10,
+      "duration_s": 1000.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "acd67eb712d8f2304a05855af6f929abf7e186025b1b97cdeab18c8abd408238"
+    },
+    {
+      "campaign": "E1",
+      "case": "gyro_driven_inertia_0.00",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "3dd205626485404dceaca52aa00e83b7f77c65154aecb539cbaac001d7fc7447"
+    },
+    {
+      "campaign": "E1",
+      "case": "gyro_driven_inertia_0.10",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "a6e6e3c9594d472459db8a4e704674e276515cc7f43eb0add36590bd56332050"
+    },
+    {
+      "campaign": "E1",
+      "case": "gyro_driven_inertia_0.25",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "c864108bbd2398d0f03ba145491da189d623816799f18ff4a053044a31d47103"
+    },
+    {
+      "campaign": "E1",
+      "case": "model_aided_inertia_0.00",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "9dc8bceb6caecd5f1b3ef1929091c5afbc0083d75da34a199d8821b2ea716d38"
+    },
+    {
+      "campaign": "E1",
+      "case": "model_aided_inertia_0.10",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "28f51b4418d5ffbe03dcb0310830c7def9b2f654e58dec427c0cd9a1d495838e"
+    },
+    {
+      "campaign": "E1",
+      "case": "model_aided_inertia_0.25",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "25fa00461740aa16bd0b8176b6cf1f7e8667b665a9387bfdbdadf307a8a3ca3c"
+    },
+    {
+      "campaign": "E2",
+      "case": "Q_scale_0.1",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "0c3ccc12d18d71058fc0791f220b0f374769222dab1e9af97b0494f6938f5a30"
+    },
+    {
+      "campaign": "E2",
+      "case": "Q_scale_1",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "ce23ec18163cc8f9710d05131129893f792bda76af019b1ffb58d444bf8165a0"
+    },
+    {
+      "campaign": "E2",
+      "case": "Q_scale_10",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "7903191556f158d5a571da35c07b34945b59f796820d0611e0d2d1667a27cdc7"
+    },
+    {
+      "campaign": "E3",
+      "case": "R_scale_0.1",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "1078d0224f0247c2c23cd7da1b74fbeba442ff4b1a00ed0a2ab9093ac992e404"
+    },
+    {
+      "campaign": "E3",
+      "case": "R_scale_1",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "eae2b0d428c43a1d731a91682bcfcb3f545e58c679d137f109027029ddd3bc9c"
+    },
+    {
+      "campaign": "E3",
+      "case": "R_scale_10",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "f613077bf4f1300574a584fc4f3772a0ca6f98bf380bbc88aa3fc6cfc718d931"
+    },
+    {
+      "campaign": "E4",
+      "case": "outlier_0.1_gate_false",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "86235b714216ff2f39cec2cb8cf3af4454a5c2e1e49a1b1fda99102ffb6e8b4b"
+    },
+    {
+      "campaign": "E4",
+      "case": "outlier_0.1_gate_true",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "7cbcb03c722abdbec2ab7d51383da4caa89a8215d3940ad04f4b0f60464aaae9"
+    },
+    {
+      "campaign": "E4",
+      "case": "outlier_0.5_gate_false",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "1841016ddac6a59cf4db59dd44ab246bca4187d5d1af58005083043d7a2c46fa"
+    },
+    {
+      "campaign": "E4",
+      "case": "outlier_0.5_gate_true",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "a84bc937c5036b699ec9fd9ce7beee5e601f80ead29a96b259fefd8f0c9e47cf"
+    },
+    {
+      "campaign": "E4",
+      "case": "outlier_1_gate_false",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "b5ac5fa35a54983fd9ebaf6c66f4d5d603b3c4344e6378eda4964df85f8c1bef"
+    },
+    {
+      "campaign": "E4",
+      "case": "outlier_1_gate_true",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "b91a55c0fdc683b93cea56cb1f406d3354940841fe34be6dd96704621ec50ae1"
+    },
+    {
+      "campaign": "E5",
+      "case": "outage_10_updates",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "aa63107cf1d2d30da7536056b5df13499ee446cbc30640f0b64754a798e018e8"
+    },
+    {
+      "campaign": "E5",
+      "case": "outage_1_updates",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "78df5b5ee85b6640854b7d750e2ab50c6b266a04ebf98ba92ba38a484b4b973b"
+    },
+    {
+      "campaign": "E5",
+      "case": "outage_30_updates",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "57b45fa54e64c62bca2839dc8187f1a1a7aea6e621893ba2a29479c248085c62"
+    },
+    {
+      "campaign": "E6",
+      "case": "Q_R_scale_10",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "259283687e2cca3d366619914a5dbe1f810a55c9ac7b7b5635ec0c31aeca45ae"
+    },
+    {
+      "campaign": "E6",
+      "case": "Q_scale_10",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "2092b456e7c45197814edaca61d1adc0d53ad785571b9c6f6e7008d89d704529"
+    },
+    {
+      "campaign": "E6",
+      "case": "R_scale_10",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "1bc03b5d794b17067078a2e44413ac93cee21d5789e938474ac8a3a853e3c6a2"
+    },
+    {
+      "campaign": "E6",
+      "case": "double_torque_authority",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "48c9ef1962763b4e9e36f08e464e338b84f49baf8b321f74317d3cde642adf1a"
+    },
+    {
+      "campaign": "E6",
+      "case": "half_torque_authority",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "b073bc893818a339a8501fb4bf8d63af00e7d5d3e3526714c45d2f10e7327c27"
+    },
+    {
+      "campaign": "E6",
+      "case": "inertia_mismatch_25pct",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "95ef6c81ab845d77bb7e6a1f01dcbd9658c08771ad85704b61c8f7f91749d2f5"
+    },
+    {
+      "campaign": "E6",
+      "case": "low_wheel_momentum_limit",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "58d77bbc73863fab9ac50c75d4ed1eacc1fcf4c34bc6037e993509376e9c3e53"
+    },
+    {
+      "campaign": "E6",
+      "case": "near_180deg_attitude",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "b51266689e335dafcc9d0f5de2c7bf09b43f9c9de6b4f7f7c8400446f4a40353"
+    },
+    {
+      "campaign": "E6",
+      "case": "nominal",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "6492eaf77a7f96cc4e24e478d648b4282538f9bebbc55534a63fb7d24cb3dd4c"
+    },
+    {
+      "campaign": "E6",
+      "case": "zero_initial_rate",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "27828b21681638d3a929abd8c51ddb525890c8905b1c540743acf7814b40a402"
+    },
+    {
+      "campaign": "E7",
+      "case": "nominal_monte_carlo",
+      "runs": 10,
+      "duration_s": 100.0,
+      "dt_s": 0.01,
+      "seeds": [
+        42,
+        1042,
+        2042,
+        3042,
+        4042,
+        5042,
+        6042,
+        7042,
+        8042,
+        9042
+      ],
+      "case_signature_sha256": "0562fb2d3123ca1b0541537f0b50e50e516166e6d8744e4b62d6229391846665"
+    }
+  ],
+  "sha256": {
+    "README.md": "21219bc0b9eb0ba12fa74c657a6280ce14621e655a291ed2b53eea063cae1da1",
+    "scripts/run_research_campaigns.py": "91786bdee393a1b88a6c342d51482d98646e4c643a75f8244d70166bc81fe1ac",
+    "scripts/run_experiment.py": "ecbf2a8efa45ee98b306605ca0f250295f3ae6b974547adcc710334234d79cb9",
+    "scripts/plot_campaign_figures.py": "85326e725a7ce86a6457c27609326fa1ecd2462a1e15c1892012295bc2f65274",
+    "scripts/export_campaign_evidence.py": "3149222d9b25c2c4d7c337140291a748946de896ef492896ddef1d8e78131680",
+    "config/nominal.yaml": "480b5b5e223c6c86dc1b593aa68c197d8e3a26f24bf9dd844af9f73ea0a2a7fe",
+    "config/model_uncertainty.yaml": "794afff636649794efdc4e121711bf060e120b71ead93258c2984fc4b5c3c525",
+    "config/sensor_degradation.yaml": "f6a02ade7845d74975a20aa91b2995adfc020efa69ea5e6e786b82a64b3eb798",
+    "config/closed_loop.yaml": "a08f192bcc3b43afd4cab4432fa7c6c66d9986b301b319442a3e4eeaa40cd036",
+    "config/monte_carlo.yaml": "8566b5542ea8e0c098d35449ddb73663f22f840a8582a79a48abd265d0656bfe",
+    "docs/e0_e7_campaign.md": "b478dc1fd222857d9970e5f01259f6c20b110499b6b08e850c51dac234c3a53b",
+    "docs/current_evidence.md": "8fca92a80c05f37fd000db2a76a02a507af1c09b08bc0e9c760aeb5c7adf9bdc",
+    "docs/requirements_traceability.md": "d123f3817de4fcc90681f772ec00831fa8379764361a314ee3283eada90f1e34",
+    "docs/e0_e7_campaign_summary.csv": "a4c5992ee1ac62e91fb1e46ec9a31bf77bb07cc80b0b651778d0a2d4e2fff3d4",
+    "docs/figures/refreshed_campaign/e0_nominal_baseline.png": "464c3a758e3a73924219b9bad596f81a2a6b9d040f9c496c2bd7a4bc55428f8f",
+    "docs/figures/refreshed_campaign/e1_inertia_consistency.png": "63cbd925b89a0657ccc369eba78c7528bdadf2e23cfb16cd15435d8eed6ac8f2",
+    "docs/figures/refreshed_campaign/e4_outlier_gating.png": "0e0a01965d0c846700959f702c25e852a4adfe05e30f5bd99f5cb74b4b783faa",
+    "docs/figures/refreshed_campaign/e6_control_authority.png": "1b8590991b09c127b5a63e56d2c714765a7fcb848959d895406a728eef4968aa"
+  }
+}

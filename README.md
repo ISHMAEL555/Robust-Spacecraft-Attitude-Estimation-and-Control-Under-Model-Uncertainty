@@ -15,7 +15,8 @@ This repository implements two multiplicative extended Kalman filters (MEKFs), a
 - **E6 pointing acquisition:** The labeled project benchmark starts at 60 deg error and 0.1 rad/s body rate, with a 0.1 N m wheel torque limit, 20 N m s per-wheel momentum limit, and a 50 ms first-order motor response. The deterministic seed-42 run settles within 2% of its initial error at 176.58 s, holds that bound for 23.41 s, peaks at 1.083 deg during the final 20 s, and ends at 2.81e-4 rad/s. Peak wheel use is 49.9%. It passes the project benchmark in [the machine-readable report](docs/e6_project_benchmark.json).
 - **Innovation check:** The E6 run's covariance-normalized star-tracker innovations have a 10-lag multivariate Ljung-Box p-value of 0.387. This is evidence for that run, not a general sensor validation result.
 - **Model-aided covariance:** With an explicit angular-rate process-noise term, the 15-state matched-inertia case has mean NEES 15.047 (10-run 95% t interval [12.530, 17.565]) and mean NIS 2.958 (run-level interval [2.760, 3.156]). This is an exploratory matched case; the process-noise setting is not hardware-calibrated and the inertia-mismatch envelope remains open. See the [consistency report](docs/model_aided_consistency.json).
-- **Robustness slices:** Five-run ensembles cover 25% inertia mismatch, Q/R scaling, 1-rad tracker outliers with and without gating, a 30-update outage, and closed-loop initial conditions. At 25% inertia mismatch the model-aided filter has mean NEES/DOF 20.36 despite 0.092 deg attitude RMSE. Gating rejects 25 of 500 tracker measurements and restores accepted NIS to 3.03; without gating, NEES exceeds 6 million. A 170 deg acquisition settles at about 235 s in the 400 s stress case, outside the nominal 180 s project benchmark. See the [robustness report](docs/robustness_slices.json) and [plot](docs/figures/robustness_slices.png).
+- **Refreshed E0-E7 statistics:** 33 cases, 330 independent runs, and 4.2 million propagation steps. Matched-inertia NEES and accepted NIS intervals contain their DOF references. At 25% model-aided inertia mismatch, mean NEES/DOF is 17.132 (run-level 95% interval [6.064, 28.199]) despite 0.094 deg attitude-estimation RMSE. See the [campaign report](docs/e0_e7_campaign.md), [full summary CSV](docs/e0_e7_campaign_summary.csv), [metadata and hashes](docs/e0_e7_campaign_metadata.json), and refreshed plots below.
+- **Long-duration robustness slices:** Five-run ensembles cover 25% inertia mismatch, Q/R scaling, tracker outliers, a 30-update outage, and closed-loop initial conditions. Gating rejects 25 of 500 tracker measurements and keeps accepted NIS near 3; without gating, NEES exceeds 6 million. A 170 deg acquisition settles at about 235 s in the 400 s stress case, outside the nominal 180 s project benchmark. See the [robustness report](docs/robustness_slices.json) and [plot](docs/figures/robustness_slices.png).
 - **Regression and integration tests:** The GitHub Actions workflow runs the suite on Python 3.10 and 3.12.
 
 The E6 targets are explicit **project benchmarks**, not mission requirements. The full checks and assumptions are in [requirements traceability](docs/requirements_traceability.md). The benchmark trajectory and wheel margin are shown below.
@@ -33,7 +34,8 @@ The E6 targets are explicit **project benchmarks**, not mission requirements. Th
 | `src/actuators/` | Reaction-wheel allocation, torque response, and hard momentum limits |
 | `config/` | Nominal, uncertainty, sensor-degradation, Monte Carlo, and closed-loop scenarios |
 | `scripts/run_experiment.py` | Single-run and Monte Carlo simulation |
-| `scripts/run_research_campaigns.py` | E1-E7 parameter-sweep campaigns |
+| `scripts/run_research_campaigns.py` | Resumable E0-E7 campaign with run-level confidence intervals |
+| `scripts/export_campaign_evidence.py` | Export summaries, scenario seeds, and source/result hashes |
 | `scripts/evaluate_e6_benchmark.py` | Reproducible E6 benchmark, pass/fail report, and plot |
 | `scripts/plot_campaign_figures.py` | Campaign summary plots |
 | `tests/` | Unit and integration verification |
@@ -116,11 +118,11 @@ Use `--plot-only` to rebuild the robustness figure from the saved JSON report.
 
 ## Estimator statistics and interpretation
 
-NEES and NIS are reported with their state and measurement degrees of freedom. The gyro-driven filter is the statistically consistent baseline in the original nominal campaign. The model-aided filter's matched-inertia result passes the exploratory 10-run ensemble check, but the five-run 25% inertia-mismatch slice has mean NEES/DOF 20.36. Accurate attitude estimates do not imply calibrated full-state covariance. The robustness slices characterize selected scenarios; they do not establish consistency over a validated mismatch envelope.
+NEES and NIS are reported with their state and measurement degrees of freedom. In the refreshed 10-run campaign, the gyro-driven and model-aided matched-inertia intervals contain their DOF references. The model-aided 25% mismatch case has mean NEES/DOF 17.132 with a 95% run-level interval [6.064, 28.199], despite 0.094 deg attitude-estimation RMSE. Accurate attitude estimates do not imply calibrated full-state covariance. These fixed scenario results do not establish consistency over a validated mismatch envelope.
 
 Innovation whiteness is evaluated on accepted, covariance-normalized innovations. The multivariate Ljung-Box result is approximate and depends on independent, regularly sampled innovations; outages and rejected outliers change that interpretation. Monte Carlo confidence intervals are computed over independent run summaries, while time-series fractions are descriptive because adjacent epochs are correlated.
 
-Review the [current evidence and limitations](docs/current_evidence.md) alongside the [requirements traceability and risk register](docs/requirements_traceability.md). Earlier E0-E7 campaign results are retained as a campaign snapshot; the E6 project benchmark and selected post-review robustness slices are reported separately with the updated timing and actuator models.
+Review the [refreshed E0-E7 campaign report](docs/e0_e7_campaign.md), [current evidence and limitations](docs/current_evidence.md), and [requirements traceability and risk register](docs/requirements_traceability.md). The E6 project benchmark and the longer 400 s robustness slices remain separately reported scenarios.
 
 ![Model-aided matched-inertia NEES by state group and full-state ensemble interval](docs/figures/model_aided_nees_groups.png)
 
@@ -142,24 +144,37 @@ python scripts/run_experiment.py --config config/nominal.yaml --output reports/n
 python scripts/analyze_results.py reports/nominal.npz --all --output-dir reports/nominal_analysis
 ```
 
-Run an E1-E7 campaign:
+Run the refreshed E0-E7 campaign:
 
 ```powershell
-python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --output-dir reports/research_campaigns
-python scripts/plot_campaign_figures.py --input reports/research_campaigns/summary.csv --output-dir docs/figures
+python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --output-dir reports/research_campaigns/e0_e7_refresh --resume
+python scripts/plot_campaign_figures.py --input reports/research_campaigns/e0_e7_refresh/summary.csv --output-dir docs/figures/refreshed_campaign
+python scripts/export_campaign_evidence.py --input-dir reports/research_campaigns/e0_e7_refresh
 ```
 
-Campaign outputs include compressed traces, case summaries, and plots. The checked-in [campaign CSV](docs/campaign_summary.csv) is the earlier E0-E7 snapshot and does not replace the current E6 project-benchmark report.
+The complete command runs E0 at its configured 1,000 s duration and E1-E7 at 100 s per run. It records ten independent seeds per case, configuration signatures, compressed traces, and run-level 95% Student-t intervals. The checked-in [E0-E7 summary](docs/e0_e7_campaign_summary.csv) and [manifest](docs/e0_e7_campaign_metadata.json) preserve the refreshed result set. The older [campaign snapshot](docs/campaign_summary.csv) remains available for historical comparison.
 
-## Selected campaign figures
+## Refreshed E0-E7 campaign results
 
-![E1 inertia uncertainty: NEES and attitude estimation error](docs/figures/e1_inertia_consistency.png)
+| Case | Mean NEES / DOF (95% run-level interval) | Accepted NIS / DOF (95% run-level interval) | Attitude-estimation result |
+|---|---:|---:|---|
+| E0 nominal, 1,000 s | 0.999 [0.931, 1.068] | 0.997 [0.979, 1.014] | RMSE 0.031°; true pointing RMS 0.639° |
+| E1 gyro-driven, matched inertia | 0.994 [0.794, 1.194] | 0.990 [0.942, 1.038] | RMSE 0.094° |
+| E1 model-aided, matched inertia | 1.003 [0.835, 1.171] | 0.986 [0.920, 1.052] | RMSE 0.094° |
+| E1 model-aided, 25% inertia mismatch | 17.132 [6.064, 28.199] | 1.070 [1.008, 1.133] | RMSE 0.094°; covariance inconsistent |
+| E4 1 rad outliers, gate off | 1.04×10⁶ [7.30×10⁵, 1.36×10⁶] | 6.18×10⁵ [4.24×10⁵, 8.12×10⁵] | RMSE 10.80° |
+| E4 1 rad outliers, gate on | 0.922 [0.790, 1.053] | 0.988 [0.925, 1.050] | RMSE 0.094°; 46/1,000 updates rejected |
+| E5 30-update tracker outage | 1.013 [0.688, 1.338] | 0.994 [0.914, 1.074] | RMSE 0.119°; 62.78 s recovery |
 
-![E4 star-tracker outlier gating](docs/figures/e4_outlier_gating.png)
+The intervals use ten independent run means per scenario; epochs within each run are correlated and are not counted as independent trials. E6 campaign cases are 100 s characterization runs; the 200 s seed-42 project benchmark above remains the pointing pass/fail result.
 
-![E6 E1-E7 campaign actuator-authority comparison](docs/figures/e6_control_authority.png)
+![E0 nominal 1,000 s baseline: normalized consistency and attitude accuracy](docs/figures/refreshed_campaign/e0_nominal_baseline.png)
 
-These campaign plots accompany the original campaign snapshot. Read their conditions and confidence intervals in [current evidence](docs/current_evidence.md); use the dedicated E6 benchmark plot above for the updated actuator setup.
+![E1 inertia mismatch: run-level NEES confidence intervals and attitude estimation error](docs/figures/refreshed_campaign/e1_inertia_consistency.png)
+
+![E4 star-tracker outlier gating: estimator accuracy and normalized innovation consistency](docs/figures/refreshed_campaign/e4_outlier_gating.png)
+
+![E6 closed-loop stress and actuator authority for the 100 s campaign cases](docs/figures/refreshed_campaign/e6_control_authority.png)
 
 ## Modeling limitations
 

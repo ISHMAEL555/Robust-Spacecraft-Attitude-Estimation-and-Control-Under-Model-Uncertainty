@@ -1,4 +1,4 @@
-"""Create compact, README-ready figures from the tracked campaign summary CSV."""
+"""Create README-ready figures from the refreshed E0-E7 campaign summary."""
 
 from __future__ import annotations
 
@@ -77,15 +77,26 @@ def save_estimator_consistency(rows: list[dict[str, str]], output: Path) -> None
         )
         offset = -0.006 if variant == "gyro_driven" else 0.006
         x = np.array([metric(row, "inertia_mismatch") for row in series]) + offset
+        dof = np.array([metric(row, "NEES_dof") for row in series])
         nees_per_dof = np.array(
-            [metric(row, "NEES_mean") / metric(row, "NEES_dof") for row in series]
+            [metric(row, "NEES_run_mean") / value for row, value in zip(series, dof)]
         )
-        axes[0].plot(
+        nees_low = np.array([
+            metric(row, "NEES_run_mean_ci95_lower") / value
+            for row, value in zip(series, dof)
+        ])
+        nees_high = np.array([
+            metric(row, "NEES_run_mean_ci95_upper") / value
+            for row, value in zip(series, dof)
+        ])
+        axes[0].errorbar(
             x,
             nees_per_dof,
+            yerr=np.vstack((nees_per_dof - nees_low, nees_high - nees_per_dof)),
             marker="o",
             markersize=6,
             linewidth=2,
+            capsize=3,
             color=color,
             label=label,
         )
@@ -119,9 +130,9 @@ def save_estimator_consistency(rows: list[dict[str, str]], output: Path) -> None
 
     axes[0].axhline(1.0, color=MUTED, linestyle="--", linewidth=1.2, label="NEES / DOF = 1")
     axes[0].set_yscale("log")
-    axes[0].set_ylim(0.65, 100)
-    axes[0].set_ylabel("Pooled mean NEES / DOF")
-    axes[0].set_title("Covariance consistency")
+    axes[0].set_ylim(0.5, 100)
+    axes[0].set_ylabel("Run-mean NEES / DOF")
+    axes[0].set_title("Covariance consistency (95% run-level t CI)")
     axes[0].legend(frameon=False, fontsize=8, loc="upper left")
 
     axes[1].set_ylabel("Attitude-estimation RMSE (deg)")
@@ -134,6 +145,14 @@ def save_estimator_consistency(rows: list[dict[str, str]], output: Path) -> None
         axis.set_xlabel("Truth inertia mismatch")
 
     fig.suptitle("E1 · Inertia mismatch", fontsize=15, fontweight="bold", color=INK)
+    fig.text(
+        0.5,
+        -0.025,
+        "10 independent runs per case · intervals are over run-level means",
+        ha="center",
+        fontsize=8,
+        color=MUTED,
+    )
     fig.savefig(output, dpi=220, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -196,17 +215,34 @@ def save_outlier_gating(rows: list[dict[str, str]], output: Path) -> None:
     axes[0].legend(frameon=False, fontsize=9)
     axes[0].set_xticks(x)
 
-    raw_nis = np.array([metric(ungated[value], "NIS_mean") for value in magnitudes])
-    accepted_nis = np.array([metric(gated[value], "NIS_mean_accepted") for value in magnitudes])
-    axes[1].plot(x, raw_nis, marker="o", linewidth=2, markersize=6, color=BLUE,
-                 label="All innovations, gate off")
-    axes[1].plot(x, accepted_nis, marker="o", linewidth=2, markersize=6, color=VERMILLION,
-                 label="Accepted innovations, gate on")
-    axes[1].axhline(3.0, color=MUTED, linestyle="--", linewidth=1.2, label="3-DOF reference")
+    for dataset, label, color in [
+        (ungated, "All updates, gate off", BLUE),
+        (gated, "Accepted updates, gate on", VERMILLION),
+    ]:
+        series = [dataset[value] for value in magnitudes]
+        mean = np.array([metric(row, "NIS_accepted_run_mean") / 3.0 for row in series])
+        low = np.array([
+            metric(row, "NIS_accepted_run_mean_ci95_lower") / 3.0 for row in series
+        ])
+        high = np.array([
+            metric(row, "NIS_accepted_run_mean_ci95_upper") / 3.0 for row in series
+        ])
+        axes[1].errorbar(
+            x,
+            mean,
+            yerr=np.vstack((mean - low, high - mean)),
+            marker="o",
+            linewidth=2,
+            markersize=6,
+            capsize=3,
+            color=color,
+            label=label,
+        )
+    axes[1].axhline(1.0, color=MUTED, linestyle="--", linewidth=1.2, label="NIS / 3 DOF = 1")
     axes[1].set_yscale("log")
-    axes[1].set_ylim(1.0, 1.0e7)
+    axes[1].set_ylim(1.0e-1, 3.0e6)
     axes[1].set_xlabel("Injected outlier magnitude (rad)")
-    axes[1].set_ylabel("Mean NIS")
+    axes[1].set_ylabel("Run-mean accepted NIS / 3 DOF")
     axes[1].set_title("Innovation consistency")
     axes[1].legend(frameon=False, fontsize=8, loc="upper left")
     axes[1].set_xticks(x)
@@ -218,6 +254,60 @@ def save_outlier_gating(rows: list[dict[str, str]], output: Path) -> None:
         0.5,
         -0.025,
         f"5% outlier probability · 10 runs × 100 s per case · NIS gate rejected {rejected:.0f}/{updates:.0f} updates",
+        ha="center",
+        fontsize=8,
+        color=MUTED,
+    )
+    fig.savefig(output, dpi=220, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+
+
+def save_nominal_baseline(rows: list[dict[str, str]], output: Path) -> None:
+    row = case_rows(rows, "E0", ["nominal_baseline"])[0]
+    fig, axes = plt.subplots(1, 3, figsize=(12.2, 4.1), constrained_layout=True)
+    style_axes(axes)
+
+    consistency = [
+        ("NEES_run_mean", "NEES_run_mean_ci95_lower", "NEES_run_mean_ci95_upper", 6.0, "NEES / 6 DOF"),
+        ("NIS_accepted_run_mean", "NIS_accepted_run_mean_ci95_lower", "NIS_accepted_run_mean_ci95_upper", 3.0, "Accepted NIS / 3 DOF"),
+    ]
+    for axis, (mean_key, low_key, high_key, dof, title) in zip(axes[:2], consistency):
+        mean = metric(row, mean_key) / dof
+        low = metric(row, low_key) / dof
+        high = metric(row, high_key) / dof
+        axis.errorbar(
+            [0], [mean], yerr=[[mean - low], [high - mean]],
+            fmt="o", markersize=7, capsize=4, color=BLUE, linewidth=1.8,
+        )
+        axis.axhline(1.0, color=MUTED, linestyle="--", linewidth=1.2)
+        axis.set_xlim(-0.6, 0.6)
+        axis.set_xticks([0], ["Nominal"])
+        axis.set_ylim(0.5, 1.5)
+        axis.set_ylabel("Normalized mean")
+        axis.set_title(title)
+
+    angle_metrics = [
+        ("attitude_estimation_rmse_rad", "Attitude estimate RMSE", BLUE),
+        ("pointing_rms_rad", "True pointing RMS", VERMILLION),
+    ]
+    for index, (prefix, label, color) in enumerate(angle_metrics):
+        mean = metric(row, f"{prefix}_mean") * 180.0 / np.pi
+        low = metric(row, f"{prefix}_ci95_lower") * 180.0 / np.pi
+        high = metric(row, f"{prefix}_ci95_upper") * 180.0 / np.pi
+        axes[2].errorbar(
+            [index], [mean], yerr=[[mean - low], [high - mean]],
+            fmt="o", markersize=6, capsize=3, color=color, label=label,
+        )
+    axes[2].set_xticks([0, 1], ["Estimator", "Spacecraft"])
+    axes[2].set_ylabel("Angle RMS (deg)")
+    axes[2].set_title("Accuracy and true pointing")
+    axes[2].legend(frameon=False, fontsize=8)
+
+    fig.suptitle("E0 · Nominal 1,000 s baseline", fontsize=15, fontweight="bold", color=INK)
+    fig.text(
+        0.5,
+        -0.025,
+        "10 independent runs · bars are 95% Student-t intervals over run means",
         ha="center",
         fontsize=8,
         color=MUTED,
@@ -305,8 +395,8 @@ def main() -> None:
     parser.add_argument(
         "--input",
         type=Path,
-        default=ROOT / "docs" / "campaign_summary.csv",
-        help="Tracked E1–E7 campaign summary CSV.",
+        default=ROOT / "docs" / "e0_e7_campaign_summary.csv",
+        help="Refreshed E0-E7 campaign summary CSV.",
     )
     parser.add_argument(
         "--output-dir",
@@ -332,6 +422,7 @@ def main() -> None:
     save_estimator_consistency(rows, args.output_dir / "e1_inertia_consistency.png")
     save_outlier_gating(rows, args.output_dir / "e4_outlier_gating.png")
     save_actuator_authority(rows, args.output_dir / "e6_control_authority.png")
+    save_nominal_baseline(rows, args.output_dir / "e0_nominal_baseline.png")
     print(f"Wrote README figures to {args.output_dir}")
 
 
