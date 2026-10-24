@@ -15,6 +15,8 @@ The project couples nonlinear rigid-body truth dynamics, gyroscope and star-trac
 
 These are scenario findings, not universal thresholds. Full measurement conditions, definitions, and per-case results are in [current simulation evidence](docs/current_evidence.md) and the [32-case campaign summary](docs/campaign_summary.csv).
 
+**Implementation correction:** An audit found that the MEKF covariance model used a right-multiplicative body-frame attitude error while the tracker residual, correction injection, and reported attitude errors used left-multiplicative operations. These coordinates differ under nonidentity attitude. The filter update, tracker perturbations, and error metrics now use the same right/body convention. E0–E7 results in this README were regenerated after that correction; older report artifacts are not directly comparable.
+
 ## Model and implementation
 
 ### Truth and sensors
@@ -180,7 +182,7 @@ tests/unit/               Dynamics, estimator, sensor, actuator, and controller 
 tests/integration/        End-to-end simulation checks
 ```
 
-Historical reports under `reports/` predate the reaction-wheel sign correction and model-aided covariance updates. They are retained as provenance; use `docs/current_evidence.md` and `docs/campaign_summary.csv` for the current results described here.
+Historical reports under `reports/` predate the reaction-wheel sign correction and the corrected MEKF attitude-error convention. They are retained as provenance; use `docs/current_evidence.md` and `docs/campaign_summary.csv` for the current results described here.
 
 ## Assumptions and limits of inference
 
