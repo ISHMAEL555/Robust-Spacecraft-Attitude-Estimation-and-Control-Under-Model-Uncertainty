@@ -140,7 +140,7 @@ def test_switch_fires_on_the_estimated_rate_in_the_closed_loop():
 def test_low_pass_switching_ignores_single_noisy_samples():
     """One sample far below the threshold does not switch; a sustained low rate does."""
     controller = _manager(switch_filter_time_constant_s=1.0, detumble_entry_rate=0.009)
-    for _ in range(300):
+    for _ in range(2000):  # let the filter settle at 0.012 from its start at w_exit
         controller.compute_control(IDENTITY, np.array([0.012, 0.0, 0.0]))
     controller.compute_control(IDENTITY, np.array([0.0, 0.0, 0.0]))  # one outlier sample
     assert controller.phase == "detumble"
@@ -191,3 +191,16 @@ def test_acquisition_never_reaches_the_exit_threshold_near_j_min():
     assert peak_true < 0.15 and float(np.max(results["switch_signal"])) < 0.15
     # And it does slew fast, so the check is not vacuous.
     assert peak_true > 0.05
+
+
+def test_filtered_switch_cannot_fire_on_the_first_sample():
+    """Regression: the filter starts at w_exit, so a low first sample does not switch at t = 0."""
+    controller = _manager(switch_filter_time_constant_s=1.0, detumble_entry_rate=0.009)
+    controller.compute_control(IDENTITY, np.array([0.0085, 0.0, 0.0]))
+    assert controller.phase == "detumble" and controller.switch_signal > 0.14
+    steps = 1
+    while controller.phase == "detumble":
+        controller.compute_control(IDENTITY, np.array([0.0085, 0.0, 0.0]))
+        steps += 1
+    # From 0.15 toward 0.0085, crossing 0.009 takes T_f ln((0.15 - 0.0085) / 0.0005) = 5.65 s.
+    assert steps == pytest.approx(565, abs=5)

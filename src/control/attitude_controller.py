@@ -38,8 +38,10 @@ and back to 'detumble' only if |w| > w_exit > w_entry. The gap between the two
 thresholds is the hysteresis; w_exit is set above every rate the acquisition
 law commands, so a noisy rate near w_entry cannot make it chatter. With
 switch_filter_time_constant_s set, both thresholds act on a first-order low-pass
-of |w| (s_k = s_{k-1} + a (|w_k| - s_{k-1}), a = dt / (T_f + dt), started at the
-first sample) instead of the single sample, so one noisy sample cannot switch.
+of |w| (s_k = s_{k-1} + a (|w_k| - s_{k-1}), a = dt / (T_f + dt)) instead of the
+single sample, so one noisy sample cannot switch. The filter starts at w_exit (a
+tumble is assumed until the filtered rate shows otherwise), so not even the first
+sample can switch on its own.
 """
 
 import numpy as np
@@ -235,9 +237,11 @@ class AttitudeController:
         """Hysteresis between detumble and acquisition on the rate the controller is given."""
         rate = float(np.linalg.norm(omega_current))
         tau_f = self.params.switch_filter_time_constant_s
-        if tau_f is None or self.switch_signal is None:
+        if tau_f is None:
             self.switch_signal = rate
         else:
+            if self.switch_signal is None:
+                self.switch_signal = self.params.detumble_exit_rate
             alpha = self.params.control_dt_s / (tau_f + self.params.control_dt_s)
             self.switch_signal += alpha * (rate - self.switch_signal)
         rate = self.switch_signal

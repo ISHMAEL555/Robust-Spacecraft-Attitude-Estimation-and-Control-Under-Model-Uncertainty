@@ -1,3 +1,13 @@
+# ROUND 3b NOTE (added before the round-3b runs): round 3 (results in
+# docs/b5_design/round3/, selection_round3.json, which picked tp3_lp1_t009) exposed
+# a defect: the switching filter started at the first raw sample, so in one
+# acq_drifted run (seed 10058042) a first estimated sample of 0.0085 rad/s
+# switched at t = 0, defeating the persistence. Fix: the filter now starts at
+# w_exit. Round 3b re-runs the three low-pass candidates below with the fix, on
+# the same design seeds, into docs/b5_design/round3b/, and applies the same rule
+# (the round-2 winner's round-3 result is reused as the comparison; it has no
+# filter, so the fix does not affect it).
+#
 # B5 design round 3 (two-phase family only), design seeds base 10000042, 60 runs.
 #
 # Why a third round: round 2 (docs/b5_design/selection_round2.json) selected
