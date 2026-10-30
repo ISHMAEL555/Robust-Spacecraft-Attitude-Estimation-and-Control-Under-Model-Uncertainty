@@ -3,7 +3,7 @@
 [![Tests](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml/badge.svg)](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.12-blue)
 ![Tests](https://img.shields.io/badge/tests-211%20passing-brightgreen)
-![Release](https://img.shields.io/badge/release-1.0.0-informational)
+![Release](https://img.shields.io/badge/release-1.1.0-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 Closed-loop attitude GNC simulation that characterizes how **state-estimation errors** propagate into **controller and mission performance**. Two multiplicative extended Kalman filters (MEKFs) run in the loop with a quaternion-feedback controller and a constrained reaction-wheel assembly. Their knowledge is then degraded on purpose: inertia mismatch, mistuned noise models, star-tracker outliers, and outages. Each case is assessed on three questions:
@@ -364,7 +364,7 @@ The first step quantified how much pointing error estimation *causes*, separatel
   author  = {Kowluri, Ishmael},
   title   = {Robust Spacecraft Attitude Estimation and Control Under Model Uncertainty},
   year    = {2026},
-  version = {1.0.0},
+  version = {1.1.0},
   url     = {https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty}
 }
 ```

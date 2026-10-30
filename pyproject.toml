@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spacecraft-estimation-control"
-version = "1.0.0"
+version = "1.1.0"
 description = "Robust Spacecraft Attitude Estimation and Control Under Model Uncertainty"
 readme = "README.md"
 authors = [{name = "Kowluri Ishmael"}]
