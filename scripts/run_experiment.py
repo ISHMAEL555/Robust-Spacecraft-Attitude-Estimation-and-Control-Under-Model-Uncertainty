@@ -191,6 +191,10 @@ def run_simulation(config: SimulationConfig,
         inertia=np.array(config.spacecraft['inertia'], dtype=float),
         profile_accel_fraction=config.controller.get('profile_accel_fraction', 0.7),
         profile_rate_gain=config.controller.get('profile_rate_gain', 0.05),
+        profile_max_rate=config.controller.get('profile_max_rate'),
+        detumble_entry_rate=config.controller.get('detumble_entry_rate', 0.01),
+        detumble_exit_rate=config.controller.get('detumble_exit_rate', 0.15),
+        detumble_time_constant_s=config.controller.get('detumble_time_constant_s', 20.0),
     )
     controller = AttitudeController(ctrl_params)
     # Optional gyroscopic feedforward omega x (J_nominal omega + h_w), from the
@@ -266,6 +270,9 @@ def run_simulation(config: SimulationConfig,
     if config.filter['variant'] == 'model_aided':
         results['inertia_true'] = true_inertia.copy()
         results['inertia_hat'] = np.zeros((n_steps, 3, 3))
+    if controller.phase is not None:
+        # two_phase mode log: 0 detumble, 1 acquisition, after each step's command.
+        results['control_phase'] = np.zeros(n_steps, dtype=np.int8)
     
     # Star tracker update tracking
     for i in range(n_steps):
@@ -349,6 +356,8 @@ def run_simulation(config: SimulationConfig,
         else:
             tau_cmd = controller.compute_control(q_control, omega_control)
         results['tau_cmd'][i] = tau_cmd
+        if controller.phase is not None:
+            results['control_phase'][i] = controller.phase == 'acquisition'
         
         # Reaction wheels: the wheel torque is held over [t, t + dt], so the
         # body-axis wheel momentum changes linearly from h_start to h_end.

@@ -23,6 +23,20 @@ approach inside it; a rate loop with gain K_omega tracks it. The sqrt branch is
 the constant-deceleration braking profile of a double integrator, so the
 commanded rate never asks for more stopping torque than the fraction f of the
 torque limit provides. It needs a nominal inertia (it is not adapted online).
+An optional profile_max_rate caps the commanded rate (the slew-rate constraint
+of the rate-limited eigenaxis laws, Wie and Lu, JGCD 1995).
+
+'two_phase' is a mode manager for acquisition from a tumble. In 'detumble' it
+ignores the attitude and damps the body momentum with a torque-limited law,
+
+    tau = -J w * min(1 / T_d, tau_max / |J w|),
+
+which is at the limit, opposite the momentum, until |J w| < tau_max T_d and
+proportional below. It switches to 'acquisition' (the rate_profile law) when the
+rate it is given (the estimated rate in the closed loop) satisfies |w| <= w_entry,
+and back to 'detumble' only if |w| > w_exit > w_entry. The gap between the two
+thresholds is the hysteresis; w_exit is set above every rate the acquisition
+law commands, so a noisy rate near w_entry cannot make it chatter.
 """
 
 import numpy as np
@@ -41,12 +55,19 @@ class ControllerParams:
     # Maximum torque command norm (N*m)
     max_torque: float = 0.1
     # Control law type
-    control_type: Literal['quaternion_feedback', 'pd', 'rate_profile'] = 'quaternion_feedback'
+    control_type: Literal['quaternion_feedback', 'pd', 'rate_profile', 'two_phase'] = 'quaternion_feedback'
     # rate_profile only: nominal inertia (3x3), fraction f of the torque limit
     # used for braking, and the linear-region rate gain k_p (1/s).
     inertia: Optional[np.ndarray] = None
     profile_accel_fraction: float = 0.7
     profile_rate_gain: float = 0.05
+    # rate_profile and two_phase: optional cap on the commanded rate (rad/s).
+    profile_max_rate: Optional[float] = None
+    # two_phase only: switch to acquisition at |w| <= detumble_entry_rate, back
+    # to detumble at |w| > detumble_exit_rate (rad/s); detumble time constant (s).
+    detumble_entry_rate: float = 0.01
+    detumble_exit_rate: float = 0.15
+    detumble_time_constant_s: float = 20.0
 
 
 class AttitudeController:
@@ -64,15 +85,28 @@ class AttitudeController:
         Args:
             params: ControllerParams
         """
-        if params.control_type not in ('quaternion_feedback', 'pd', 'rate_profile'):
+        if params.control_type not in ('quaternion_feedback', 'pd', 'rate_profile', 'two_phase'):
             raise ValueError(f"Unknown control_type: {params.control_type!r}")
-        if params.control_type == 'rate_profile':
+        if params.control_type in ('rate_profile', 'two_phase'):
             if params.inertia is None:
-                raise ValueError("control_type 'rate_profile' requires a nominal inertia")
+                raise ValueError(f"control_type {params.control_type!r} requires a nominal inertia")
+            if params.profile_max_rate is not None and params.profile_max_rate <= 0.0:
+                raise ValueError("profile_max_rate must be positive")
             if not 0.0 < params.profile_accel_fraction <= 1.0:
                 raise ValueError("profile_accel_fraction must be in (0, 1]")
             if params.profile_rate_gain <= 0.0:
                 raise ValueError("profile_rate_gain must be positive")
+        if params.control_type == 'two_phase':
+            if not 0.0 < params.detumble_entry_rate < params.detumble_exit_rate:
+                raise ValueError("need 0 < detumble_entry_rate < detumble_exit_rate")
+            if params.detumble_time_constant_s <= 0.0:
+                raise ValueError("detumble_time_constant_s must be positive")
+            if (params.profile_max_rate is not None
+                    and params.profile_max_rate >= params.detumble_exit_rate):
+                raise ValueError("profile_max_rate must be below detumble_exit_rate")
+        # Mode state (two_phase only): starts in detumble; switches counts every change.
+        self.phase = 'detumble' if params.control_type == 'two_phase' else None
+        self.mode_switches = 0
         if params.max_torque <= 0.0:
             raise ValueError("max_torque must be positive")
         self.params = params
@@ -133,10 +167,15 @@ class AttitudeController:
             Commanded torque
         """
         h_w = np.zeros(3) if wheel_momentum is None else np.asarray(wheel_momentum, dtype=float)
+        feedback = self._feedback(q_current, omega_current)  # updates the two_phase mode
+        if self.phase == 'detumble':
+            # Detumbling already uses the full torque against the momentum; the
+            # gyroscopic term only rotates the momentum, so it is not fed forward.
+            return self._saturate(feedback)
         tau_ff = np.cross(omega_current, inertia @ omega_current + h_w)
         if tau_dist is not None:
             tau_ff = tau_ff - np.asarray(tau_dist, dtype=float)
-        return self._saturate(self._feedback(q_current, omega_current) + tau_ff)
+        return self._saturate(feedback + tau_ff)
 
     def attitude_error(self, q_current: np.ndarray) -> np.ndarray:
         """Return the shortest-path body-frame correction quaternion q_c^-1 ⊗ q_d."""
@@ -149,6 +188,11 @@ class AttitudeController:
         # Desired rate is given in the desired body frame; express it in the
         # current body frame before forming the rate error.
         omega_desired_body = rotate_vector(q_error, self.omega_desired)
+        if self.params.control_type == 'two_phase':
+            self._update_phase(omega_current)
+            if self.phase == 'detumble':
+                return self._detumble_torque(omega_current)
+            return self._rate_profile_feedback(q_error, omega_current, omega_desired_body)
         if self.params.control_type == 'rate_profile':
             return self._rate_profile_feedback(q_error, omega_current, omega_desired_body)
         omega_error = omega_current - omega_desired_body
@@ -169,8 +213,29 @@ class AttitudeController:
             decel = (self.params.profile_accel_fraction * self.max_torque
                      / float(axis @ inertia @ axis))
             speed = min(np.sqrt(2.0 * decel * angle), self.params.profile_rate_gain * angle)
+            if self.params.profile_max_rate is not None:
+                speed = min(speed, self.params.profile_max_rate)
             omega_cmd = speed * axis
         return self.K_omega * (omega_cmd + omega_desired_body - omega_current)
+
+    def _update_phase(self, omega_current: np.ndarray) -> None:
+        """Hysteresis between detumble and acquisition on the rate the controller is given."""
+        rate = float(np.linalg.norm(omega_current))
+        if self.phase == 'detumble' and rate <= self.params.detumble_entry_rate:
+            self.phase = 'acquisition'
+            self.mode_switches += 1
+        elif self.phase == 'acquisition' and rate > self.params.detumble_exit_rate:
+            self.phase = 'detumble'
+            self.mode_switches += 1
+
+    def _detumble_torque(self, omega_current: np.ndarray) -> np.ndarray:
+        """Torque-limited momentum damping: at the limit far out, proportional near zero."""
+        momentum = np.asarray(self.params.inertia, dtype=float) @ omega_current
+        norm = float(np.linalg.norm(momentum))
+        if norm == 0.0:
+            return np.zeros(3)
+        scale = min(1.0 / self.params.detumble_time_constant_s, self.max_torque / norm)
+        return -scale * momentum
 
     def _saturate(self, tau_cmd: np.ndarray) -> np.ndarray:
         """Limit the command norm while preserving direction."""

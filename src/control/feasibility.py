@@ -199,7 +199,8 @@ def stop_then_slew_plan(inertia: np.ndarray, q0: np.ndarray, omega0: np.ndarray,
     j_eff = float((rotation / angle) @ inertia @ (rotation / angle)) if angle > 1e-12 else 1.0
     slew = slew_time_rest_to_rest_s(angle, j_eff, tau_max)
     return {"stop_s": float(elapsed), "slew_s": slew, "total_s": float(elapsed + slew),
-            "angle_after_stop_deg": float(np.rad2deg(angle))}
+            "angle_after_stop_deg": float(np.rad2deg(angle)),
+            "q_after_stop": [float(v) for v in body.q]}
 
 
 def slow_pole_settling_estimate_s(slow_pole: float, band: float = 0.02) -> float:
