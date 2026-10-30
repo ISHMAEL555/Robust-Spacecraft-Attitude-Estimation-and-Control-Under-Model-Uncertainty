@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml/badge.svg)](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.12-blue)
-![Tests](https://img.shields.io/badge/tests-156%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-211%20passing-brightgreen)
 ![Release](https://img.shields.io/badge/release-1.0.0-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -43,7 +43,8 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 | Star-tracker outliers (1 rad, 5%) | With χ² gate: NEES/DOF 0.974, RMSE 0.085°. Without: RMSE 12.3° | Pass |
 | Star-tracker outage (30 s) | Peak error 550″ inside filter peak 3σ of 1,074″ | Pass |
 | Innovation whiteness | 12-seed ensemble vs calibrated white-noise null: KS p = 0.457 | Pass |
-| Pointing benchmark (E6) | 2% settling **174.5 s** (≤ 180 s); terminal peak 1.01° (≤ 2°); wheel use 49.9% (≤ 80%) | Pass (3% margin, R-02) |
+| Pointing benchmark (E6), one deterministic run | 2% settling **174.5 s** (≤ 180 s); terminal peak 1.01° (≤ 2°); wheel use 49.9% (≤ 80%) | Pass (3% margin) |
+| Pointing benchmark (E6), 200-run Monte Carlo | **P(pass all criteria) = 0.005 [0.000, 0.028]**: 1 of 200 runs passes under random attitude axis, rate direction, inertia and sensor noise. Sensor noise alone: 100/100 pass. Actuator limits never violated | **Fails under dispersions (R-02)** |
 | Estimation cost on pointing (E6, 400–600 s) | Gyro-driven filter adds **+0.043°** [0.036, 0.049] APE over true-state feedback (0.0005°); model-aided adds +0.0004°. 0.1° project-defined requirement met throughout in both | Characterized (R-10) |
 | 170° slew with stored momentum | Needs 0.152 N·m of gyroscopic torque against 0.1 N·m available; not settled at 400 s | Authority-limited (R-07) |
 
@@ -54,6 +55,7 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 - **Fixing the truth across seeds can bias a consistency result.** With the true inertia held at its nominal value, the model-aided filter's inertia states start with zero error against a 5% prior, so its 15-state NEES is low by construction (initial value 9 of 15). Sampling the truth from the filter's own prior removes that, and exposes a mildly over-confident inertia group at the matched prior and inconsistency from a 10% prior.
 - **Model fidelity can create false passes.** Omitting the wheel gyroscopic term `ω × h_w` violated angular-momentum conservation by 197% and made a 170° slew appear to settle in 235 s. With correct physics it does not. The earlier result is withdrawn.
 - **Estimation costs pointing through the rate path, not only through attitude knowledge.** With true-state feedback steady-state pointing is 0.0005°. With the gyro-driven filter it is 0.043°: the 1.73 mrad/s rate error passes through the derivative gain and moves the spacecraft, so the control error (0.044°) exceeds the attitude-estimation error (0.008°). The model-aided filter's rate estimate is 2,000× quieter and costs 0.0004°. A 30 s tracker outage does not show up in pointing.
+- **A single deterministic pass can hide a fragile design.** The E6 benchmark passes in the one run where the initial rate is aligned with the slew axis. With the same criteria and 200 randomized runs, 1 passes. Sensor noise alone does not break it; a random slew axis, a random rate direction, or a 5% inertia dispersion each does, and 2% settling moves from 174.5 s to 193.6 s at 0.95× inertia and to 133.4 s at 1.05×. The gains were not redesigned here; that is a separate follow-up.
 - **Statistical tests need calibration.** At the available sample size, the multivariate Ljung–Box test rejects white noise 11.1% of the time at nominal 5%. Whiteness is therefore judged against an empirically calibrated null.
 
 ---
@@ -123,8 +125,9 @@ The full equations, step timing, and metric definitions are in the [system desig
 | Innovation whiteness | Analysis: calibrated 12-seed ensemble | Pass |
 | Fault response (outliers, outages) | Analysis: 10-run Monte Carlo | Pass |
 | Pointing benchmark E6 | Analysis: deterministic run | Pass |
+| Pointing benchmark E6 under dispersions | Analysis: 200-run Monte Carlo, Clopper–Pearson intervals | **Fails**: P(pass) = 0.005 |
 
-156 automated tests run in CI on Python 3.10 and 3.12. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
+211 automated tests run in CI on Python 3.10 and 3.12. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
 
 ---
 
@@ -214,6 +217,21 @@ The gyro-driven filter does not use inertia, so it is unaffected. The model-aide
 | Achieved / requested squared-torque effort | ≥ 85% | 87.9% | Pass |
 | Peak commanded and wheel torque | ≤ 0.1 N·m | 0.100 N·m | Pass |
 
+**E6 Monte Carlo (200 runs):** the same configuration and criteria, with a random 60° attitude axis, a random 0.1 rad/s rate direction, per-seed inertia (5% prior) and new sensor noise. Probabilities are with Clopper–Pearson 95% intervals; thresholds are project-defined.
+
+| Criterion | Passes / 200 | P(pass) |
+|---|---:|---:|
+| 2% settling ≤ 180 s; hold ≥ 20 s | 1 | 0.005 [0.000, 0.028] |
+| Final-20 s peak pointing ≤ 2° | 1 | 0.005 [0.000, 0.028] |
+| Final body-rate norm ≤ 1e-3 rad/s | 7 | 0.035 [0.014, 0.071] |
+| Effort fraction ≥ 85% | 192 | 0.960 [0.923, 0.983] |
+| Wheel momentum ≤ 80%; torque ≤ 0.1 N·m | 200 | 1.000 [0.982, 1.000] |
+| **All criteria** | **1** | **0.005 [0.000, 0.028]** |
+
+The median run is still 16° off in the last 20 s (5th–95th percentile 4.0°–41.1°), and settling is not reached within 200 s in 199 runs. Ablations (100 runs each): sensor noise only passes 100/100; adding a random attitude axis, a random rate direction, or inertia dispersion gives 0/100, 0/100 and 14/100. Rate direction is only weakly related to the terminal error (|ρ| ≈ 0.3), with errors lower when the rate is aligned with the slew axis, as in the benchmark.
+
+![E6 Monte Carlo](docs/figures/e6_monte_carlo.png)
+
 **Large-angle slew with stored wheel momentum:** a 170° slew about z while 10 N·m·s of the initial x-axis spin sits in the wheels. Rotating that stored momentum through the body frame needs gyroscopic torque beyond the controller's authority.
 
 | Model | Momentum drift | Peak `‖ω × h_w‖` | 2% settling | Final error (400 s) |
@@ -257,7 +275,7 @@ Requires Python 3.10 or later.
 git clone https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty.git
 cd Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty
 python -m pip install -r requirements.txt
-python -m pytest                                  # 156 tests, about 30 s
+python -m pytest                                  # 211 tests, about 1 min
 ```
 
 | Task | Command | Runtime |
@@ -267,6 +285,7 @@ python -m pytest                                  # 156 tests, about 30 s
 | Full E0–E7 campaign | `python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --jobs 8 --output-dir reports/research_campaigns/e0_e7_refresh` | ~15 min (16 cores) |
 | Estimation cost (estimated vs true-state feedback) | `python scripts/verify_estimation_cost.py --jobs 14` | ~10 min (16 cores) |
 | Inertia sampling study (deterministic vs sampled truth) | `python scripts/verify_inertia_sampling_study.py --jobs 6` | ~5 min (6 workers) |
+| E6 Monte Carlo (200 runs) | `python scripts/run_e6_monte_carlo.py --jobs 14` | ~5 min (16 cores) |
 | Targeted studies | `verify_model_aided_consistency.py`, `verify_robustness_slices.py`, `verify_innovation_whiteness.py`, `verify_wheel_coupling.py` | ~15 min |
 | README figures | `python scripts/plot_readme_figures.py` | ~2 min |
 
@@ -319,7 +338,7 @@ docs/            design description, results, traceability, evidence, figures
 | ID | Risk | Severity |
 |---|---|:-:|
 | R-01 | Model-aided covariance inconsistent under inertia mismatch | High |
-| R-02 | E6 settling margin is 3% | Medium |
+| R-02 | E6 benchmark passes only for its deterministic run: P(pass) = 0.5% under dispersions | High |
 | R-06 | Model-aided rate-process noise is a tuning parameter, not identified | Medium |
 | R-07 | Large slews with stored wheel momentum exceed gyroscopic torque authority | High |
 
@@ -331,6 +350,10 @@ The first step quantified how much pointing error estimation *causes*, separatel
 - [x] Steady-state absolute and relative pointing error (APE/RPE) after acquisition, with tracker outages placed inside that window.
 - [x] Decomposition of pointing error into control tracking error and estimation error, including how gyro noise in the rate feedback becomes pointing error; gyro-driven vs model-aided filters. *Not done: an experiment that separates the rate path from the attitude path.*
 - [ ] Mission-level metric: time inside a stated pointing requirement for each estimation fault. *Metric implemented; evaluated for the tracker outage only. Remains: outliers (E4), noise mistuning (E2/E3) and inertia mismatch (E1), and a requirement near the achieved error, since 0.1° is met throughout in steady state.*
+
+**Follow-up (separate task)**
+
+- [ ] Control gain redesign so the E6 benchmark holds under the Monte Carlo dispersions: design with `compute_control_gains` from a settling-time and damping target (the current gains give a linearised slow pole of about −0.027 s⁻¹), add gyroscopic feedforward, and re-run the 200-run campaign and ablations. Not started; gains were deliberately unchanged in 1.1.0.
 
 ---
 

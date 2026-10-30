@@ -1,0 +1,402 @@
+{
+  "label": "E6 Monte Carlo; criteria are project-defined, not mission requirements",
+  "config": "config/closed_loop.yaml",
+  "filter_variant": "gyro_driven",
+  "duration_s": 200.0,
+  "criteria_limits": {
+    "settling_time_2pct_s": {
+      "operator": "<=",
+      "limit": 180.0
+    },
+    "settling_hold_duration_s": {
+      "operator": ">=",
+      "limit": 20.0
+    },
+    "pointing_peak_final_20s_rad": {
+      "operator": "<=",
+      "limit": 0.03490658503988659
+    },
+    "final_angular_rate_norm_rad_s": {
+      "operator": "<=",
+      "limit": 0.001
+    },
+    "peak_wheel_momentum_utilization": {
+      "operator": "<=",
+      "limit": 0.8
+    },
+    "achieved_effort_fraction": {
+      "operator": ">=",
+      "limit": 0.85
+    },
+    "peak_commanded_torque_nm": {
+      "operator": "<=",
+      "limit": 0.1
+    },
+    "peak_wheel_torque_nm": {
+      "operator": "<=",
+      "limit": 0.1
+    }
+  },
+  "dispersions": {
+    "enabled": [
+      "rate"
+    ],
+    "attitude": {
+      "magnitude_deg": 60.0
+    },
+    "attitude_axis": "uniform on the sphere",
+    "rate": {
+      "magnitude_rad_s": 0.1,
+      "direction": "uniform on the sphere"
+    },
+    "inertia": {
+      "mode": "sampled_from_prior",
+      "relative_sigma": 0.05,
+      "note": "the E6 filter is gyro-driven and does not use inertia"
+    },
+    "sensor_noise": "new SeedSequence streams per run (seed = base + 1000 i)"
+  },
+  "seeds": [
+    42,
+    1042,
+    2042,
+    3042,
+    4042,
+    5042,
+    6042,
+    7042,
+    8042,
+    9042,
+    10042,
+    11042,
+    12042,
+    13042,
+    14042,
+    15042,
+    16042,
+    17042,
+    18042,
+    19042,
+    20042,
+    21042,
+    22042,
+    23042,
+    24042,
+    25042,
+    26042,
+    27042,
+    28042,
+    29042,
+    30042,
+    31042,
+    32042,
+    33042,
+    34042,
+    35042,
+    36042,
+    37042,
+    38042,
+    39042,
+    40042,
+    41042,
+    42042,
+    43042,
+    44042,
+    45042,
+    46042,
+    47042,
+    48042,
+    49042,
+    50042,
+    51042,
+    52042,
+    53042,
+    54042,
+    55042,
+    56042,
+    57042,
+    58042,
+    59042,
+    60042,
+    61042,
+    62042,
+    63042,
+    64042,
+    65042,
+    66042,
+    67042,
+    68042,
+    69042,
+    70042,
+    71042,
+    72042,
+    73042,
+    74042,
+    75042,
+    76042,
+    77042,
+    78042,
+    79042,
+    80042,
+    81042,
+    82042,
+    83042,
+    84042,
+    85042,
+    86042,
+    87042,
+    88042,
+    89042,
+    90042,
+    91042,
+    92042,
+    93042,
+    94042,
+    95042,
+    96042,
+    97042,
+    98042,
+    99042
+  ],
+  "n_runs": 100,
+  "overall": {
+    "passes": 0,
+    "fails": 100,
+    "p_pass": 0.0,
+    "ci95_clopper_pearson": [
+      0.0,
+      0.03621669264517641
+    ]
+  },
+  "criteria": {
+    "settling_time_2pct_s": {
+      "passes": 0,
+      "fails": 100,
+      "p_pass": 0.0,
+      "ci95_clopper_pearson": [
+        0.0,
+        0.03621669264517641
+      ]
+    },
+    "settling_hold_duration_s": {
+      "passes": 0,
+      "fails": 100,
+      "p_pass": 0.0,
+      "ci95_clopper_pearson": [
+        0.0,
+        0.03621669264517641
+      ]
+    },
+    "pointing_peak_final_20s_rad": {
+      "passes": 3,
+      "fails": 97,
+      "p_pass": 0.03,
+      "ci95_clopper_pearson": [
+        0.006229971538306397,
+        0.08517605297427999
+      ]
+    },
+    "final_angular_rate_norm_rad_s": {
+      "passes": 13,
+      "fails": 87,
+      "p_pass": 0.13,
+      "ci95_clopper_pearson": [
+        0.07107304618542955,
+        0.21204067708744978
+      ]
+    },
+    "peak_wheel_momentum_utilization": {
+      "passes": 100,
+      "fails": 0,
+      "p_pass": 1.0,
+      "ci95_clopper_pearson": [
+        0.9637833073548235,
+        1.0
+      ]
+    },
+    "achieved_effort_fraction": {
+      "passes": 89,
+      "fails": 11,
+      "p_pass": 0.89,
+      "ci95_clopper_pearson": [
+        0.8116988678035575,
+        0.9437929797145125
+      ]
+    },
+    "peak_commanded_torque_nm": {
+      "passes": 100,
+      "fails": 0,
+      "p_pass": 1.0,
+      "ci95_clopper_pearson": [
+        0.9637833073548235,
+        1.0
+      ]
+    },
+    "peak_wheel_torque_nm": {
+      "passes": 100,
+      "fails": 0,
+      "p_pass": 1.0,
+      "ci95_clopper_pearson": [
+        0.9637833073548235,
+        1.0
+      ]
+    }
+  },
+  "most_frequent_failing_criteria": [
+    "settling_time_2pct_s",
+    "settling_hold_duration_s"
+  ],
+  "failed_simultaneously_with_overall": {
+    "runs_failing_any_criterion": 100,
+    "runs_failing_only_one_criterion": 0
+  },
+  "distributions": {
+    "settling_time_s": {
+      "median": null,
+      "p05": null,
+      "p95": null,
+      "n_not_finite": 97,
+      "n_never_settled": 97
+    },
+    "peak_terminal_error_deg": {
+      "median": 12.59930532594183,
+      "p05": 2.668896722851619,
+      "p95": 28.817195323802675,
+      "n_not_finite": 0
+    },
+    "peak_wheel_momentum_use": {
+      "median": 0.35805091116925447,
+      "p05": 0.27381182087518025,
+      "p95": 0.48091333337972864,
+      "n_not_finite": 0
+    }
+  },
+  "inertia_sampling": {
+    "rejections": 0,
+    "attempts": 100,
+    "rejection_rate": 0.0
+  },
+  "rate_direction_analysis": {
+    "note": "exploratory Spearman rank correlations, not corrected for the 25 covariate-target pairs tested",
+    "covariates": [
+      "|rate . minor_axis|",
+      "|rate . intermediate_axis|",
+      "|rate . major_axis|",
+      "|rate . attitude_axis|",
+      "rate . attitude_axis (signed)"
+    ],
+    "most_frequent_failing_criterion": "settling_time_2pct_s",
+    "targets": {
+      "overall_failure": {
+        "|rate . minor_axis|": {
+          "spearman_rho": null,
+          "p_value": null
+        },
+        "|rate . intermediate_axis|": {
+          "spearman_rho": null,
+          "p_value": null
+        },
+        "|rate . major_axis|": {
+          "spearman_rho": null,
+          "p_value": null
+        },
+        "|rate . attitude_axis|": {
+          "spearman_rho": null,
+          "p_value": null
+        },
+        "rate . attitude_axis (signed)": {
+          "spearman_rho": null,
+          "p_value": null
+        }
+      },
+      "settling_time": {
+        "|rate . minor_axis|": {
+          "spearman_rho": 0.15172006459460025,
+          "p_value": 0.13184565718533212
+        },
+        "|rate . intermediate_axis|": {
+          "spearman_rho": 0.13255200504196338,
+          "p_value": 0.18862275339113496
+        },
+        "|rate . major_axis|": {
+          "spearman_rho": -0.2630328850051461,
+          "p_value": 0.008193528785959043
+        },
+        "|rate . attitude_axis|": {
+          "spearman_rho": 0.04406217079366736,
+          "p_value": 0.663349391858509
+        },
+        "rate . attitude_axis (signed)": {
+          "spearman_rho": 0.05839760516248264,
+          "p_value": 0.563853739358267
+        }
+      },
+      "peak_terminal_error_deg": {
+        "|rate . minor_axis|": {
+          "spearman_rho": 0.20460846084608456,
+          "p_value": 0.041149798627522466
+        },
+        "|rate . intermediate_axis|": {
+          "spearman_rho": 0.13748574857485746,
+          "p_value": 0.17254889345749913
+        },
+        "|rate . major_axis|": {
+          "spearman_rho": -0.29285328532853283,
+          "p_value": 0.003108208381278685
+        },
+        "|rate . attitude_axis|": {
+          "spearman_rho": 0.01452145214521452,
+          "p_value": 0.8859771574395631
+        },
+        "rate . attitude_axis (signed)": {
+          "spearman_rho": -0.13248124812481246,
+          "p_value": 0.1888609249810401
+        }
+      },
+      "final_angular_rate_norm_rad_s": {
+        "|rate . minor_axis|": {
+          "spearman_rho": 0.20193219321932193,
+          "p_value": 0.04393191903975701
+        },
+        "|rate . intermediate_axis|": {
+          "spearman_rho": 0.13036903690369037,
+          "p_value": 0.19607159318202214
+        },
+        "|rate . major_axis|": {
+          "spearman_rho": -0.2821242124212421,
+          "p_value": 0.004458169668833284
+        },
+        "|rate . attitude_axis|": {
+          "spearman_rho": 0.010657065706570656,
+          "p_value": 0.9161903111828343
+        },
+        "rate . attitude_axis (signed)": {
+          "spearman_rho": -0.1335013501350135,
+          "p_value": 0.18544827640258968
+        }
+      },
+      "failure_of_settling_time_2pct_s": {
+        "|rate . minor_axis|": {
+          "spearman_rho": null,
+          "p_value": null
+        },
+        "|rate . intermediate_axis|": {
+          "spearman_rho": null,
+          "p_value": null
+        },
+        "|rate . major_axis|": {
+          "spearman_rho": null,
+          "p_value": null
+        },
+        "|rate . attitude_axis|": {
+          "spearman_rho": null,
+          "p_value": null
+        },
+        "rate . attitude_axis (signed)": {
+          "spearman_rho": null,
+          "p_value": null
+        }
+      }
+    }
+  }
+}
