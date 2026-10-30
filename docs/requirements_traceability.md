@@ -1,6 +1,6 @@
 # Verification Requirements, Traceability, and Risk Register
 
-**Release:** 1.0.0. This document defines the project's verification requirements, traces each to its implementation and evidence, and records open engineering risks. The requirements are **project benchmarks** for a simulation study, not mission requirements or hardware acceptance limits. Results are reported in [current_evidence.md](current_evidence.md); models are specified in [system_description.md](system_description.md).
+**Release:** 1.0.0 (entries marked *1.1.0, unreleased* were added after it). This document defines the project's verification requirements, traces each to its implementation and evidence, and records open engineering risks. The requirements are **project benchmarks** for a simulation study, not mission requirements or hardware acceptance limits. Results are reported in [current_evidence.md](current_evidence.md); models are specified in [system_description.md](system_description.md).
 
 **Verification methods:** **T** = test (automated, in `tests/`), **A** = analysis (simulation campaign or statistical analysis, in `scripts/`), **I** = inspection.
 
@@ -50,7 +50,15 @@
 | GNC-PB-002 | Body and wheel torque ≤ 0.1 N·m; peak wheel momentum ≤ 80% of 20 N·m·s; achieved/requested squared-torque effort ≥ 85% with a 50 ms motor lag. | A | same | **Pass**: 0.1000 / 0.1000 N·m; 49.9%; 87.9% |
 | GNC-CHAR-001 | Characterize closed-loop stress cases (authority, wheel limit, initial state, estimator tuning) and large-angle acquisition. | A | [campaign CSV](e0_e7_campaign_summary.csv) (E6); [robustness_slices.json](robustness_slices.json); [wheel_coupling_effect.json](wheel_coupling_effect.json) | **Characterized**: 60° from rest settles at 149.2 s; the 170° slew does not settle in 400 s (gyroscopic-torque limited; see R-07) |
 
-### 1.6 Software and reproducibility
+### 1.6 Estimation cost (1.1.0, unreleased)
+
+| ID | Requirement | Method | Verification artifact | Result |
+|---|---|:---:|---|:---:|
+| EST-DECOMP-001 | The logged pointing, control, and estimation error rotations satisfy `δq_p = δq_c ⊗ δq_e` exactly, and their rotation vectors add to second order (`θ_p − θ_c − θ_e = ½ θ_c × θ_e + O(θ³)`). | T | `test_pointing_decomposition.py` | **Pass** (identity to 1e-14 on random rotations and 1e-12 along closed-loop runs; log-log residual slope 2.0) |
+| EST-COST-001 | Characterize the steady-state pointing error caused by estimation: paired estimated-versus-truth feedback, both filters, E0/E5/E6, 10 seeds, 95% t intervals on the per-seed differences. The 0.1° fraction-within-requirement threshold is project-defined. | A | `scripts/verify_estimation_cost.py`; [estimation_cost.json](estimation_cost.json) | **Characterized**: late-window APE increment +0.0425° [0.0361, 0.0490] gyro-driven, +0.0004° [0.0003, 0.0006] model-aided (E6); 0.1° requirement met throughout in steady state in both modes; outage not visible in pointing. See [current_evidence §5.4](current_evidence.md#54-estimation-cost-estimated-versus-true-state-feedback) |
+| SW-004 | With `controller.state_feedback` at its default, simulation output is bit-for-bit identical to release 1.0.0 for the same seed, and truth-feedback runs share all random draws with estimated-feedback runs. | T | `test_pointing_decomposition.py` (golden arrays from 1.0.0 in `tests/data/`) | **Pass** (both filters, 10 s closed loop; compared on Python 3.11 / Windows) |
+
+### 1.7 Software and reproducibility
 
 | ID | Requirement | Method | Verification artifact | Result |
 |---|---|:---:|---|:---:|
@@ -79,7 +87,7 @@ Likelihood and impact are qualitative and assessed for the purpose of this study
 | ID | Risk | Status | Severity | Mitigation / next evidence |
 |---|---|---|---|---|
 | R-01 | Model-aided covariance becomes inconsistent under inertia mismatch (NEES/DOF 25.98 at 25%), even though attitude accuracy is unchanged. A user who reads RMSE alone would trust an over-confident rate and inertia covariance. | Open | High | Do not use the model-aided rate/inertia covariance downstream without mismatch-aware tuning. Next: full-tensor (off-diagonal) mismatch sweeps, excitation-dependent observability analysis of the inertia states, and a consider-state or Schmidt-Kalman treatment of inertia. |
-| R-02 | The E6 benchmark settling margin is thin: 174.51 s against 180 s (3%). Small parameter changes can flip the verdict. | Open | Medium | Report a seed ensemble for the benchmark metrics; consider gain re-design with `compute_control_gains` and gyroscopic feedforward. |
+| R-02 | The E6 benchmark settling margin is thin: 174.51 s against 180 s (3%). Small parameter changes can flip the verdict. Estimation is not the source of the margin: over the 200 s benchmark window the model-aided estimation cost is +0.0001° [−0.0003, 0.0006] and the gyro-driven cost is negative (EST-COST-001); it is a controller-transient matter. | Open | Medium | Report a seed ensemble for the benchmark metrics; consider gain re-design with `compute_control_gains` and gyroscopic feedforward. |
 | R-03 | The truth model omits flexible modes, slosh, environmental disturbance torques, wheel friction, motor electrical/thermal limits, and desaturation. | Open | Medium | Add one effect at a time and re-run the benchmark and campaign; label parameters as illustrative until tied to hardware. *Closed sub-item:* wheel gyroscopic coupling was added in 1.0.0. |
 | R-04 | Sensor updates are applied at their generation epoch on the simulation grid; latency, jitter, out-of-sequence measurements, gyro scale factor and misalignment are not modeled. | Open | Medium | Add delayed-measurement replay and gyro error terms before claiming flight-software timing behavior. |
 | R-05 | Campaigns use 10 runs per case (robustness slices 5) and one-factor-at-a-time variations with diagonal inertia only. | Open | Medium | Randomized dispersions (initial state, full inertia tensor, sensor parameters, disturbances) with larger ensembles; keep run-level intervals separate from pointwise bounds. |
@@ -87,6 +95,7 @@ Likelihood and impact are qualitative and assessed for the purpose of this study
 | R-07 | Large-angle slews that rotate stored wheel momentum through the body frame need gyroscopic torque beyond the 0.1 N·m authority. The 170° case peaks at 0.152 N·m and does not settle in 400 s. | Open | High | Momentum management before large slews (unloading or desaturation), slew planning that accounts for `ω × h_w`, gyroscopic feedforward, or more authority. Define a large-angle acquisition requirement if the mission scope needs one. *The pre-1.0.0 "settles at 235 s" result was a modeling artifact (197% momentum non-conservation) and is withdrawn.* |
 | R-08 | The multivariate Ljung–Box test is liberal at the available sample size (11.1% false alarms at nominal 5%), so single-run whiteness verdicts are unreliable. | Mitigated | Low | INNOV-001 uses an ensemble compared with an empirically calibrated null. |
 | R-09 | Outliers below the gate threshold (about 5.5 innovation σ) are accepted and not characterized; gating is not a complete FDIR design. | Open | Medium | Sweep outlier magnitude through the gate threshold; evaluate persistent faults and FDIR logic. |
+| R-10 | With the gyro-driven filter, gyro noise in the rate feedback becomes real pointing jitter: late-window APE 0.043° against 0.0005° with true-state feedback (1.73 mrad/s rate error through `K_ω = 20`). It stays inside the project-defined 0.1° requirement, with about a factor of two to spare. Not mission-level evidence. | Open | Low | Rate-feedback filtering or the model-aided filter (0.0009°). Test a tighter requirement and other gains. A noise-free-feedback comparison does not isolate which path (rate or attitude) carries the cost. |
 
 ## 4. Interpretation limits
 

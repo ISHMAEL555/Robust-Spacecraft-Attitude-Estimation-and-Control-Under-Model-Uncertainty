@@ -2,6 +2,28 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — Unreleased
+
+### Added
+
+- **Perfect-knowledge baseline.** `controller.state_feedback` (`"estimated"` default, or `"truth"`) selects whether the controller receives `q̂, ω̂` or the true state. The filter, sensors, and every random stream run identically in both modes. The default reproduces 1.0.0 output bit-for-bit (regression test against golden arrays generated from the 1.0.0 code).
+- **Pointing-error decomposition.** `pointing_error_vector`, `control_error_vector`, and `q_desired` are logged. `δq_p = q_d⁻¹⊗q_true`, `δq_c = q_d⁻¹⊗q̂`, `δq_e = q̂⁻¹⊗q_true` satisfy `δq_p = δq_c⊗δq_e` exactly (tested), and the vectors add to second order.
+- **Steady-state metrics.** `compute_pointing_decomposition_metrics`: APE and RPE (RMS, 99th percentile) for pointing, control, and estimation error, rate-feedback error, and the fraction of time within a project-defined pointing requirement. The window starts at the 2% settling time or at `analysis.steady_state_start_s`; settings `analysis.rpe_window_s` (10 s) and `analysis.pointing_requirement_deg` (0.1°). `compute_performance_metrics` is unchanged, so existing campaign summaries and hashes are unaffected.
+- **`scripts/verify_estimation_cost.py`**, `docs/estimation_cost.json`, `docs/figures/estimation_cost.png`: paired estimated-versus-truth study for E0, E5 and E6, both filters, 10 seeds, with `--jobs` support (output is identical for any job count).
+- Requirement IDs EST-DECOMP-001, EST-COST-001, SW-004 and risk R-10; roadmap items 2 and 3 completed, items 1 and 4 partly (see README §8).
+- 20 tests (176 total).
+
+### Findings
+
+- With the gyro-driven filter the estimator adds +0.043° [0.036, 0.049] of steady-state APE (400–600 s) over true-state feedback; the model-aided filter adds +0.0004°. The cost comes through rate-feedback noise. The 0.1° project-defined requirement is met throughout in steady state in both modes, and a 30 s tracker outage is not visible in pointing.
+- Over the 2%-settling window, gyro-driven estimated feedback gives a slightly *lower* APE than truth feedback (−0.012° over 600 s, −0.054° over the 200 s benchmark window). This is unexplained.
+- The E6 terminal-window error (about 1°) is a control-transient effect with no measurable estimation contribution (R-02).
+
+### Notes
+
+- The first run of the estimation-cost study compared each mode over its own settling-based window, which confounded the paired difference. It was corrected to a common per-seed window before any result was published. A fixed late window (400–600 s) was added after seeing that the 2%-settling window still contains the acquisition tail; both are reported.
+- Campaign results are not regenerated (the default path is unchanged), so `docs/e0_e7_campaign_metadata.json` still carries the 1.0.0 hashes. Its source and document hashes no longer match the working tree.
+
 ## [1.0.0] — 2026-10-24
 
 Engineering review release. It corrects one reporting defect, closes two truth-model and estimator modeling gaps, makes the random-number streams independent, and regenerates all published evidence with the corrected code. **Numbers from before this release are not comparable with those after it**; see [Impact on published results](#impact-on-published-results).

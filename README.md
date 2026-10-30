@@ -44,6 +44,7 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 | Star-tracker outage (30 s) | Peak error 550″ inside filter peak 3σ of 1,074″ | Pass |
 | Innovation whiteness | 12-seed ensemble vs calibrated white-noise null: KS p = 0.457 | Pass |
 | Pointing benchmark (E6) | 2% settling **174.5 s** (≤ 180 s); terminal peak 1.01° (≤ 2°); wheel use 49.9% (≤ 80%) | Pass (3% margin, R-02) |
+| Estimation cost on pointing (E6, 400–600 s) | Gyro-driven filter adds **+0.043°** [0.036, 0.049] APE over true-state feedback (0.0005°); model-aided adds +0.0004°. 0.1° project-defined requirement met throughout in both | Characterized (R-10) |
 | 170° slew with stored momentum | Needs 0.152 N·m of gyroscopic torque against 0.1 N·m available; not settled at 400 s | Authority-limited (R-07) |
 
 **Key engineering conclusions**
@@ -51,6 +52,7 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 - **Attitude accuracy does not establish covariance consistency.** Under inertia mismatch the star tracker keeps attitude RMSE flat while the rate and inertia states become overconfident: the actual error variance is about 26× the reported covariance. Breaking NEES down by state group locates the failure; RMSE alone cannot.
 - **Noise-model mistuning is invisible to RMSE.** Scaling Q or R by 0.1× or 10× moves NEES and NIS by up to an order of magnitude with no change in attitude accuracy. 3σ coverage approaches 100% under inflated noise, a symptom of mistuning rather than a sign of good performance.
 - **Model fidelity can create false passes.** Omitting the wheel gyroscopic term `ω × h_w` violated angular-momentum conservation by 197% and made a 170° slew appear to settle in 235 s. With correct physics it does not. The earlier result is withdrawn.
+- **Estimation costs pointing through the rate path, not only through attitude knowledge.** With true-state feedback steady-state pointing is 0.0005°. With the gyro-driven filter it is 0.043°: the 1.73 mrad/s rate error passes through the derivative gain and moves the spacecraft, so the control error (0.044°) exceeds the attitude-estimation error (0.008°). The model-aided filter's rate estimate is 2,000× quieter and costs 0.0004°. A 30 s tracker outage does not show up in pointing.
 - **Statistical tests need calibration.** At the available sample size, the multivariate Ljung–Box test rejects white noise 11.1% of the time at nominal 5%. Whiteness is therefore judged against an empirically calibrated null.
 
 ---
@@ -207,6 +209,20 @@ The gyro-driven filter does not use inertia, so it is unaffected. The model-aide
 
 ![Wheel gyroscopic coupling](docs/figures/summary/wheel_coupling.png)
 
+**Estimation cost (E0, E5, E6; 10 paired seeds):** the same seed is run with the controller fed the filter estimate and the true state. Increment = estimated minus truth feedback, with a 95% t interval over the per-seed differences. The 0.1° requirement is project-defined.
+
+| Case (window) | Filter | APE RMS, estimated | APE RMS, truth | Increment | Within 0.1° (estimated / truth) |
+|---|---|---:|---:|---:|---:|
+| E6 (400–600 s) | Gyro-driven | 0.0431° | 0.0005° | **+0.0425°** [0.0361, 0.0490] | 100% / 100% |
+| E6 (400–600 s) | Model-aided | 0.0009° | 0.0005° | +0.0004° [0.0003, 0.0006] | 100% / 100% |
+| E5, outage 450–480 s (400–600 s) | Gyro-driven | 0.0460° | 0.0005° | +0.0455° [0.0392, 0.0517] | 100% / 100% |
+| E0 (100–300 s) | Gyro-driven | 0.0351° | 0.0134° | +0.0217° [0.0180, 0.0253] | 99.6% / 100% |
+| E6 (from 2% settling, 600 s) | Gyro-driven | 0.2294° | 0.2411° | −0.0117° [−0.0178, −0.0057] | 80.8% / 79.9% |
+
+Over the 2%-settling window the error is dominated by the acquisition tail, and estimated feedback with the gyro-driven filter scores slightly *better* than truth feedback. That is unexplained and is not an estimation benefit ([details](docs/current_evidence.md#54-estimation-cost-estimated-versus-true-state-feedback)).
+
+![Estimation cost](docs/figures/estimation_cost.png)
+
 ### 5.6 Innovation whiteness
 
 | Quantity | Value |
@@ -235,6 +251,7 @@ python -m pytest                                  # 156 tests, about 30 s
 | Single simulation and analysis figures | `python scripts/run_experiment.py --config config/nominal.yaml --output reports/nominal.npz`<br/>`python scripts/analyze_results.py reports/nominal.npz --all --output-dir reports/nominal_analysis` | ~1 min |
 | E6 pointing benchmark | `python scripts/evaluate_e6_benchmark.py` | ~1 min |
 | Full E0–E7 campaign | `python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --jobs 8 --output-dir reports/research_campaigns/e0_e7_refresh` | ~15 min (16 cores) |
+| Estimation cost (estimated vs true-state feedback) | `python scripts/verify_estimation_cost.py --jobs 14` | ~10 min (16 cores) |
 | Targeted studies | `verify_model_aided_consistency.py`, `verify_robustness_slices.py`, `verify_innovation_whiteness.py`, `verify_wheel_coupling.py` | ~15 min |
 | README figures | `python scripts/plot_readme_figures.py` | ~2 min |
 
@@ -293,12 +310,12 @@ docs/            design description, results, traceability, evidence, figures
 
 **Roadmap**
 
-The next step quantifies how much pointing error estimation *causes*, separately from the control floor:
+The first step quantified how much pointing error estimation *causes*, separately from the control floor ([results §5.4](docs/current_evidence.md#54-estimation-cost-estimated-versus-true-state-feedback)):
 
-- [ ] Perfect-knowledge baseline: rerun each scenario with the controller fed the true state, using the same seeds.
-- [ ] Steady-state absolute and relative pointing error (APE/RPE) after acquisition, with tracker outages placed inside that window.
-- [ ] Decomposition of pointing error into control tracking error and estimation error, including how gyro noise in the rate feedback becomes pointing error; gyro-driven vs model-aided filters.
-- [ ] Mission-level metric: time inside a stated pointing requirement for each estimation fault.
+- [ ] Perfect-knowledge baseline: rerun each scenario with the controller fed the true state, using the same seeds. *Done for E0, E5 and E6 (both filters, 10 seeds). Remains: E1–E4, E7 and the E6 stress cases.*
+- [x] Steady-state absolute and relative pointing error (APE/RPE) after acquisition, with tracker outages placed inside that window.
+- [x] Decomposition of pointing error into control tracking error and estimation error, including how gyro noise in the rate feedback becomes pointing error; gyro-driven vs model-aided filters. *Not done: an experiment that separates the rate path from the attitude path.*
+- [ ] Mission-level metric: time inside a stated pointing requirement for each estimation fault. *Metric implemented; evaluated for the tracker outage only. Remains: outliers (E4), noise mistuning (E2/E3) and inertia mismatch (E1), and a requirement near the achieved error, since 0.1° is met throughout in steady state.*
 
 ---
 
