@@ -207,6 +207,8 @@ q_e = q̂⁻¹ ⊗ q_d   (shortest path: w ≥ 0)
 
 `sat` limits the Euclidean norm to `τ_max` and preserves direction. For small angles `q_e,v ≈ θ_e/2`, so the attitude stiffness is `K_q/2` for `quaternion_feedback`. `compute_control_gains` accounts for this when designing gains from a settling time and damping ratio, and the design is verified against a simulated step response.
 
+**State-feedback source.** `controller.state_feedback` selects what the controller receives. `"estimated"` (default, release 1.0.0 behaviour) uses `q̂, ω̂`; `"truth"` uses `q_true, ω_true` and exists only to measure the pointing error the estimator causes. The filter, sensors, and every random stream run identically in both modes, so a given seed gives the same filter-initialization, gyro, and tracker random draws. The realized measurements still differ between modes once the two trajectories diverge, because the tracker perturbs the actual truth attitude.
+
 An optional feedforward adds `ω × (Ĵ ω + h_w)` and cancels an estimated disturbance, saturating the sum once. The campaigns use feedback only.
 
 ## 7. Performance and consistency metrics
@@ -226,6 +228,27 @@ An optional feedforward adds `ω × (Ĵ ω + h_w)` and cancels an estimated dist
 | Whiteness | 10-lag multivariate Ljung–Box test on Cholesky-whitened accepted innovations |
 | Outage estimator response | Peak attitude-estimation error and peak attitude 3σ from outage start to 30 s after it ends |
 | Outage pointing recovery | Time after the outage ends until pointing re-enters and stays within 2% of the pre-outage peak; undefined (not reported) if that never happens within the run |
+
+### 7.1 Pointing-error decomposition and steady-state metrics
+
+Three body-frame rotation vectors are logged per step (`pointing_error_vector`, `control_error_vector`, `attitude_estimation_error_vector`), all in the right-error convention of [conventions.md](conventions.md):
+
+| Rotation | Definition | Meaning |
+|---|---|---|
+| `δq_p` | `q_d⁻¹ ⊗ q_true` | pointing error (the existing pointing metric) |
+| `δq_c` | `q_d⁻¹ ⊗ q̂` | control error: what the controller believes |
+| `δq_e` | `q̂⁻¹ ⊗ q_true` | estimation error (the existing attitude-estimation error) |
+
+They satisfy `δq_p = δq_c ⊗ δq_e` exactly, so `θ_p = θ_c + θ_e + ½ θ_c × θ_e + O(θ³)`: the angle vectors add to first order, and the norms do not add exactly. The controller's own `q_e = q̂⁻¹ ⊗ q_d` is `δq_c⁻¹`.
+
+`compute_pointing_decomposition_metrics` evaluates them over a post-acquisition window that starts at the 2% settling time of `‖θ_p‖`, or at `analysis.steady_state_start_s` if the run never settles (or starts with zero error); the source used is reported as `window_source`.
+
+| Metric | Definition |
+|---|---|
+| APE | RMS and 99th percentile of `‖θ‖` over the window, for `θ_p`, `θ_c`, `θ_e` |
+| RPE | RMS and 99th percentile of `‖θ(t+Δt) − θ(t)‖`, both samples inside the window; `Δt = analysis.rpe_window_s` (default 10 s) |
+| Rate-feedback noise | RMS of `‖ω̂ − ω_true‖` over the window |
+| Fraction within requirement | Share of window samples with `‖θ_p‖ ≤ 0.1°` (project-defined, `analysis.pointing_requirement_deg`) |
 
 **Statistical treatment.** Monte Carlo confidence intervals are two-sided Student-t intervals over independent run-level means. Epochs within a run are correlated, so time fractions inside pointwise χ² bounds are descriptive only. Pointwise ensemble bounds for N runs use `χ²_(N·dof)/N`.
 

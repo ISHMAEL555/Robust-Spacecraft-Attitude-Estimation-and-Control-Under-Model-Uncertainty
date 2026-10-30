@@ -14,3 +14,6 @@ venv/
 # Curated, reviewable evidence is exported to docs/ instead.
 *.npz
 reports/
+
+# Golden regression arrays from release 1.0.0 (tests/unit/test_pointing_decomposition.py)
+!tests/data/*.npz

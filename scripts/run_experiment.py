@@ -168,6 +168,14 @@ def run_simulation(config: SimulationConfig,
     )
     controller = AttitudeController(ctrl_params)
     controller.set_desired(np.array([0.0, 0.0, 0.0, 1.0]))  # Regulate to identity
+    # "estimated" (default) feeds the controller q_hat, omega_hat. "truth" feeds
+    # it the true state; the filter and all random streams still run unchanged.
+    state_feedback = config.controller.get('state_feedback', 'estimated')
+    if state_feedback not in ('estimated', 'truth'):
+        raise ValueError(
+            "controller.state_feedback must be 'estimated' or 'truth', "
+            f"got {state_feedback!r}"
+        )
     
     # Reaction wheels
     rw_params = ReactionWheelParams(
@@ -213,6 +221,10 @@ def run_simulation(config: SimulationConfig,
         'attitude_estimation_error': np.zeros(n_steps),
         'attitude_estimation_error_vector': np.zeros((n_steps, 3)),
         'bias_error': np.zeros((n_steps, 3)),
+        'state_feedback': state_feedback,
+        'q_desired': np.asarray(controller.q_desired, dtype=float).copy(),
+        'pointing_error_vector': np.zeros((n_steps, 3)),
+        'control_error_vector': np.zeros((n_steps, 3)),
         'max_torque': float(config.controller['max_torque']),
         'max_wheel_momentum': float(config.reaction_wheels['max_momentum']),
         'max_wheel_torque': float(config.reaction_wheels['max_torque']),
@@ -291,7 +303,10 @@ def run_simulation(config: SimulationConfig,
                 results['NEES_components'][i, column] = components[name]
         
         # Controller
-        tau_cmd = controller.compute_control(q_hat, results['omega_hat'][i])
+        if state_feedback == 'truth':
+            tau_cmd = controller.compute_control(q_true, omega_true)
+        else:
+            tau_cmd = controller.compute_control(q_hat, results['omega_hat'][i])
         results['tau_cmd'][i] = tau_cmd
         
         # Reaction wheels: the wheel torque is held over [t, t + dt], so the
@@ -325,10 +340,17 @@ def run_simulation(config: SimulationConfig,
         
         # Separate true spacecraft pointing from estimator attitude error.
         pointing_delta = right_error_quat(q_true, controller.q_desired)
-        pointing_err = np.linalg.norm(error_quat_to_vec(pointing_delta))
+        pointing_vector = error_quat_to_vec(pointing_delta)
+        pointing_err = np.linalg.norm(pointing_vector)
         attitude_delta = right_error_quat(q_true, q_hat)
         attitude_error_vector = error_quat_to_vec(attitude_delta)
         results['pointing_error'][i] = pointing_err
+        results['pointing_error_vector'][i] = pointing_vector
+        # Control error q_d^-1 (x) q_hat: what the controller believes it is
+        # pointing at, so that delta_q_p = delta_q_c (x) delta_q_e.
+        results['control_error_vector'][i] = error_quat_to_vec(
+            right_error_quat(q_hat, controller.q_desired)
+        )
         results['pointing_error_deg'][i] = np.degrees(pointing_err)
         results['attitude_estimation_error'][i] = np.linalg.norm(attitude_error_vector)
         results['attitude_estimation_error_vector'][i] = attitude_error_vector
@@ -559,6 +581,100 @@ def multivariate_ljung_box(
     degrees_of_freedom = dimensions**2 * n_lags
     p_value = float(chi2.sf(statistic, degrees_of_freedom))
     return float(statistic), p_value, n_lags
+
+
+def _angle_statistics(vectors: np.ndarray) -> Dict[str, float]:
+    """RMS and 99th percentile of the rotation-vector norms."""
+    norms = np.linalg.norm(vectors, axis=1)
+    return {
+        'rms_rad': float(np.sqrt(np.mean(norms**2))),
+        'p99_rad': float(np.percentile(norms, 99.0)),
+    }
+
+
+def decomposition_settings(analysis: Dict[str, Any]) -> Dict[str, Any]:
+    """Keyword arguments for the decomposition metrics from a config ``analysis`` block."""
+    return {
+        'steady_state_start_s': analysis.get('steady_state_start_s'),
+        'rpe_window_s': float(analysis.get('rpe_window_s', 10.0)),
+        'pointing_requirement_deg': float(analysis.get('pointing_requirement_deg', 0.1)),
+    }
+
+
+def compute_pointing_decomposition_metrics(
+    results: Dict[str, Any],
+    steady_state_start_s: Optional[float] = None,
+    rpe_window_s: float = 10.0,
+    pointing_requirement_deg: float = 0.1,
+    forced_window_start_s: Optional[float] = None,
+    forced_window_source: str = 'forced',
+) -> Dict[str, Any]:
+    """
+    Steady-state pointing, control, and estimation error statistics.
+
+    All three rotation vectors are body-frame right errors (docs/conventions.md):
+    theta_p = Log(q_d^-1 q_true), theta_c = Log(q_d^-1 q_hat),
+    theta_e = Log(q_hat^-1 q_true), with delta_q_p = delta_q_c delta_q_e.
+
+    The window starts at the 2% settling time of the true pointing error. If the
+    run never settles (or starts with zero error), ``steady_state_start_s`` is
+    used instead and ``window_source`` reports which one applied. The
+    ``pointing_requirement_deg`` threshold is project-defined.
+
+    ``forced_window_start_s`` overrides both so that paired runs (for example
+    estimated versus truth feedback) can be compared over one common window.
+    """
+    time = np.asarray(results['time'])
+    dt = float(time[1] - time[0])
+    settling = compute_performance_metrics(results)['settling_time_2pct_s']
+    if forced_window_start_s is not None:
+        start, source = float(forced_window_start_s), forced_window_source
+    elif np.isfinite(settling):
+        start, source = float(settling), 'settling_2pct'
+    elif steady_state_start_s is not None:
+        start, source = float(steady_state_start_s), 'config'
+    else:
+        raise ValueError(
+            "Run never settled to 2%; set analysis.steady_state_start_s"
+        )
+    window = time >= start
+    if not np.any(window):
+        raise ValueError(f"Steady-state window start {start} s is past the run end")
+
+    theta = {
+        'pointing': np.asarray(results['pointing_error_vector'])[window],
+        'control': np.asarray(results['control_error_vector'])[window],
+        'estimation': np.asarray(results['attitude_estimation_error_vector'])[window],
+    }
+    lag = int(round(rpe_window_s / dt))
+    metrics: Dict[str, Any] = {
+        'window_start_s': start,
+        'window_source': source,
+        'window_duration_s': float(time[-1] - start),
+        'rpe_window_s': float(rpe_window_s),
+        'state_feedback': str(results.get('state_feedback', 'estimated')),
+    }
+    for name, vectors in theta.items():
+        entry = {'ape': _angle_statistics(vectors)}
+        if 1 <= lag < len(vectors):
+            entry['rpe'] = _angle_statistics(vectors[lag:] - vectors[:-lag])
+        else:
+            entry['rpe'] = None  # window shorter than the RPE interval
+        metrics[name] = entry
+
+    rate_error = (np.asarray(results['omega_hat'])
+                  - np.asarray(results['omega_true']))[window]
+    metrics['rate_estimation_error'] = {
+        'rms_rad_s': float(np.sqrt(np.mean(np.sum(rate_error**2, axis=1)))),
+        'rms_per_axis_rad_s': np.sqrt(np.mean(rate_error**2, axis=0)).tolist(),
+    }
+    requirement_rad = np.deg2rad(pointing_requirement_deg)
+    metrics['pointing_requirement_deg'] = float(pointing_requirement_deg)
+    metrics['pointing_requirement_label'] = 'project-defined; not a mission requirement'
+    metrics['fraction_within_requirement'] = float(np.mean(
+        np.linalg.norm(theta['pointing'], axis=1) <= requirement_rad
+    ))
+    return metrics
 
 
 def evaluate_e6_project_benchmark(metrics: Dict[str, Any]) -> Dict[str, Any]:
