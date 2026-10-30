@@ -23,6 +23,7 @@ from src.sensors.star_tracker import StarTracker, StarTrackerParams
 from src.estimation.mekf import MEKF, MEKFParams
 from src.control.attitude_controller import AttitudeController, ControllerParams
 from src.actuators.reaction_wheel import ReactionWheelAssembly, ReactionWheelParams
+from src.dynamics.inertia_sampling import sample_inertia_from_prior
 
 
 @dataclass
@@ -90,6 +91,28 @@ def run_simulation(config: SimulationConfig,
     )
 
     # Spacecraft
+    inertia_truth_mode = config.spacecraft.get('inertia_truth_mode', 'fixed')
+    if inertia_truth_mode not in ('fixed', 'sampled_from_prior'):
+        raise ValueError(
+            "spacecraft.inertia_truth_mode must be 'fixed' or 'sampled_from_prior', "
+            f"got {inertia_truth_mode!r}"
+        )
+    inertia_sampling = None
+    if inertia_truth_mode == 'sampled_from_prior':
+        if true_inertia is not None:
+            raise ValueError(
+                "true_inertia cannot be combined with inertia_truth_mode "
+                "'sampled_from_prior'"
+            )
+        # Dedicated fourth child stream. Children 0-2 are unchanged by spawning
+        # a fourth, so every other stream matches the 'fixed' mode run.
+        inertia_rng = np.random.default_rng(np.random.SeedSequence(config.seed).spawn(4)[3])
+        true_inertia, rejections = sample_inertia_from_prior(
+            np.array(config.spacecraft['inertia'], dtype=float),
+            float(config.filter.get('inertia_relative_sigma', 0.05)),
+            inertia_rng,
+        )
+        inertia_sampling = {'attempts': rejections + 1, 'rejections': rejections}
     if true_inertia is None:
         true_inertia = np.array(config.spacecraft['inertia'])
     spacecraft = RigidBody(
@@ -222,6 +245,7 @@ def run_simulation(config: SimulationConfig,
         'attitude_estimation_error_vector': np.zeros((n_steps, 3)),
         'bias_error': np.zeros((n_steps, 3)),
         'state_feedback': state_feedback,
+        'inertia_truth_mode': inertia_truth_mode,
         'q_desired': np.asarray(controller.q_desired, dtype=float).copy(),
         'pointing_error_vector': np.zeros((n_steps, 3)),
         'control_error_vector': np.zeros((n_steps, 3)),
@@ -229,6 +253,9 @@ def run_simulation(config: SimulationConfig,
         'max_wheel_momentum': float(config.reaction_wheels['max_momentum']),
         'max_wheel_torque': float(config.reaction_wheels['max_torque']),
     }
+    if inertia_sampling is not None:
+        results['inertia_sampling'] = inertia_sampling
+        results['inertia_true_sampled'] = true_inertia.copy()
     if config.filter['variant'] == 'model_aided':
         results['inertia_true'] = true_inertia.copy()
         results['inertia_hat'] = np.zeros((n_steps, 3, 3))
@@ -756,6 +783,7 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
 
     compact_runs = []
     performance_by_run = []
+    sampling_by_run = []
     accumulators: Dict[str, np.ndarray] = {}
     squared_accumulators: Dict[str, np.ndarray] = {}
     n_steps = int(config.duration / config.dt)
@@ -787,6 +815,8 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
             )
         })
         performance_by_run.append(compute_performance_metrics(result))
+        if 'inertia_sampling' in result:
+            sampling_by_run.append(result['inertia_sampling'])
 
         mean_fields = {
             'b_hat_mean': 'b_hat',
@@ -835,6 +865,15 @@ def run_monte_carlo(config: SimulationConfig, n_runs: int,
         'performance_by_run': performance_by_run,
         'performance_summary': summarize_performance(performance_by_run),
     }
+    if sampling_by_run:
+        attempts = sum(item['attempts'] for item in sampling_by_run)
+        rejections = sum(item['rejections'] for item in sampling_by_run)
+        aggregated['inertia_sampling'] = {
+            'runs': len(sampling_by_run),
+            'attempts': attempts,
+            'rejections': rejections,
+            'rejection_rate': rejections / attempts,
+        }
     nis_values = np.stack([r['NIS'] for r in compact_runs])
     nis_valid = np.stack([r['measurement_available'] for r in compact_runs])
     nis_accepted = np.stack([r['measurement_accepted'] for r in compact_runs])
