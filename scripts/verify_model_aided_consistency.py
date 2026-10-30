@@ -28,6 +28,11 @@ def main() -> None:
         "--output", type=Path,
         default=ROOT / "docs" / "model_aided_consistency.json",
     )
+    parser.add_argument(
+        "--inertia-truth-mode", choices=("fixed", "sampled_from_prior"),
+        default="fixed",
+        help="'sampled_from_prior' draws each seed's true inertia from the filter prior",
+    )
     args = parser.parse_args()
     if args.runs < 2 or args.duration <= 0.0:
         parser.error("--runs must be at least 2 and --duration must be positive")
@@ -36,6 +41,7 @@ def main() -> None:
     config.duration = args.duration
     config.filter["variant"] = "model_aided"
     config.filter["inertia_relative_sigma"] = 0.05
+    config.spacecraft = {**config.spacecraft, "inertia_truth_mode": args.inertia_truth_mode}
     results = run_monte_carlo(config, args.runs)
     consistency = compute_consistency_stats(
         results,
@@ -97,6 +103,10 @@ def main() -> None:
             "are descriptive because each run is temporally correlated."
         ),
     }
+    if args.inertia_truth_mode != "fixed":
+        report["scenario"] = "per-seed sampled inertia (from the filter prior), model-aided MEKF"
+        report["inertia_truth_mode"] = args.inertia_truth_mode
+        report["inertia_sampling"] = results["inertia_sampling"]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print(f"Saved matched-inertia consistency report: {args.output}")

@@ -38,8 +38,8 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 | Area | Result | Status |
 |---|---|:-:|
 | Nominal consistency | E0 (1,000 s): NEES/DOF **1.023** [0.928, 1.117]; NIS/DOF **1.002** [0.982, 1.022] | Pass |
-| Model-aided filter, matched inertia | 15-state NEES **13.28** [10.28, 16.28] for 15 DOF; all state-group intervals contain their DOF | Pass |
-| Model-aided filter, 25% inertia error | NEES/DOF **25.98** [9.13, 42.83]; attitude RMSE unchanged at 0.081° | Inconsistent (R-01) |
+| Model-aided filter, truth inertia sampled from the 5% prior (30 seeds) | NEES/DOF **1.16** [0.94, 1.38]; NIS 1.02; inertia group **1.44** [1.09, 1.79], mildly over-confident. With truth fixed instead, NEES/DOF is 0.80 [0.70, 0.89]: biased low by construction | Pass (full NEES); inertia group flagged |
+| Model-aided filter, inertia error | Fixed 10% / 25% offsets: NEES/DOF 1.85 / 31.97 (attitude RMSE unchanged at 0.081°). Truth sampled from a 10% / 25% prior: 2.83 / median run 19.8 | Inconsistent from a 10% prior (R-01) |
 | Star-tracker outliers (1 rad, 5%) | With χ² gate: NEES/DOF 0.974, RMSE 0.085°. Without: RMSE 12.3° | Pass |
 | Star-tracker outage (30 s) | Peak error 550″ inside filter peak 3σ of 1,074″ | Pass |
 | Innovation whiteness | 12-seed ensemble vs calibrated white-noise null: KS p = 0.457 | Pass |
@@ -51,6 +51,7 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 
 - **Attitude accuracy does not establish covariance consistency.** Under inertia mismatch the star tracker keeps attitude RMSE flat while the rate and inertia states become overconfident: the actual error variance is about 26× the reported covariance. Breaking NEES down by state group locates the failure; RMSE alone cannot.
 - **Noise-model mistuning is invisible to RMSE.** Scaling Q or R by 0.1× or 10× moves NEES and NIS by up to an order of magnitude with no change in attitude accuracy. 3σ coverage approaches 100% under inflated noise, a symptom of mistuning rather than a sign of good performance.
+- **Fixing the truth across seeds can bias a consistency result.** With the true inertia held at its nominal value, the model-aided filter's inertia states start with zero error against a 5% prior, so its 15-state NEES is low by construction (initial value 9 of 15). Sampling the truth from the filter's own prior removes that, and exposes a mildly over-confident inertia group at the matched prior and inconsistency from a 10% prior.
 - **Model fidelity can create false passes.** Omitting the wheel gyroscopic term `ω × h_w` violated angular-momentum conservation by 197% and made a 170° slew appear to settle in 235 s. With correct physics it does not. The earlier result is withdrawn.
 - **Estimation costs pointing through the rate path, not only through attitude knowledge.** With true-state feedback steady-state pointing is 0.0005°. With the gyro-driven filter it is 0.043°: the 1.73 mrad/s rate error passes through the derivative gain and moves the spacecraft, so the control error (0.044°) exceeds the attitude-estimation error (0.008°). The model-aided filter's rate estimate is 2,000× quieter and costs 0.0004°. A 30 s tracker outage does not show up in pointing.
 - **Statistical tests need calibration.** At the available sample size, the multivariate Ljung–Box test rejects white noise 11.1% of the time at nominal 5%. Whiteness is therefore judged against an empirically calibrated null.
@@ -152,6 +153,19 @@ The gyro-driven filter does not use inertia, so it is unaffected. The model-aide
 
 ![E1 inertia mismatch](docs/figures/refreshed_campaign/e1_inertia_consistency.png)
 
+**Deterministic offsets versus sampled truth inertia (30 seeds, model-aided):**
+
+| Truth inertia | Prior σ | NEES / DOF | Median run | Inertia-group NEES / DOF |
+|---|---:|---:|---:|---:|
+| Fixed, 0% offset | 5% | 0.795 [0.700, 0.890] | 0.73 | 0.80 |
+| Sampled | 5% | 1.163 [0.943, 1.383] | 1.06 | 1.44 [1.09, 1.79] |
+| Fixed, 10% offset | 10% | 1.850 [1.424, 2.277] | 1.54 | 2.41 |
+| Sampled | 10% | 2.834 [1.337, 4.332] | 2.18 | 3.79 |
+| Fixed, 25% offset | 25% | 31.97 [13.54, 50.40] | 13.14 | 42.28 |
+| Sampled (55% of draws rejected) | 25% | 174 (one run at 3,700; interval not meaningful) | 19.80 | 220.9 |
+
+![Deterministic vs sampled truth inertia](docs/figures/inertia_sampling_consistency.png)
+
 ### 5.3 Noise-model mistuning
 
 | Filter setting | NEES / DOF | Accepted NIS / DOF | Attitude 3σ coverage | Attitude RMSE |
@@ -252,6 +266,7 @@ python -m pytest                                  # 156 tests, about 30 s
 | E6 pointing benchmark | `python scripts/evaluate_e6_benchmark.py` | ~1 min |
 | Full E0–E7 campaign | `python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --jobs 8 --output-dir reports/research_campaigns/e0_e7_refresh` | ~15 min (16 cores) |
 | Estimation cost (estimated vs true-state feedback) | `python scripts/verify_estimation_cost.py --jobs 14` | ~10 min (16 cores) |
+| Inertia sampling study (deterministic vs sampled truth) | `python scripts/verify_inertia_sampling_study.py --jobs 6` | ~5 min (6 workers) |
 | Targeted studies | `verify_model_aided_consistency.py`, `verify_robustness_slices.py`, `verify_innovation_whiteness.py`, `verify_wheel_coupling.py` | ~15 min |
 | README figures | `python scripts/plot_readme_figures.py` | ~2 min |
 
@@ -297,7 +312,7 @@ docs/            design description, results, traceability, evidence, figures
 
 - Rigid bus only: no flexible modes, propellant slosh, environmental disturbance torques, wheel friction, or momentum desaturation.
 - Sensor timing is idealized: no latency, jitter, out-of-sequence measurements, or gyro scale-factor and misalignment errors.
-- 10 runs per campaign case (5 per robustness slice), one factor at a time, diagonal inertia mismatch only. This is enough for the large effects reported, not for an operating envelope.
+- 10 runs per campaign case (5 per robustness slice), one factor at a time, diagonal inertia mismatch only in the campaigns. Truth inertia is fixed across seeds by default; `spacecraft.inertia_truth_mode: "sampled_from_prior"` draws it per seed from the filter prior (full tensor, realisable only), used in the 30-seed inertia study. Rejecting non-realisable draws truncates the prior (55% rejected at a 25% prior). This is enough for the large effects reported, not for an operating envelope.
 
 **Open risks** (full register in [traceability](docs/requirements_traceability.md#3-risk-register))
 

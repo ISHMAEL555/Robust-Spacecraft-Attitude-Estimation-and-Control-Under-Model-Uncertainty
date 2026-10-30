@@ -13,10 +13,16 @@ All notable changes to this project are documented here. Versions follow [Semant
 - Requirement IDs EST-DECOMP-001, EST-COST-001, SW-004 and risk R-10; roadmap items 2 and 3 completed, items 1 and 4 partly (see README §8).
 - 20 tests (176 total).
 
+- **Per-seed inertia sampling.** `spacecraft.inertia_truth_mode` (`"fixed"` default, `"sampled_from_prior"`) draws the six independent inertia elements from `N(J_nom, P0_J)` in the filter's own parameterisation and `inertia_relative_sigma`, from a dedicated fourth `SeedSequence` child. Draws are rejected unless the tensor is SPD with principal moments satisfying the triangle inequality; the rejection rate is reported (`inertia_sampling`). `src/dynamics/inertia_sampling.py`.
+- `scripts/verify_inertia_sampling_study.py` (deterministic model-error study and sampled study side by side, 30 seeds, `--jobs`), `docs/model_aided_inertia_sampling.json`, `docs/model_aided_consistency_sampled.json`, `docs/figures/inertia_sampling_consistency.png`; `verify_model_aided_consistency.py --inertia-truth-mode`.
+- EST-SAMPLE-001; EST-INIT-001 extended to 15 states; EST-STAT-002, EST-MODEL-002 and R-01 updated. 16 more tests (192 total).
+
 ### Findings
 
 - With the gyro-driven filter the estimator adds +0.043° [0.036, 0.049] of steady-state APE (400–600 s) over true-state feedback; the model-aided filter adds +0.0004°. The cost comes through rate-feedback noise. The 0.1° project-defined requirement is met throughout in steady state in both modes, and a 30 s tracker outage is not visible in pointing.
 - Over the 2%-settling window, gyro-driven estimated feedback gives a slightly *lower* APE than truth feedback (−0.012° over 600 s, −0.054° over the 200 s benchmark window). This is unexplained.
+- **Fixed truth inertia biased the matched-inertia result.** With 30 seeds the fixed matched case has NEES/DOF 0.795 [0.700, 0.890] (initial NEES 9 of 15). With inertia sampled from the filter prior it is 1.163 [0.943, 1.383], but the inertia group is mildly over-confident (1.44 [1.09, 1.79]). The earlier "all state-group intervals contain their DOF" (10 runs, fixed truth) does not survive either change.
+- Model-aided inconsistency begins at a 10% prior (sampled 2.83, fixed offset 1.85) and is severe at 25% (fixed 31.97; sampled median 19.8, one run at 3,700). 55% of 25% draws are non-realisable, so that sampled distribution is heavily truncated; the inconsistency is not a truncation artefact. R-01 stands.
 - The E6 terminal-window error (about 1°) is a control-transient effect with no measurable estimation contribution (R-02).
 
 ### Notes

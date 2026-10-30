@@ -80,6 +80,8 @@ The coupling is controlled by `reaction_wheels.gyroscopic_coupling` (default `tr
 
 Campaign inertia mismatch scales the truth diagonal: `J_true = J_nom + m·diag(diag(J_nom))` for mismatch fraction `m`. The model-aided filter starts from `J_nom`; the gyro-driven filter does not use inertia.
 
+With `spacecraft.inertia_truth_mode: "sampled_from_prior"` (default `"fixed"`), each run instead draws its own truth inertia from the model-aided filter's prior. The six independent elements `[Jxx, Jyy, Jzz, Jxy, Jxz, Jyz]` are drawn as `J_nom + Σ δ_j s_j E_j` with `δ ~ N(0, σ² I₆)`, where `σ = filter.inertia_relative_sigma` and `s_j` are the filter's own element scales (§5.2). The filter's initial inertia error is therefore a draw from its prior, and the initial 15-state NEES is χ²(15). Draws are rejected and redrawn unless the tensor is symmetric positive definite with principal moments obeying the triangle inequality (`I₁ + I₂ ≥ I₃` and permutations). **Rejection truncates the Gaussian**, so the sampled distribution is narrower than the prior; the rejection rate is reported per run and per campaign (`inertia_sampling`). For the nominal diag(100, 80, 60) it is 0 at σ = 5%, about 2% at 10%, and about 55% at 25%, where the off-diagonal elements (scaled by `√(JᵢᵢJⱼⱼ)`) dominate. The mode cannot be combined with an explicit `true_inertia` argument.
+
 ## 3. Reaction-wheel assembly
 
 For `N` wheels with spin axes as the columns of `A` (3×N, body axes):
@@ -261,5 +263,7 @@ Each run seed `s` is expanded with `numpy.random.SeedSequence(s).spawn(3)` into 
 | 0 | Filter initialization error (§5.5) |
 | 1 | Gyro: bias random walk, rate noise |
 | 2 | Star tracker: noise, outliers, outages |
+
+A fourth child, stream 3, is created only when `spacecraft.inertia_truth_mode` is `"sampled_from_prior"` and drives the truth-inertia draw. `SeedSequence.spawn` gives child `i` the same state whatever the total, so streams 0–2 are identical in both modes and the default path is unchanged.
 
 Sensors hold private `numpy.random.Generator` instances and never read or reseed NumPy's global state. Changing one sensor's configuration, such as the outlier probability, therefore leaves the other streams unchanged. That is what makes paired comparisons between campaign cases meaningful. Monte Carlo run `i` uses seed `s₀ + 1000·i`.
