@@ -63,3 +63,14 @@ def test_aggregate_counts_detumble_and_e6_passes_separately():
     assert s["mode_switches"] == {"max": 1, "runs_with_more_than_one": 0, "runs_with_none": 1}
     assert s["settling_time_s"]["n_none"] == 2
     assert s["optimality_gap_ratio"]["median"] == pytest.approx(160.0 / 150.0)
+
+
+def test_seed_ranges_are_checked_for_overlap():
+    from scripts.run_b5_comparison import PUBLISHED_RANGE, check_disjoint, seed_range
+    design, evaluation = seed_range(10000042, 100), seed_range(20000042, 200)
+    check_disjoint({"published": PUBLISHED_RANGE, "design": design, "evaluation": evaluation})
+    assert evaluation["last"] == 20000042 + 199 * 1000
+    with pytest.raises(ValueError, match="overlap"):
+        check_disjoint({"published": PUBLISHED_RANGE, "evaluation": seed_range(42 + 199000, 5)})
+    with pytest.raises(ValueError, match="overlap"):
+        check_disjoint({"design": design, "evaluation": seed_range(10050042, 10)})

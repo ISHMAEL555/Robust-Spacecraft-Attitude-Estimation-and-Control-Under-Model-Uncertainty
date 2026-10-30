@@ -134,6 +134,26 @@ def run_one(task: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def seed_range(base: int, n: int) -> Dict[str, int]:
+    return {"base": int(base), "stride": SEED_STRIDE, "n": int(n),
+            "first": int(base), "last": int(base + SEED_STRIDE * (n - 1))}
+
+
+def check_disjoint(ranges: Dict[str, Dict[str, int]]) -> None:
+    """Raise if any two seed ranges share a seed."""
+    sets = {name: {r["base"] + r["stride"] * i for i in range(r["n"])}
+            for name, r in ranges.items()}
+    names = list(sets)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            common = sets[a] & sets[b]
+            if common:
+                raise ValueError(f"seed ranges {a!r} and {b!r} overlap, e.g. {min(common)}")
+
+
+PUBLISHED_RANGE = seed_range(42, 200)
+
+
 def _ratio(k: int, n: int) -> Dict[str, Any]:
     low, high = clopper_pearson(k, n)
     return {"passes": k, "n": n, "p": k / n, "ci95_clopper_pearson": [low, high]}
@@ -182,6 +202,9 @@ def main() -> None:
     parser.add_argument("--stage", choices=("design", "evaluation"), required=True)
     parser.add_argument("--base-seed", type=int, required=True)
     parser.add_argument("--runs", type=int, required=True)
+    parser.add_argument("--design-base-seed", type=int, default=None,
+                        help="evaluation stage: base seed of the design range (recorded, checked)")
+    parser.add_argument("--design-runs", type=int, default=None)
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("--duration", type=float, default=None, help="smoke tests only")
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -193,10 +216,16 @@ def main() -> None:
     det_limit = float(spec["requirements"]["detumble_time_limit_s"])
     sigma = float(spec["dispersion"]["inertia_sigma"])
     names = args.controllers or list(spec["controllers"])
-    published = set(42 + SEED_STRIDE * i for i in range(200))
     seeds = [args.base_seed + SEED_STRIDE * i for i in range(args.runs)]
-    if published & set(seeds):
-        parser.error("seeds overlap the published 200-run campaign")
+    ranges = {"published_e6_monte_carlo": PUBLISHED_RANGE}
+    if args.stage == "design":
+        ranges["design"] = seed_range(args.base_seed, args.runs)
+    else:
+        if args.design_base_seed is None or args.design_runs is None:
+            parser.error("the evaluation stage needs --design-base-seed and --design-runs")
+        ranges["design"] = seed_range(args.design_base_seed, args.design_runs)
+        ranges["evaluation"] = seed_range(args.base_seed, args.runs)
+    check_disjoint(ranges)  # raises on any overlap
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     for scenario in args.scenarios:
@@ -216,6 +245,7 @@ def main() -> None:
                                         else args.controllers_file),
                 "controllers_file_sha256": hashlib.sha256(spec_text.encode("utf-8")).hexdigest(),
                 "requirements": spec["requirements"], "dispersion": spec["dispersion"],
+                "seed_ranges": ranges,
                 **completeness(len(tasks), seeds, [r["seed"] for r in runs]),
                 "wall_time_s": wall_clock.time() - started,
                 "summary": aggregate(runs, det_limit),

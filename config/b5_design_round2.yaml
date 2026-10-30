@@ -1,0 +1,37 @@
+# B5 design round 2 (two-phase family only), design seeds base 10000042, 60 runs.
+#
+# Why a second round: round 1 (docs/b5_design/selection_round1.json) selected
+# tp_f09, and its design results showed two defects that the round-1 candidates
+# did not vary:
+#   1. The mode switch fires on the estimated rate at 0.01 rad/s, the same value
+#      GNC-DET-001 requires of the TRUE rate. With about 1e-3 rad/s of rate
+#      estimation noise per axis, the true rate at the switch is often just above
+#      0.01, and the acquisition slew then speeds the body up, so GNC-DET-001 was
+#      missed in about half the envelope runs although detumble ended near 70 s.
+#   2. In acquisition the only failed criterion was the achieved/requested
+#      effort fraction (>= 85%): the rate loop reverses the saturated command
+#      faster than the 50 ms wheel lag follows.
+# Candidates: switch threshold 0.007 rad/s on the estimate (3 sigma below the
+# 0.01 requirement), and lower rate-loop gains.
+#
+# Selection rule, fixed before these runs: among the four round-2 candidates and
+# the round-1 winner tp_f09 (its existing design results), pick the highest
+# envelope:det + envelope:e6 + acq_drifted:e6 pass count; break ties by the lower
+# median settling time in acq_drifted.
+
+requirements:
+  detumble_entry_rate: 0.01      # rad/s, GNC-DET-001 (true rate) / GNC-ACQ-001 entry
+  detumble_time_limit_s: 150.0
+
+dispersion:
+  inertia_sigma: 0.05
+
+controllers:
+  tp2_e007:         {control_type: two_phase, K_omega: 20.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.9,
+                     detumble_entry_rate: 0.007, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp2_e007_kw10:    {control_type: two_phase, K_omega: 10.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.9,
+                     detumble_entry_rate: 0.007, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp2_e007_kw14:    {control_type: two_phase, K_omega: 14.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.9,
+                     detumble_entry_rate: 0.007, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp2_e007_kw10_kp08: {control_type: two_phase, K_omega: 10.0, profile_rate_gain: 0.08, profile_accel_fraction: 0.9,
+                     detumble_entry_rate: 0.007, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}

@@ -1,0 +1,114 @@
+{
+  "families": [
+    {
+      "terms": [
+        "envelope:e6",
+        "acq_drifted:e6"
+      ],
+      "tie_scenario": "acq_drifted",
+      "candidates": [
+        {
+          "name": "pd_z08_T60",
+          "parts": {
+            "envelope:e6": 1,
+            "acq_drifted:e6": 59
+          },
+          "score": 60,
+          "tie_break_median_settling_s": 126.85
+        },
+        {
+          "name": "pd_z08_T90",
+          "parts": {
+            "envelope:e6": 0,
+            "acq_drifted:e6": 60
+          },
+          "score": 60,
+          "tie_break_median_settling_s": 109.53
+        },
+        {
+          "name": "pd_z08_T120",
+          "parts": {
+            "envelope:e6": 0,
+            "acq_drifted:e6": 48
+          },
+          "score": 48,
+          "tie_break_median_settling_s": 145.11
+        }
+      ],
+      "selected": "pd_z08_T90"
+    },
+    {
+      "terms": [
+        "envelope:e6",
+        "acq_drifted:e6"
+      ],
+      "tie_scenario": "acq_drifted",
+      "candidates": [
+        {
+          "name": "tp_base",
+          "parts": {
+            "envelope:e6": 1,
+            "acq_drifted:e6": 7
+          },
+          "score": 8,
+          "tie_break_median_settling_s": 89.9
+        },
+        {
+          "name": "tp_f05",
+          "parts": {
+            "envelope:e6": 3,
+            "acq_drifted:e6": 0
+          },
+          "score": 3,
+          "tie_break_median_settling_s": 101.185
+        },
+        {
+          "name": "tp_f09",
+          "parts": {
+            "envelope:e6": 0,
+            "acq_drifted:e6": 36
+          },
+          "score": 36,
+          "tie_break_median_settling_s": 97.905
+        },
+        {
+          "name": "tp_kp03",
+          "parts": {
+            "envelope:e6": 0,
+            "acq_drifted:e6": 2
+          },
+          "score": 2,
+          "tie_break_median_settling_s": 133.54500000000002
+        },
+        {
+          "name": "tp_kp08",
+          "parts": {
+            "envelope:e6": 6,
+            "acq_drifted:e6": 9
+          },
+          "score": 15,
+          "tie_break_median_settling_s": 84.23
+        },
+        {
+          "name": "tp_kw40",
+          "parts": {
+            "envelope:e6": 3,
+            "acq_drifted:e6": 0
+          },
+          "score": 3,
+          "tie_break_median_settling_s": 96.64
+        },
+        {
+          "name": "tp_td10",
+          "parts": {
+            "envelope:e6": 2,
+            "acq_drifted:e6": 7
+          },
+          "score": 9,
+          "tie_break_median_settling_s": 89.795
+        }
+      ],
+      "selected": "tp_f09"
+    }
+  ]
+}
