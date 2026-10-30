@@ -6,13 +6,13 @@
 ![Release](https://img.shields.io/badge/release-1.1.0-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Closed-loop attitude GNC simulation that characterizes how **state-estimation errors** propagate into **controller and mission performance**. Two multiplicative extended Kalman filters (MEKFs) run in the loop with a quaternion-feedback controller and a constrained reaction-wheel assembly. Their knowledge is then degraded on purpose: inertia mismatch, mistuned noise models, star-tracker outliers, and outages. Each case is assessed on three questions:
+A closed-loop attitude GNC simulation built to answer one question: **when the navigation filter's knowledge is wrong, what happens to the pointing loop?** Two multiplicative extended Kalman filters (MEKFs) run in the loop with a quaternion-feedback controller and a constrained reaction-wheel assembly. Their knowledge is then degraded on purpose: inertia mismatch, mistuned noise models, star-tracker outliers, and outages. Each case is assessed on three questions, answered here in one line each and in detail in [Section 5](#5-results):
 
-| # | Question | Evidence |
+| # | Question | Short answer |
 |:-:|---|---|
-| 1 | **Is the estimator consistent?** Does the covariance describe the real error? | NEES / NIS with run-level 95% intervals |
-| 2 | **How does estimation error reach the controller?** | Fault-injection campaigns, closed loop |
-| 3 | **Is the mission still achievable** with finite wheel torque and momentum? | Pointing benchmark against project criteria |
+| 1 | **Is the estimator consistent?** Does the covariance describe the real error? | Yes when the filter model matches the truth (nominal NEES/DOF 1.02). The model-aided filter is not consistent once its inertia prior reaches 10%, and attitude RMSE does not show it. |
+| 2 | **How does estimation error reach the controller?** | Mainly through the rate path. The gyro-driven filter adds 0.043° of steady-state pointing error over true-state feedback; the model-aided filter adds 0.0004°. |
+| 3 | **Is the mission still achievable** with finite wheel torque and momentum? | The deterministic E6 benchmark passes with a 3% settling margin. Under randomized attitude, rate, inertia and sensor noise, 1 of 200 runs passes every criterion. Actuator limits are never the cause. |
 
 > **Scope.** Simulation evidence for this repository's models. Not hardware validation, qualification, mission acceptance, or flight-readiness evidence. Benchmark thresholds are project-defined, not mission requirements.
 
@@ -22,7 +22,7 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 
 ## Contents
 
-1. [Technical summary](#1-technical-summary)
+1. [Summary of findings](#1-summary-of-findings)
 2. [System architecture](#2-system-architecture)
 3. [Design parameters](#3-design-parameters)
 4. [Verification summary](#4-verification-summary)
@@ -33,7 +33,27 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 
 ---
 
-## 1. Technical summary
+## 1. Summary of findings
+
+### 1.1 Engineering conclusions
+
+**Estimator consistency**
+
+- **Attitude accuracy does not establish covariance consistency.** Under inertia mismatch the star tracker keeps attitude RMSE flat while the rate and inertia states become overconfident: the actual error variance is about 26× the reported covariance. Breaking NEES down by state group locates the failure; RMSE alone cannot.
+- **Noise-model mistuning is invisible to RMSE.** Scaling Q or R by 0.1× or 10× moves NEES and NIS by up to an order of magnitude with no change in attitude accuracy. 3σ coverage approaches 100% under inflated noise, a symptom of mistuning rather than a sign of good performance.
+- **Fixing the truth across seeds can bias a consistency result.** With the true inertia held at its nominal value, the model-aided filter's inertia states start with zero error against a 5% prior, so its 15-state NEES is low by construction (initial value 9 of 15). Sampling the truth from the filter's own prior removes that, and exposes a mildly over-confident inertia group at the matched prior and inconsistency from a 10% prior.
+- **Statistical tests need calibration.** At the available sample size, the multivariate Ljung–Box test rejects white noise 11.1% of the time at nominal 5%. Whiteness is therefore judged against an empirically calibrated null.
+
+**Estimation to control**
+
+- **Estimation costs pointing through the rate path, not only through attitude knowledge.** With true-state feedback steady-state pointing is 0.0005°. With the gyro-driven filter it is 0.043°: the 1.73 mrad/s rate error passes through the derivative gain and moves the spacecraft, so the control error (0.044°) exceeds the attitude-estimation error (0.008°). The model-aided filter's rate estimate is 2,000× quieter and costs 0.0004°. A 30 s tracker outage does not show up in pointing.
+
+**Mission performance and model fidelity**
+
+- **A single deterministic pass can hide a fragile design.** The E6 benchmark passes in the one run where the initial rate is aligned with the slew axis. With the same criteria and 200 randomized runs, 1 passes. Sensor noise alone does not break it; a random slew axis, a random rate direction, or a 5% inertia dispersion each does, and 2% settling moves from 174.5 s to 193.6 s at 0.95× inertia and to 133.4 s at 1.05×. The gains were not redesigned here; that is a separate follow-up.
+- **Model fidelity can create false passes.** Omitting the wheel gyroscopic term `ω × h_w` violated angular-momentum conservation by 197% and made a 170° slew appear to settle in 235 s. With correct physics it does not. The earlier result is withdrawn.
+
+### 1.2 Status at a glance
 
 | Area | Result | Status |
 |---|---|:-:|
@@ -47,16 +67,6 @@ Closed-loop attitude GNC simulation that characterizes how **state-estimation er
 | Pointing benchmark (E6), 200-run Monte Carlo | **P(pass all criteria) = 0.005 [0.000, 0.028]**: 1 of 200 runs passes under random attitude axis, rate direction, inertia and sensor noise. Sensor noise alone: 100/100 pass. Actuator limits never violated | **Fails under dispersions (R-02)** |
 | Estimation cost on pointing (E6, 400–600 s) | Gyro-driven filter adds **+0.043°** [0.036, 0.049] APE over true-state feedback (0.0005°); model-aided adds +0.0004°. 0.1° project-defined requirement met throughout in both | Characterized (R-10) |
 | 170° slew with stored momentum | Needs 0.152 N·m of gyroscopic torque against 0.1 N·m available; not settled at 400 s | Authority-limited (R-07) |
-
-**Key engineering conclusions**
-
-- **Attitude accuracy does not establish covariance consistency.** Under inertia mismatch the star tracker keeps attitude RMSE flat while the rate and inertia states become overconfident: the actual error variance is about 26× the reported covariance. Breaking NEES down by state group locates the failure; RMSE alone cannot.
-- **Noise-model mistuning is invisible to RMSE.** Scaling Q or R by 0.1× or 10× moves NEES and NIS by up to an order of magnitude with no change in attitude accuracy. 3σ coverage approaches 100% under inflated noise, a symptom of mistuning rather than a sign of good performance.
-- **Fixing the truth across seeds can bias a consistency result.** With the true inertia held at its nominal value, the model-aided filter's inertia states start with zero error against a 5% prior, so its 15-state NEES is low by construction (initial value 9 of 15). Sampling the truth from the filter's own prior removes that, and exposes a mildly over-confident inertia group at the matched prior and inconsistency from a 10% prior.
-- **Model fidelity can create false passes.** Omitting the wheel gyroscopic term `ω × h_w` violated angular-momentum conservation by 197% and made a 170° slew appear to settle in 235 s. With correct physics it does not. The earlier result is withdrawn.
-- **Estimation costs pointing through the rate path, not only through attitude knowledge.** With true-state feedback steady-state pointing is 0.0005°. With the gyro-driven filter it is 0.043°: the 1.73 mrad/s rate error passes through the derivative gain and moves the spacecraft, so the control error (0.044°) exceeds the attitude-estimation error (0.008°). The model-aided filter's rate estimate is 2,000× quieter and costs 0.0004°. A 30 s tracker outage does not show up in pointing.
-- **A single deterministic pass can hide a fragile design.** The E6 benchmark passes in the one run where the initial rate is aligned with the slew axis. With the same criteria and 200 randomized runs, 1 passes. Sensor noise alone does not break it; a random slew axis, a random rate direction, or a 5% inertia dispersion each does, and 2% settling moves from 174.5 s to 193.6 s at 0.95× inertia and to 133.4 s at 1.05×. The gains were not redesigned here; that is a separate follow-up.
-- **Statistical tests need calibration.** At the available sample size, the multivariate Ljung–Box test rejects white noise 11.1% of the time at nominal 5%. Whiteness is therefore judged against an empirically calibrated null.
 
 ---
 
@@ -203,9 +213,9 @@ The gyro-driven filter does not use inertia, so it is unaffected. The model-aide
 
 ![E5 outage response](docs/figures/summary/outage_response.png)
 
-### 5.5 Closed-loop pointing
+### 5.5 Pointing benchmark (E6)
 
-**E6 project benchmark:** 60° initial error, 0.1 rad/s initial rate, deterministic seed 42.
+**Deterministic run:** 60° initial error, 0.1 rad/s initial rate, seed 42.
 
 | Criterion | Limit | Measured | Verdict |
 |---|---:|---:|:-:|
@@ -217,7 +227,7 @@ The gyro-driven filter does not use inertia, so it is unaffected. The model-aide
 | Achieved / requested squared-torque effort | ≥ 85% | 87.9% | Pass |
 | Peak commanded and wheel torque | ≤ 0.1 N·m | 0.100 N·m | Pass |
 
-**E6 Monte Carlo (200 runs):** the same configuration and criteria, with a random 60° attitude axis, a random 0.1 rad/s rate direction, per-seed inertia (5% prior) and new sensor noise. Probabilities are with Clopper–Pearson 95% intervals; thresholds are project-defined.
+**Monte Carlo (200 runs):** the same configuration and criteria, with a random 60° attitude axis, a random 0.1 rad/s rate direction, per-seed inertia (5% prior) and new sensor noise. Probabilities are with Clopper–Pearson 95% intervals; thresholds are project-defined.
 
 | Criterion | Passes / 200 | P(pass) |
 |---|---:|---:|
@@ -232,7 +242,9 @@ The median run is still 16° off in the last 20 s (5th–95th percentile 4.0°�
 
 ![E6 Monte Carlo](docs/figures/e6_monte_carlo.png)
 
-**Large-angle slew with stored wheel momentum:** a 170° slew about z while 10 N·m·s of the initial x-axis spin sits in the wheels. Rotating that stored momentum through the body frame needs gyroscopic torque beyond the controller's authority.
+### 5.6 Large-angle slew with stored wheel momentum
+
+A 170° slew about z while 10 N·m·s of the initial x-axis spin sits in the wheels. Rotating that stored momentum through the body frame needs gyroscopic torque beyond the controller's authority.
 
 | Model | Momentum drift | Peak `‖ω × h_w‖` | 2% settling | Final error (400 s) |
 |---|---:|---:|---:|---:|
@@ -241,7 +253,9 @@ The median run is still 16° off in the last 20 s (5th–95th percentile 4.0°�
 
 ![Wheel gyroscopic coupling](docs/figures/summary/wheel_coupling.png)
 
-**Estimation cost (E0, E5, E6; 10 paired seeds):** the same seed is run with the controller fed the filter estimate and the true state. Increment = estimated minus truth feedback, with a 95% t interval over the per-seed differences. The 0.1° requirement is project-defined.
+### 5.7 Estimation cost
+
+E0, E5 and E6, 10 paired seeds: the same seed is run with the controller fed the filter estimate and the true state. Increment = estimated minus truth feedback, with a 95% t interval over the per-seed differences. The 0.1° requirement is project-defined.
 
 | Case (window) | Filter | APE RMS, estimated | APE RMS, truth | Increment | Within 0.1° (estimated / truth) |
 |---|---|---:|---:|---:|---:|
@@ -255,7 +269,7 @@ Over the 2%-settling window the error is dominated by the acquisition tail, and 
 
 ![Estimation cost](docs/figures/estimation_cost.png)
 
-### 5.6 Innovation whiteness
+### 5.8 Innovation whiteness
 
 | Quantity | Value |
 |---|---:|
@@ -344,14 +358,14 @@ docs/            design description, results, traceability, evidence, figures
 
 **Roadmap**
 
-The first step quantified how much pointing error estimation *causes*, separately from the control floor ([results §5.4](docs/current_evidence.md#54-estimation-cost-estimated-versus-true-state-feedback)):
+Quantify how much pointing error estimation *causes*, separately from the control floor (method and status in [results §5.4](docs/current_evidence.md#54-estimation-cost-estimated-versus-true-state-feedback)):
 
 - [ ] Perfect-knowledge baseline: rerun each scenario with the controller fed the true state, using the same seeds. *Done for E0, E5 and E6 (both filters, 10 seeds). Remains: E1–E4, E7 and the E6 stress cases.*
 - [x] Steady-state absolute and relative pointing error (APE/RPE) after acquisition, with tracker outages placed inside that window.
 - [x] Decomposition of pointing error into control tracking error and estimation error, including how gyro noise in the rate feedback becomes pointing error; gyro-driven vs model-aided filters. *Not done: an experiment that separates the rate path from the attitude path.*
 - [ ] Mission-level metric: time inside a stated pointing requirement for each estimation fault. *Metric implemented; evaluated for the tracker outage only. Remains: outliers (E4), noise mistuning (E2/E3) and inertia mismatch (E1), and a requirement near the achieved error, since 0.1° is met throughout in steady state.*
 
-**Follow-up (separate task)**
+**Follow-up (not started)**
 
 - [ ] Control gain redesign so the E6 benchmark holds under the Monte Carlo dispersions: design with `compute_control_gains` from a settling-time and damping target (the current gains give a linearised slow pole of about −0.027 s⁻¹), add gyroscopic feedforward, and re-run the 200-run campaign and ablations. Not started; gains were deliberately unchanged in 1.1.0.
 
