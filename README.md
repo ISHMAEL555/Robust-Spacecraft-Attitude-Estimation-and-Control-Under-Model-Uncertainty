@@ -347,6 +347,12 @@ docs/            design description, results, traceability, evidence, figures
 - Sensor timing is idealized: no latency, jitter, out-of-sequence measurements, or gyro scale-factor and misalignment errors.
 - 10 runs per campaign case (5 per robustness slice), one factor at a time, diagonal inertia mismatch only in the campaigns. Truth inertia is fixed across seeds by default; `spacecraft.inertia_truth_mode: "sampled_from_prior"` draws it per seed from the filter prior (full tensor, realisable only), used in the 30-seed inertia study. Rejecting non-realisable draws truncates the prior (55% rejected at a 25% prior). This is enough for the large effects reported, not for an operating envelope.
 
+**Study-design limitations**
+
+- **Inertia truth is fixed across seeds**, not drawn from the filter's inertia prior. In the matched-inertia case the inertia states start with zero error against a 5% prior, so the 15-state NEES is biased low by construction. In the mismatch cases every seed shares the same offset, so the run-level intervals reflect sensor-noise variation only, not variation over inertia errors. Next step: sample δJ ~ N(0, P0_J) per seed for the consistency cases, and keep the fixed offset as a separately labelled deterministic model-error study.
+- **The model-aided filter knows the applied wheel torque exactly**, and all campaigns use zero disturbance torque. Its rate model is therefore optimistic compared with hardware, where wheel friction, torque noise, and gravity-gradient or solar-pressure torques would enter as unmodelled rate process noise (see R-06).
+- **E6 is a single deterministic run.** The 3% settling margin (R-02) is not a probability of meeting the criterion; a Monte Carlo over initial attitude and inertia would be needed for that.
+
 **Open risks** (full register in [traceability](docs/requirements_traceability.md#3-risk-register))
 
 | ID | Risk | Severity |
