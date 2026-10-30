@@ -38,6 +38,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
+import yaml
 
 from scripts.parallel_runs import completeness, run_tasks
 from scripts.run_experiment import (
@@ -154,6 +155,9 @@ def run_one(task: Dict[str, Any]) -> Dict[str, Any]:
                           task["inertia_sigma"])
     if task.get("duration") is not None:
         config = replace(config, duration=float(task["duration"]))
+    if task.get("controller_overrides"):
+        config = replace(config, controller={**config.controller,
+                                             **task["controller_overrides"]})
     results = run_simulation(config)
     metrics = compute_performance_metrics(results)
     benchmark = evaluate_e6_project_benchmark(metrics)
@@ -343,6 +347,9 @@ def main() -> None:
                         choices=["attitude", "rate", "inertia"])
     parser.add_argument("--duration", type=float, default=None,
                         help="override the E6 run length (smoke tests only)")
+    parser.add_argument("--controller", nargs="*", default=[], metavar="KEY=VALUE",
+                        help="override controller settings (YAML values), e.g. "
+                             "K_omega=20 control_type=rate_profile gyroscopic_feedforward=true")
     parser.add_argument("--output", type=Path, default=ROOT / "docs" / "e6_monte_carlo.json")
     parser.add_argument("--figure", type=Path,
                         default=ROOT / "docs" / "figures" / "e6_monte_carlo.png")
@@ -350,12 +357,19 @@ def main() -> None:
     if args.runs < 2:
         parser.error("--runs must be at least 2")
 
+    overrides = {}
+    for item in args.controller:
+        key, separator, value = item.partition("=")
+        if not separator:
+            parser.error(f"--controller expects KEY=VALUE, got {item!r}")
+        overrides[key] = yaml.safe_load(value)
     tasks = [{"index": i, "seed": args.base_seed + SEED_STRIDE * i,
               "attitude_deg": args.attitude_deg,
               "attitude_range_deg": (tuple(args.attitude_range_deg)
                                      if args.attitude_range_deg else None),
               "rate_rad_s": args.rate_rad_s, "dispersions": args.dispersions,
-              "inertia_sigma": args.inertia_sigma, "duration": args.duration}
+              "inertia_sigma": args.inertia_sigma, "duration": args.duration,
+              "controller_overrides": overrides}
              for i in range(args.runs)]
     started = wall_clock.time()
     runs = execute_runs(tasks, args.jobs)
@@ -369,6 +383,7 @@ def main() -> None:
         "label": "E6 Monte Carlo; criteria are project-defined, not mission requirements",
         "config": "config/closed_loop.yaml",
         "filter_variant": base.filter["variant"],
+        "controller": {**base.controller, **overrides},
         "duration_s": args.duration if args.duration is not None else base.duration,
         "criteria_limits": {n: {"operator": c["operator"], "limit": c["limit"]}
                             for n, c in benchmark_limits.items()},

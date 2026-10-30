@@ -7,10 +7,22 @@ the current body frame:
 
     quaternion_feedback:  tau = +K_q q_e,v - K_omega (omega - omega_d)
     pd:                   tau = 2 K_q q_e,v - K_omega (omega - omega_d)
+    rate_profile:         tau = K_omega (omega_cmd - omega_d_body - omega),  see below
 
 For small angles q_e,v ≈ theta_e / 2, so the effective attitude stiffness is
 K_q / 2 for 'quaternion_feedback' and K_q for 'pd'. The command is limited
 in Euclidean norm, which preserves the commanded torque direction.
+
+'rate_profile' is the saturation-aware alternative. The correction rotation
+vector phi (magnitude |phi|, axis n) is turned into a commanded rate along n,
+
+    |omega_cmd| = min(sqrt(2 a |phi|), k_p |phi|),   a = f tau_max / (n' J n),
+
+a deceleration-limited approach (sqrt) outside |phi| = 2a/k_p^2 and a linear
+approach inside it; a rate loop with gain K_omega tracks it. The sqrt branch is
+the constant-deceleration braking profile of a double integrator, so the
+commanded rate never asks for more stopping torque than the fraction f of the
+torque limit provides. It needs a nominal inertia (it is not adapted online).
 """
 
 import numpy as np
@@ -29,7 +41,12 @@ class ControllerParams:
     # Maximum torque command norm (N*m)
     max_torque: float = 0.1
     # Control law type
-    control_type: Literal['quaternion_feedback', 'pd'] = 'quaternion_feedback'
+    control_type: Literal['quaternion_feedback', 'pd', 'rate_profile'] = 'quaternion_feedback'
+    # rate_profile only: nominal inertia (3x3), fraction f of the torque limit
+    # used for braking, and the linear-region rate gain k_p (1/s).
+    inertia: Optional[np.ndarray] = None
+    profile_accel_fraction: float = 0.7
+    profile_rate_gain: float = 0.05
 
 
 class AttitudeController:
@@ -47,8 +64,15 @@ class AttitudeController:
         Args:
             params: ControllerParams
         """
-        if params.control_type not in ('quaternion_feedback', 'pd'):
+        if params.control_type not in ('quaternion_feedback', 'pd', 'rate_profile'):
             raise ValueError(f"Unknown control_type: {params.control_type!r}")
+        if params.control_type == 'rate_profile':
+            if params.inertia is None:
+                raise ValueError("control_type 'rate_profile' requires a nominal inertia")
+            if not 0.0 < params.profile_accel_fraction <= 1.0:
+                raise ValueError("profile_accel_fraction must be in (0, 1]")
+            if params.profile_rate_gain <= 0.0:
+                raise ValueError("profile_rate_gain must be positive")
         if params.max_torque <= 0.0:
             raise ValueError("max_torque must be positive")
         self.params = params
@@ -124,9 +148,29 @@ class AttitudeController:
         q_error = self.attitude_error(q_current)
         # Desired rate is given in the desired body frame; express it in the
         # current body frame before forming the rate error.
-        omega_error = omega_current - rotate_vector(q_error, self.omega_desired)
+        omega_desired_body = rotate_vector(q_error, self.omega_desired)
+        if self.params.control_type == 'rate_profile':
+            return self._rate_profile_feedback(q_error, omega_current, omega_desired_body)
+        omega_error = omega_current - omega_desired_body
         stiffness = self.K_q if self.params.control_type == 'quaternion_feedback' else 2.0 * self.K_q
         return quaternion_feedback_torque(q_error, omega_error, stiffness, self.K_omega)
+
+    def _rate_profile_feedback(self, q_error: np.ndarray, omega_current: np.ndarray,
+                               omega_desired_body: np.ndarray) -> np.ndarray:
+        """Torque tracking the deceleration-limited approach rate (see module doc)."""
+        vector = q_error[:3]
+        sin_half = np.linalg.norm(vector)
+        if sin_half < 1e-12:
+            omega_cmd = np.zeros(3)
+        else:
+            axis = vector / sin_half
+            angle = 2.0 * np.arctan2(sin_half, q_error[3])
+            inertia = np.asarray(self.params.inertia, dtype=float)
+            decel = (self.params.profile_accel_fraction * self.max_torque
+                     / float(axis @ inertia @ axis))
+            speed = min(np.sqrt(2.0 * decel * angle), self.params.profile_rate_gain * angle)
+            omega_cmd = speed * axis
+        return self.K_omega * (omega_cmd + omega_desired_body - omega_current)
 
     def _saturate(self, tau_cmd: np.ndarray) -> np.ndarray:
         """Limit the command norm while preserving direction."""
