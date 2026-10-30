@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml/badge.svg)](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.12-blue)
-![Tests](https://img.shields.io/badge/tests-262%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-286%20passing-brightgreen)
 ![Release](https://img.shields.io/badge/release-1.1.0-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -137,7 +137,7 @@ The full equations, step timing, and metric definitions are in the [system desig
 | Pointing benchmark E6 | Analysis: deterministic run | Pass |
 | Pointing benchmark E6 under dispersions | Analysis: 200-run Monte Carlo, Clopper–Pearson intervals | **Fails**: P(pass) = 0.005 |
 
-262 automated tests run in CI on Python 3.10, 3.12 and 3.13, plus a job with the newest numpy/scipy/matplotlib (3.13 and the latest-dependencies job are configured but not yet run). Regression tests against the 1.0.0 output use floating-point tolerances, not exact equality; a separate test requires identical repeat runs. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
+286 automated tests run in CI on Python 3.10, 3.12 and 3.13, plus a job with the newest numpy/scipy/matplotlib (3.13 and the latest-dependencies job are configured but not yet run). Regression tests against the 1.0.0 output use floating-point tolerances, not exact equality; a separate test requires identical repeat runs. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
 
 ---
 
@@ -265,6 +265,8 @@ E0, E5 and E6, 10 paired seeds: the same seed is run with the controller fed the
 | E0 (100–300 s) | Gyro-driven | 0.0351° | 0.0134° | +0.0217° [0.0180, 0.0253] | 99.6% / 100% |
 | E6 (from 2% settling, 600 s) | Gyro-driven | 0.2294° | 0.2411° | −0.0117° [−0.0178, −0.0057] | 80.8% / 79.9% |
 
+The gyro-driven filter's 1.73 mrad/s rate error is the raw per-sample gyro noise, σ_v/√dt = 1e-4/√0.01 = 1e-3 rad/s per axis times √3; nothing filters ω̂ before the K_ω term, so the 0.043° cost is gyro noise passed through the damping gain.
+
 Over the 2%-settling window the error is dominated by the acquisition tail, and estimated feedback with the gyro-driven filter scores slightly *better* than truth feedback. That is unexplained and is not an estimation benefit ([details](docs/current_evidence.md#54-estimation-cost-estimated-versus-true-state-feedback)).
 
 ![Estimation cost](docs/figures/estimation_cost.png)
@@ -289,7 +291,7 @@ Requires Python 3.10 or later.
 git clone https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty.git
 cd Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty
 python -m pip install -r requirements.txt
-python -m pytest                                  # 262 tests, about 1 min
+python -m pytest                                  # 286 tests, about 2 min
 ```
 
 | Task | Command | Runtime |
