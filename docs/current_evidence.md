@@ -323,6 +323,43 @@ Sensor noise alone leaves the nominal case passing, so the 3% margin is robust t
 
 **Hypotheses, not tested.** (a) With K_ω = 20 N·m·s and K_q/2 = 0.5 N·m/rad, the linearised slow pole is about −0.027 to −0.029 s⁻¹ (inertia 100 to 60 kg·m²), roughly 130–145 s to reach 2% from 60° before saturation and slewing add to it, so the benchmark's 174.5 s leaves little room above its linear floor. (b) With 0.1 N·m of authority, stopping a 0.1 rad/s spin of a 100 kg·m² body takes about 100 s, so rate dispersions in unfavourable directions consume much of the 180 s budget. A gain redesign would test both; it is proposed as a separate follow-up and the gains were not changed here.
 
+### 5.6 E6 feasibility: is the 180 s criterion reachable in the dispersion envelope? (GNC-FEAS-001/002/003)
+
+The reviewer's hypothesis was that the 180 s settling criterion was never sized against the 0.1 rad/s dispersion envelope, so most of the failures in §5.5 would be unavoidable. [`analyze_e6_feasibility.py`](../scripts/analyze_e6_feasibility.py) tests this on the 200 stored runs, rebuilding each run's own attitude, rate and sampled inertia from its seed (the rebuilt inertia and initial state equal the simulation's own, tested). Definitions and the proof of the momentum bound are in [system description §6.1](system_description.md#61-feasibility-bounds-and-estimates-for-rest-to-rest-acquisition). Output: [e6_feasibility.json](e6_feasibility.json), [figure](figures/e6_feasibility.png). `n_requested = n_completed = 200`.
+
+**Linearised closed loop of the shipped gains** (K_q = 1, K_ω = 20, effective stiffness K_q/2; factor of 2 checked against `compute_control_gains`):
+
+| Axis | J (kg·m²) | ζ | Poles (s⁻¹) | Settling, slow pole `ln 50/|p|` | Settling, exact from rest |
+|---|---:|---:|---|---:|---:|
+| x | 100 | 1.414 | −0.0293, −0.1707 | 133.6 s | 140.0 s |
+| y | 80 | 1.581 | −0.0282, −0.2218 | 138.8 s | 143.7 s |
+| z | 60 | 1.826 | −0.0272, −0.3061 | 143.7 s | 147.2 s |
+
+All three axes are overdamped. The reviewer's hand estimate for x (ζ ≈ 1.4, slow pole ≈ −0.029 s⁻¹, about 133 s) is confirmed; the exact response, which includes the fast pole's residual, is 140.0 s.
+
+**Bounds and estimates over the 200 runs** (5th / median / 95th percentile; runs above 180 s):
+
+| Quantity | Kind | 5th / median / 95th | Runs > 180 s |
+|---|---|---:|---:|
+| Momentum bound `‖J ω₀‖/τ_max`, (a) | proven | 61.6 / 81.4 / 100.2 s (max 108.9) | **0** |
+| Momentum bound with per-wheel clips, (b) | proven, conservative | max 62.9 s | **0** |
+| Rest-to-rest slew `2√(θ J_eff/τ_max)` | approximation | 50.7 / 57.6 / 64.4 s (max 68.3) | 0 |
+| Single-axis feasibility estimate (initial rate, 2π wrap) | estimate, not a bound | 41.7 / 88.8 / 161.6 s (max 209.7) | 4 |
+| Stop-then-slew plan | constructive, idealised | 144.6 / 170.4 / 198.9 s | 57 (143 are ≤ 180 s) |
+| Linear unsaturated settling of the shipped gains | linear model | all ≤ 180 s | 0 |
+| Saturated single-axis settling of the shipped gains | model | 85 of 200 ≤ 180 s | 115 |
+| Monte Carlo result (§5.5) | simulation | 1 of 200 settled ≤ 180 s | 199 |
+
+![E6 feasibility](figures/e6_feasibility.png)
+
+**What this shows**
+
+- **No proven bound declares any run infeasible.** The momentum bound is at most 108.9 s for every run, and 62.9 s with the per-wheel clips, so the *proven* part of the hypothesis (that the criterion cannot be met by any controller in X of 200 runs) is **not supported**. The bound is tight for stopping: the stopping phase of the plan takes 1.026 × the bound (median).
+- **The 0.1 rad/s rate is a large share of the budget.** Median perpendicular rate is 0.084 rad/s of 0.1. Stopping needs a median 81 s of torque at the limit (83.8 s in the plan), during which the attitude drifts to a median 137° from the target (5th to 95th percentile 73° to 176°), so the slew that follows starts far from the target. This, not the poles, is what the 3-axis problem adds.
+- **The linear poles do not explain the failures.** The unsaturated linear model puts all 200 runs inside 180 s, and the single-axis saturated model puts 85 inside, against 1 in the simulation. Both ignore the perpendicular rate; the −0.029 s⁻¹ slow pole is real but is not the binding limit on its own, and the proposed wording "the overdamped linear PD is the limiting factor, not the actuator authority" is not supported by this analysis.
+- **The truth for the undecided runs is between two numbers.** 143 runs have an achievable plan inside 180 s in the idealisation; 4 are above 180 s even by the optimistic single-axis estimate; 53 lie between and are undetermined. "The criterion is achievable in X% of the envelope" can be stated only as 71.5% (143/200) *in an idealised open-loop plan* and at most 98% (196/200) by the estimate.
+- **A closed-loop controller has not yet demonstrated it.** On 20 runs chosen evenly by plan time among those the estimate calls feasible, the `rate_profile` controller with parameters fixed in advance and **not tuned** (`K_ω = 20`, `k_p = 0.05 s⁻¹`, `f = 0.7`, gyro-driven filter, estimated feedback) settled within 180 s in **2** runs (134.1 s and 148.3 s, 1.3× and 1.7× the estimate; both pass every criterion) and in 182.4 s and 190.1 s in two more; the other 16 did not settle by 200 s (terminal error 3.6° to 55°). Wheel momentum use was 29–55%, inside the 80% limit. So feasibility of most of the envelope is **not demonstrated**; the untuned controller is far from the estimate, and a controller that reaches the plan times in the nonlinear simulation is still to be built and evaluated (task B5).
+
 ## 6. Innovation whiteness
 
 For an optimal filter, normalized innovations are white. The check uses a 10-lag multivariate Ljung–Box test on Cholesky-whitened accepted star-tracker innovations: 200 per E6 run, 90 χ² degrees of freedom.
@@ -348,7 +385,7 @@ The χ² approximation is liberal at this sample size, so a single p-value below
 
 ```powershell
 python -m pip install -r requirements.txt
-python -m pytest                                   # 222 tests
+python -m pytest                                   # 262 tests
 
 # Campaign (33 cases x 10 runs); --jobs parallelizes cases, results do not depend on it
 python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --jobs 8 --output-dir reports/research_campaigns/e0_e7_refresh
@@ -364,6 +401,7 @@ python scripts/verify_robustness_slices.py
 python scripts/verify_robustness_slices.py --duration 400 --case closed_loop_near_180deg_initial_attitude
 python scripts/verify_innovation_whiteness.py
 python scripts/verify_wheel_coupling.py
+python scripts/analyze_e6_feasibility.py --demonstrate 20 --jobs 6   # feasibility of the 200 stored runs, about 2 min
 python scripts/run_e6_monte_carlo.py --jobs 14   # 200 runs, about 5 min on 16 cores; ablations: --dispersions rate --output ...
 python scripts/verify_estimation_cost.py --jobs 14   # 80 paired-mode tasks, about 9 min on 16 cores
 
@@ -381,4 +419,5 @@ python scripts/export_campaign_evidence.py --input-dir reports/research_campaign
 | [innovation_whiteness.json](innovation_whiteness.json) | `verify_innovation_whiteness.py` |
 | [wheel_coupling_effect.json](wheel_coupling_effect.json) | `verify_wheel_coupling.py` |
 | [e6_monte_carlo.json](e6_monte_carlo.json), [e6_monte_carlo_ablation/](e6_monte_carlo_ablation/) | `run_e6_monte_carlo.py` |
+| [e6_feasibility.json](e6_feasibility.json) | `analyze_e6_feasibility.py` |
 | [estimation_cost.json](estimation_cost.json) | `verify_estimation_cost.py` |

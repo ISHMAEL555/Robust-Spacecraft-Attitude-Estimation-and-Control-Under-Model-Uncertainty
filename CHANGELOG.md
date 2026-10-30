@@ -12,13 +12,20 @@ All notable changes to this project are documented here. Versions follow [Semant
 
 ### Added
 
+- **E6 feasibility analysis (B1–B4).** `src/control/feasibility.py` and `scripts/analyze_e6_feasibility.py` apply a proven momentum lower bound (two versions), a rest-to-rest slew time, a single-axis feasibility estimate, a constructive stop-then-slew plan and a linearised closed-loop analysis to each of the 200 stored E6 Monte Carlo runs: `docs/e6_feasibility.json`, `docs/figures/e6_feasibility.png`, system description §6.1, results §5.6, requirements GNC-FEAS-001/002/003, risk R-11. The 200-run result is unchanged.
+- `controller.control_type: "rate_profile"` (deceleration-limited eigenaxis approach rate, after Wie and Lu 1995), `controller.gyroscopic_feedforward`, and `--controller KEY=VALUE` overrides in `run_e6_monte_carlo.py`. Defaults are unchanged. Not yet evaluated in a campaign.
 - CI: Python 3.13 in the test matrix, and a `latest-dependencies` job that installs the newest numpy, scipy and matplotlib (`requirements.txt` stays unpinned). Neither has been run yet: only Python 3.11 and numpy 2.4.4 were available locally.
 - `docs/e6_monte_carlo_ablation/*.json` now include per-run records (see Notes).
+
+### Corrected findings
+
+- **The "180 s criterion is infeasible for the dispersion envelope" hypothesis is not supported by the proven bounds.** The momentum lower bound is at most 108.9 s for every one of the 200 runs (0 above 180 s), and the unsaturated linear poles of the shipped gains (slow pole −0.027 to −0.029 s⁻¹, 133.6 to 143.7 s) would also settle all 200 runs inside 180 s, so they do not explain the 199 failures either. What the analysis does show is a tight budget: stopping the initial momentum alone takes a median 81 s, and an idealised stop-then-slew plan takes a median 170 s (143 of 200 runs inside 180 s, 53 undetermined between that plan and the optimistic single-axis estimate). An untuned closed-loop `rate_profile` controller settled within 180 s in 2 of 20 runs, so reachability in the envelope is not demonstrated. The README conclusion will be rewritten after the controller comparison (B5).
+- A hand estimate of the E6 linear closed loop (ζ ≈ 1.4, slow pole ≈ −0.029 s⁻¹, about 133 s) was recomputed and confirmed (133.6 s from the slow pole; 140.0 s exact).
 
 ### Notes
 
 - The four ablation files in `docs/e6_monte_carlo_ablation/` were regenerated only to add per-run records and the completeness fields (`n_requested`, `n_completed`, `runs`). Before replacing them, every published field was compared with the regenerated one: all 100 seeds, `n_runs`, passes per criterion, and the distributions (median, 5th and 95th percentiles of settling time and terminal error) are identical, as are the inertia-sampling and rate-direction blocks. No result changed. The 200-run `docs/e6_monte_carlo.json` was not regenerated and is byte-identical to the 1.1.0 file.
-- Test count 211 → 222.
+- Test count 211 → 262.
 
 ## [1.1.0] — 2026-10-30
 

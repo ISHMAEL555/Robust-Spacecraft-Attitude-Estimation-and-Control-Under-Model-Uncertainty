@@ -211,7 +211,34 @@ q_e = q̂⁻¹ ⊗ q_d   (shortest path: w ≥ 0)
 
 **State-feedback source.** `controller.state_feedback` selects what the controller receives. `"estimated"` (default, release 1.0.0 behaviour) uses `q̂, ω̂`; `"truth"` uses `q_true, ω_true` and exists only to measure the pointing error the estimator causes. The filter, sensors, and every random stream run identically in both modes, so a given seed gives the same filter-initialization, gyro, and tracker random draws. The realized measurements still differ between modes once the two trajectories diverge, because the tracker perturbs the actual truth attitude.
 
-An optional feedforward adds `ω × (Ĵ ω + h_w)` and cancels an estimated disturbance, saturating the sum once. The campaigns use feedback only.
+An optional feedforward adds `ω × (Ĵ ω + h_w)` and cancels an estimated disturbance, saturating the sum once. The campaigns use feedback only. `controller.gyroscopic_feedforward: true` enables it in `run_simulation` (nominal inertia, measured wheel momentum; off by default).
+
+`controller.control_type: "rate_profile"` is a saturation-aware alternative in the family of rate-limited eigenaxis laws (Wie and Lu, "Feedback control logic for spacecraft eigenaxis rotations under slew rate and control constraints", JGCD 1995): the correction rotation vector `φ` (axis `n`) is mapped to a commanded rate `min(√(2 a |φ|), k_p |φ|) n` with `a = f τ_max / (nᵀ J n)`, and `τ = K_ω (ω_cmd − ω)`. It needs a nominal inertia; defaults reproduce the 1.0.0 behaviour unless it is selected.
+
+### 6.1 Feasibility bounds and estimates for rest-to-rest acquisition
+
+The functions in [`src/control/feasibility.py`](../src/control/feasibility.py) separate what is **proven** from what is **estimated**. All assume wheels that start with zero momentum and a body torque limit `τ_max`.
+
+**Momentum lower bound (proven).** The wheel-momentum vector in body axes obeys `ḣ_w = −τ`, where `τ` is the delivered body torque, so `d‖h_w‖/dt = −ĥ_w · τ ≤ ‖τ‖`. The total momentum `H = J ω + h_w` (body components) obeys `Ḣ = −ω × H`; the gyroscopic term is perpendicular to `H`, so `‖H‖` is constant, equal to `‖J ω₀‖` because `h_w(0) = 0`. If the body is at rest at time `T` then `h_w(T) = H(T)`, so `‖h_w(T)‖ = ‖J ω₀‖`, and since `‖h_w‖` grows at most at `‖τ‖`,
+
+```text
+T ≥ ‖J ω₀‖ / τ_eff,     and for every t:  ‖J ω(t)‖ ≥ ‖J ω₀‖ − τ_eff t.
+```
+
+This is the argument about the wheel momentum, not about `‖J ω‖` directly: `d‖J ω‖/dt` also contains `ω × h_w`, which is not perpendicular to `J ω` once the wheels hold momentum. Two values of `τ_eff`:
+
+- **(a) `τ_eff = τ_max`** (body command norm limit). Valid because the delivered torque cannot exceed the command norm: with orthogonal wheels the allocation is the identity, the per-wheel clip does not reduce a vector whose norm is at most `τ_max`, and the first-order lag returns `m + r (target − m)` with `0 < r < 1`, whose norm is at most `(1 − r)‖m‖ + r‖target‖ ≤ τ_max` by induction from `m = 0`. The momentum hard limit only shrinks a component. Checked in the tests: the largest delivered torque norm is at most `τ_max` to 1e-12.
+- **(b) `τ_eff = √3 τ_max`**, the conservative version that uses only the per-wheel clips (each wheel `±τ_max`).
+
+Both are tested against full nonlinear runs, including a controller whose gains keep the command saturated against the rate, which cannot beat either.
+
+**Slew time (approximation).** The rest-to-rest bang-bang time about the correction axis `â` is `2 √(θ J_eff / τ_max)` with `J_eff = âᵀ J â`. It is exact only for a principal axis and ignores gyroscopic coupling and any initial rate.
+
+**Single-axis feasibility estimate (not a bound).** A double integrator `J_eff θ̈ = u`, `|u| ≤ τ_max`, started at the true angle `θ ∈ [0, π]` with the rate component `ω · â` that carries the body away from the desired attitude, driven to either equivalent target (`θ` or `θ − 2π`), has the classical switching-curve minimum time. It ignores the rate perpendicular to `â`, the coupling between axes, the motor lag, and the 2% band, so it can be below what any 3-axis controller achieves (it is not a lower bound; it exceeded the constructive plan below in 2 of the 200 runs).
+
+**Constructive stop-then-slew plan.** In the full rigid-body-plus-wheel model, apply `−τ_max` along the body momentum until `‖ω‖ < 1e-4 rad/s`, then the rest-to-rest slew from the attitude reached. Not optimal, so an achievable time in this idealisation (no estimator, no 2% band), not a bound; its stopping phase is within 2.6% (median) of the momentum bound.
+
+**Linearised closed loop.** Per principal axis `J_i θ̈ + K_ω θ̇ + (K_q/2) θ = 0` for `quaternion_feedback` (`q_e,v ≈ θ/2`, [conventions](conventions.md)); `k = K_q` for `pd`. `compute_control_gains` returns `K_q = 2 J ω_n²` and `K_ω = 2 ζ J ω_n` for `quaternion_feedback`, and a test reproduces the requested damping and frequency for both laws. The linear model has no torque limit; a second model keeps the limit and the `sin(θ/2)` nonlinearity on one axis (`saturated_single_axis_settling_s`).
 
 ## 7. Performance and consistency metrics
 
