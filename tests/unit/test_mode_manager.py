@@ -135,3 +135,59 @@ def test_switch_fires_on_the_estimated_rate_in_the_closed_loop():
     # The true rate crosses at a different step: the decision uses the estimate.
     true_cross = int(np.argmax(rate_true <= 0.01))
     assert true_cross != switch
+
+
+def test_low_pass_switching_ignores_single_noisy_samples():
+    """One sample far below the threshold does not switch; a sustained low rate does."""
+    controller = _manager(switch_filter_time_constant_s=1.0, detumble_entry_rate=0.009)
+    for _ in range(300):
+        controller.compute_control(IDENTITY, np.array([0.012, 0.0, 0.0]))
+    controller.compute_control(IDENTITY, np.array([0.0, 0.0, 0.0]))  # one outlier sample
+    assert controller.phase == "detumble"
+    for step in range(1000):
+        controller.compute_control(IDENTITY, np.array([0.008, 0.0, 0.0]))
+        if controller.phase == "acquisition":
+            break
+    assert controller.phase == "acquisition" and controller.mode_switches == 1
+    # First-order response from 0.012 toward 0.008 crosses 0.009 after about T_f ln 4 = 1.39 s.
+    assert step + 1 == pytest.approx(139, abs=3)
+
+
+def test_filtered_switching_signal_noise_matches_the_margin_calculation():
+    """sigma_f = sigma sqrt(a / (2 - a)), a = dt / (T_f + dt): about 7.0e-5 for sigma 1e-3, T_f 1 s."""
+    rng = np.random.default_rng(4)
+    controller = _manager(switch_filter_time_constant_s=1.0, detumble_entry_rate=1e-9)
+    values = []
+    for k in range(60000):
+        noise = 1e-3 * rng.standard_normal(3)
+        controller.compute_control(IDENTITY, np.array([0.02, 0.0, 0.0]) + noise)
+        if k > 1000:
+            values.append(controller.switch_signal)
+    alpha = 0.01 / 1.01
+    expected = 1e-3 * np.sqrt(alpha / (2 - alpha))
+    assert np.std(values) == pytest.approx(expected, rel=0.15)
+    # Norm bias of a noisy vector: E|w + n| - |w| ~ sigma^2 (n - 1) / (2 |w|) = 5e-5 at 0.02.
+    assert np.mean(values) - 0.02 == pytest.approx(1e-6 * 2 / (2 * 0.02), rel=0.3)
+
+
+def test_acquisition_never_reaches_the_exit_threshold_near_j_min():
+    """Worst case for the exit hysteresis: light inertia, a 179 deg slew about the minor
+    axis, and the entry rate along that axis. The law must not return to detumble."""
+    base = load_config("config/closed_loop.yaml")
+    angle = np.deg2rad(179.0)
+    light = 0.95 * np.diag([100.0, 80.0, 60.0])  # J_min = 57 kg m^2 about z
+    config = replace(base, duration=200.0, spacecraft={
+        **base.spacecraft, "initial_attitude": [0.0, 0.0, np.sin(angle / 2), np.cos(angle / 2)],
+        "initial_omega": [0.0, 0.0, 0.01]}, controller={
+        **base.controller, "control_type": "two_phase", "K_omega": 10.0,
+        "profile_rate_gain": 0.08, "profile_accel_fraction": 0.9,
+        "detumble_entry_rate": 0.009, "detumble_exit_rate": 0.15,
+        "detumble_time_constant_s": 20.0, "switch_filter_time_constant_s": 1.0})
+    results = run_simulation(config, true_inertia=light)
+    phase = results["control_phase"]
+    changes = np.count_nonzero(np.diff(np.concatenate([[0], phase.astype(int)])))
+    assert changes == 1
+    peak_true = float(np.max(np.linalg.norm(results["omega_true"], axis=1)))
+    assert peak_true < 0.15 and float(np.max(results["switch_signal"])) < 0.15
+    # And it does slew fast, so the check is not vacuous.
+    assert peak_true > 0.05

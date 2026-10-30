@@ -55,6 +55,28 @@ from src.dynamics.inertia_sampling import sample_inertia_from_prior
 SCENARIOS = ("envelope", "acq_axis60", "acq_drifted")
 SEED_STRIDE = 1000
 SATURATION_FRACTION = 0.999
+WHEEL_TIME_CONSTANT_S = 0.05
+
+
+def low_pass(signal: np.ndarray, dt: float, tau: float) -> np.ndarray:
+    """First-order low-pass along axis 0, started at the first sample."""
+    alpha = dt / (tau + dt)
+    out = np.empty_like(signal, dtype=float)
+    out[0] = signal[0]
+    for k in range(1, len(signal)):
+        out[k] = out[k - 1] + alpha * (signal[k] - out[k - 1])
+    return out
+
+
+def in_band_effort_fraction(tau_cmd: np.ndarray, tau_rw: np.ndarray, dt: float) -> float:
+    """Achieved / requested squared-torque effort after low-passing both at the wheel bandwidth.
+
+    A diagnostic, not a criterion: it removes the command noise above the wheel
+    bandwidth that the wheels cannot deliver anyway.
+    """
+    requested = low_pass(tau_cmd, dt, WHEEL_TIME_CONSTANT_S)
+    achieved = low_pass(tau_rw, dt, WHEEL_TIME_CONSTANT_S)
+    return float(np.sum(achieved**2) / np.sum(requested**2))
 
 
 def _inertia_for_seed(seed: int, nominal: np.ndarray, sigma: float) -> np.ndarray:
@@ -98,9 +120,10 @@ def run_one(task: Dict[str, Any]) -> Dict[str, Any]:
     benchmark = evaluate_e6_project_benchmark(metrics)
 
     time = results["time"]
+    dt = float(config.dt)
     rate_true = np.linalg.norm(results["omega_true"], axis=1)
     below = np.nonzero(rate_true <= entry)[0]
-    det_time = float(time[below[0]]) if below.size else None
+    det_time = float(time[below[0]]) if below.size else None  # first true crossing
     torque = np.linalg.norm(results["tau_cmd"], axis=1)
     phase = results.get("control_phase")
     if phase is not None:
@@ -110,8 +133,30 @@ def run_one(task: Dict[str, Any]) -> Dict[str, Any]:
         hat_rate = np.linalg.norm(results["omega_hat"], axis=1)
         switch_rate_hat = float(hat_rate[changes[0]]) if changes.size else None
         switch_rate_true = float(rate_true[changes[0]]) if changes.size else None
+        signal = results["switch_signal"]
+        # Error of the switching signal against the same filter applied to the true
+        # rate, over the 10 s before the handover (noise + bias + norm bias).
+        tau_f = task["controller"].get("switch_filter_time_constant_s")
+        reference = low_pass(rate_true, dt, tau_f) if tau_f else rate_true
+        if changes.size:
+            window = slice(max(0, changes[0] - int(10.0 / dt)), changes[0])
+            error = signal[window] - reference[window]
+            switch_error_mean = float(np.mean(error)) if error.size else None
+            switch_error_std = float(np.std(error)) if error.size else None
+        else:
+            switch_error_mean = switch_error_std = None
     else:
         switch_time = n_switches = switch_rate_hat = switch_rate_true = None
+        switch_error_mean = switch_error_std = None
+    # GNC-DET-001 handover: the mode switch for a mode manager, otherwise the first
+    # time the true rate reaches w_entry. Pass if the TRUE rate at the handover is
+    # <= w_entry and the handover is within T_det. A later speed-up by the
+    # acquisition slew is intended and is not a detumble failure.
+    if phase is not None:
+        handover_time, handover_true_rate = switch_time, switch_rate_true
+    else:
+        handover_time = det_time
+        handover_true_rate = float(rate_true[below[0]]) if below.size else None
 
     plan = stop_then_slew_plan(state["inertia"], state["quaternion"], state["rate"], tau_max)
     settle = metrics["settling_time_2pct_s"]
@@ -127,6 +172,12 @@ def run_one(task: Dict[str, Any]) -> Dict[str, Any]:
         "peak_commanded_torque_nm": float(torque.max()),
         "saturation_duty": float(np.mean(torque >= SATURATION_FRACTION * tau_max)),
         "detumble_time_s": det_time,
+        "handover_time_s": handover_time, "handover_true_rate_rad_s": handover_true_rate,
+        "switch_signal_error_mean_rad_s": switch_error_mean,
+        "switch_signal_error_std_rad_s": switch_error_std,
+        "achieved_effort_fraction": float(metrics.get("achieved_effort_fraction", float("nan"))),
+        "in_band_effort_fraction": in_band_effort_fraction(
+            results["tau_cmd"], results["tau_rw"], dt),
         "mode_switch_time_s": switch_time, "mode_switches": n_switches,
         "switch_rate_hat_rad_s": switch_rate_hat, "switch_rate_true_rad_s": switch_rate_true,
         "plan_s": plan["total_s"], "plan_stop_s": plan["stop_s"],
@@ -167,12 +218,20 @@ def _dist(values: List[Any]) -> Dict[str, Any]:
     return out
 
 
-def aggregate(runs: List[Dict[str, Any]], det_limit_s: float) -> Dict[str, Any]:
+def det_passed(run: Dict[str, Any], det_limit_s: float, entry_rate: float) -> bool:
+    """GNC-DET-001 at the handover instant, with actuator limits respected."""
+    return bool(run["handover_time_s"] is not None and run["handover_time_s"] <= det_limit_s
+                and run["handover_true_rate_rad_s"] is not None
+                and run["handover_true_rate_rad_s"] <= entry_rate
+                and run["checks"]["peak_commanded_torque_nm"] and run["checks"]["peak_wheel_torque_nm"]
+                and run["checks"]["peak_wheel_momentum_utilization"])
+
+
+def aggregate(runs: List[Dict[str, Any]], det_limit_s: float,
+              entry_rate: float = 0.01) -> Dict[str, Any]:
     n = len(runs)
     criteria = list(runs[0]["checks"])
-    det_ok = [r["detumble_time_s"] is not None and r["detumble_time_s"] <= det_limit_s
-              and r["checks"]["peak_commanded_torque_nm"] and r["checks"]["peak_wheel_torque_nm"]
-              and r["checks"]["peak_wheel_momentum_utilization"] for r in runs]
+    det_ok = [det_passed(r, det_limit_s, entry_rate) for r in runs]
     switches = [r["mode_switches"] for r in runs if r["mode_switches"] is not None]
     return {
         "n_runs": n,
@@ -183,6 +242,16 @@ def aggregate(runs: List[Dict[str, Any]], det_limit_s: float) -> Dict[str, Any]:
         "optimality_gap_ratio": _dist([r["optimality_gap_ratio"] for r in runs]),
         "plan_s": _dist([r["plan_s"] for r in runs]),
         "detumble_time_s": _dist([r["detumble_time_s"] for r in runs]),
+        "handover_time_s": _dist([r["handover_time_s"] for r in runs]),
+        "handover_true_rate_rad_s": _dist([r["handover_true_rate_rad_s"] for r in runs]),
+        "handover_true_rate_above_entry": int(sum(
+            r["handover_true_rate_rad_s"] is not None and r["handover_true_rate_rad_s"] > entry_rate
+            for r in runs)),
+        "switch_signal_error_mean_rad_s": _dist([r["switch_signal_error_mean_rad_s"] for r in runs]),
+        "switch_signal_error_std_rad_s": _dist([r["switch_signal_error_std_rad_s"] for r in runs]),
+        "achieved_effort_fraction": _dist([r["achieved_effort_fraction"] for r in runs]),
+        "in_band_effort_fraction": _dist([r["in_band_effort_fraction"] for r in runs]),
+        "in_band_effort_at_or_above_0_85": int(sum(r["in_band_effort_fraction"] >= 0.85 for r in runs)),
         "mode_switch_time_s": _dist([r["mode_switch_time_s"] for r in runs]),
         "mode_switches": ({"max": int(max(switches)), "runs_with_more_than_one": int(
             sum(s > 1 for s in switches)), "runs_with_none": int(sum(s == 0 for s in switches))}
@@ -248,7 +317,7 @@ def main() -> None:
                 "seed_ranges": ranges,
                 **completeness(len(tasks), seeds, [r["seed"] for r in runs]),
                 "wall_time_s": wall_clock.time() - started,
-                "summary": aggregate(runs, det_limit),
+                "summary": aggregate(runs, det_limit, entry),
                 "runs": runs,
             }
             path = args.output_dir / f"{scenario}__{name}.json"

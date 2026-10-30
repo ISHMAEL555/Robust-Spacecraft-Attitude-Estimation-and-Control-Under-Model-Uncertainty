@@ -195,6 +195,8 @@ def run_simulation(config: SimulationConfig,
         detumble_entry_rate=config.controller.get('detumble_entry_rate', 0.01),
         detumble_exit_rate=config.controller.get('detumble_exit_rate', 0.15),
         detumble_time_constant_s=config.controller.get('detumble_time_constant_s', 20.0),
+        switch_filter_time_constant_s=config.controller.get('switch_filter_time_constant_s'),
+        control_dt_s=config.dt,
     )
     controller = AttitudeController(ctrl_params)
     # Optional gyroscopic feedforward omega x (J_nominal omega + h_w), from the
@@ -273,6 +275,7 @@ def run_simulation(config: SimulationConfig,
     if controller.phase is not None:
         # two_phase mode log: 0 detumble, 1 acquisition, after each step's command.
         results['control_phase'] = np.zeros(n_steps, dtype=np.int8)
+        results['switch_signal'] = np.zeros(n_steps)
     
     # Star tracker update tracking
     for i in range(n_steps):
@@ -358,6 +361,7 @@ def run_simulation(config: SimulationConfig,
         results['tau_cmd'][i] = tau_cmd
         if controller.phase is not None:
             results['control_phase'][i] = controller.phase == 'acquisition'
+            results['switch_signal'][i] = controller.switch_signal
         
         # Reaction wheels: the wheel torque is held over [t, t + dt], so the
         # body-axis wheel momentum changes linearly from h_start to h_end.

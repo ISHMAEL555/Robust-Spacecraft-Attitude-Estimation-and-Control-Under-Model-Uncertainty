@@ -36,7 +36,10 @@ proportional below. It switches to 'acquisition' (the rate_profile law) when the
 rate it is given (the estimated rate in the closed loop) satisfies |w| <= w_entry,
 and back to 'detumble' only if |w| > w_exit > w_entry. The gap between the two
 thresholds is the hysteresis; w_exit is set above every rate the acquisition
-law commands, so a noisy rate near w_entry cannot make it chatter.
+law commands, so a noisy rate near w_entry cannot make it chatter. With
+switch_filter_time_constant_s set, both thresholds act on a first-order low-pass
+of |w| (s_k = s_{k-1} + a (|w_k| - s_{k-1}), a = dt / (T_f + dt), started at the
+first sample) instead of the single sample, so one noisy sample cannot switch.
 """
 
 import numpy as np
@@ -68,6 +71,10 @@ class ControllerParams:
     detumble_entry_rate: float = 0.01
     detumble_exit_rate: float = 0.15
     detumble_time_constant_s: float = 20.0
+    # two_phase only: low-pass time constant (s) of the switching signal |w|, and
+    # the controller sample time (s). None switches on the raw sample.
+    switch_filter_time_constant_s: Optional[float] = None
+    control_dt_s: float = 0.01
 
 
 class AttitudeController:
@@ -101,12 +108,18 @@ class AttitudeController:
                 raise ValueError("need 0 < detumble_entry_rate < detumble_exit_rate")
             if params.detumble_time_constant_s <= 0.0:
                 raise ValueError("detumble_time_constant_s must be positive")
+            if (params.switch_filter_time_constant_s is not None
+                    and params.switch_filter_time_constant_s <= 0.0):
+                raise ValueError("switch_filter_time_constant_s must be positive")
+            if params.control_dt_s <= 0.0:
+                raise ValueError("control_dt_s must be positive")
             if (params.profile_max_rate is not None
                     and params.profile_max_rate >= params.detumble_exit_rate):
                 raise ValueError("profile_max_rate must be below detumble_exit_rate")
         # Mode state (two_phase only): starts in detumble; switches counts every change.
         self.phase = 'detumble' if params.control_type == 'two_phase' else None
         self.mode_switches = 0
+        self.switch_signal: Optional[float] = None
         if params.max_torque <= 0.0:
             raise ValueError("max_torque must be positive")
         self.params = params
@@ -221,6 +234,13 @@ class AttitudeController:
     def _update_phase(self, omega_current: np.ndarray) -> None:
         """Hysteresis between detumble and acquisition on the rate the controller is given."""
         rate = float(np.linalg.norm(omega_current))
+        tau_f = self.params.switch_filter_time_constant_s
+        if tau_f is None or self.switch_signal is None:
+            self.switch_signal = rate
+        else:
+            alpha = self.params.control_dt_s / (tau_f + self.params.control_dt_s)
+            self.switch_signal += alpha * (rate - self.switch_signal)
+        rate = self.switch_signal
         if self.phase == 'detumble' and rate <= self.params.detumble_entry_rate:
             self.phase = 'acquisition'
             self.mode_switches += 1

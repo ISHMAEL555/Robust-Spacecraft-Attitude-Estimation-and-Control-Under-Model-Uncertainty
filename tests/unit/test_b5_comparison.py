@@ -49,6 +49,9 @@ def _run(passed, det, settle, switches=1):
               "peak_wheel_torque_nm": True, "peak_wheel_momentum_utilization": True}
     return {"passed": passed, "checks": checks, "settling_time_s": settle,
             "detumble_time_s": det, "mode_switch_time_s": det, "mode_switches": switches,
+            "handover_time_s": det, "handover_true_rate_rad_s": None if det is None else 0.009,
+            "switch_signal_error_mean_rad_s": 1e-4, "switch_signal_error_std_rad_s": 1e-4,
+            "achieved_effort_fraction": 0.9, "in_band_effort_fraction": 0.99,
             "optimality_gap_ratio": None if settle is None else settle / 150.0,
             "plan_s": 150.0, "peak_wheel_momentum_use": 0.4, "peak_commanded_torque_nm": 0.1,
             "saturation_duty": 0.5, "peak_terminal_error_deg": 1.0}
@@ -74,3 +77,26 @@ def test_seed_ranges_are_checked_for_overlap():
         check_disjoint({"published": PUBLISHED_RANGE, "evaluation": seed_range(42 + 199000, 5)})
     with pytest.raises(ValueError, match="overlap"):
         check_disjoint({"design": design, "evaluation": seed_range(10050042, 10)})
+
+
+def test_detumble_metric_is_judged_at_the_handover_on_the_true_rate():
+    from scripts.run_b5_comparison import det_passed
+    run = _run(True, 90.0, 160.0)
+    assert det_passed(run, 150.0, 0.01)
+    assert not det_passed({**run, "handover_true_rate_rad_s": 0.0101}, 150.0, 0.01)
+    assert not det_passed({**run, "handover_time_s": 151.0}, 150.0, 0.01)
+    assert not det_passed({**run, "handover_time_s": None}, 150.0, 0.01)
+    failed_torque = {**run, "checks": {**run["checks"], "peak_commanded_torque_nm": False}}
+    assert not det_passed(failed_torque, 150.0, 0.01)
+
+
+def test_in_band_effort_removes_noise_the_wheels_cannot_deliver():
+    from scripts.run_b5_comparison import in_band_effort_fraction, low_pass
+    rng = np.random.default_rng(3)
+    dt, n = 0.01, 20000
+    slow = 0.05 * np.sin(2 * np.pi * 0.01 * np.arange(n) * dt)[:, None] * np.ones((1, 3))
+    command = slow + 0.03 * rng.standard_normal((n, 3))  # broadband noise in the command
+    delivered = low_pass(command, dt, 0.05)              # first-order wheel lag
+    raw = float(np.sum(delivered**2) / np.sum(command**2))
+    assert raw < 0.85                                    # the published metric fails
+    assert in_band_effort_fraction(command, delivered, dt) > 0.97
