@@ -2,7 +2,24 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [1.1.0] — Unreleased
+## [1.2.0] — Unreleased
+
+### Fixed
+
+- **Regression tests are portable.** The 1.0.0 regression test compared against golden arrays with exact equality. The unmodified 1.0.0 code does not reproduce those arrays exactly on other numpy/BLAS builds (numpy 2.5, Python 3.13: about 1e-16 in the states and 1e-10 in NEES), which is rounding, not a regression. The test now uses `assert_allclose` (`rtol=1e-12, atol=1e-14` for states, torques, wheel momentum and pointing error; `rtol=1e-8, atol=1e-10` for NEES, which divides by a small covariance and amplifies rounding). The 1.1.0 wording "bit-for-bit" described the development platform only; the claim is now "matches 1.0.0 to rounding". A separate same-process test requires `np.array_equal` between two identical runs, so hidden global state is still caught.
+- **Studies fail loudly instead of losing runs.** `scripts/parallel_runs.py` collects every worker exception, raises `RunFailure` naming the failed runs, and checks that the completed seeds equal the requested seeds. `run_e6_monte_carlo.py` uses it, and `run_research_campaigns.py` now exits with an error if a case fails or a case has the wrong run count. Output JSON records `n_requested`, `n_completed` and the seed list. Tested with a simulated worker failure.
+
+### Added
+
+- CI: Python 3.13 in the test matrix, and a `latest-dependencies` job that installs the newest numpy, scipy and matplotlib (`requirements.txt` stays unpinned). Neither has been run yet: only Python 3.11 and numpy 2.4.4 were available locally.
+- `docs/e6_monte_carlo_ablation/*.json` now include per-run records (see Notes).
+
+### Notes
+
+- The four ablation files in `docs/e6_monte_carlo_ablation/` were regenerated only to add per-run records and the completeness fields (`n_requested`, `n_completed`, `runs`). Before replacing them, every published field was compared with the regenerated one: all 100 seeds, `n_runs`, passes per criterion, and the distributions (median, 5th and 95th percentiles of settling time and terminal error) are identical, as are the inertia-sampling and rate-direction blocks. No result changed. The 200-run `docs/e6_monte_carlo.json` was not regenerated and is byte-identical to the 1.1.0 file.
+- Test count 211 → 222.
+
+## [1.1.0] — 2026-10-30
 
 ### Added
 

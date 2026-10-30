@@ -56,6 +56,8 @@
     },
     "sensor_noise": "new SeedSequence streams per run (seed = base + 1000 i)"
   },
+  "n_requested": 100,
+  "n_completed": 100,
   "seeds": [
     42,
     1042,
@@ -398,5 +400,1116 @@
         }
       }
     }
-  }
+  },
+  "runs": [
+    {
+      "seed": 42,
+      "passed": false,
+      "settling_time_s": 180.69,
+      "peak_terminal_error_deg": 1.224339458848929,
+      "peak_wheel_momentum_use": 0.49604301093913383,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 1042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.3910386856747317,
+      "peak_wheel_momentum_use": 0.45425221896621604,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 2042,
+      "passed": false,
+      "settling_time_s": 187.1,
+      "peak_terminal_error_deg": 1.4105901425270209,
+      "peak_wheel_momentum_use": 0.4971702204483469,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 3042,
+      "passed": false,
+      "settling_time_s": 183.52,
+      "peak_terminal_error_deg": 1.294191538525885,
+      "peak_wheel_momentum_use": 0.5158531614421473,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 4042,
+      "passed": false,
+      "settling_time_s": 182.84,
+      "peak_terminal_error_deg": 1.2751336700271807,
+      "peak_wheel_momentum_use": 0.5047403743944507,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 5042,
+      "passed": false,
+      "settling_time_s": 180.14000000000001,
+      "peak_terminal_error_deg": 1.2046009019362753,
+      "peak_wheel_momentum_use": 0.5009736696466931,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 6042,
+      "passed": false,
+      "settling_time_s": 185.79,
+      "peak_terminal_error_deg": 1.426888231159616,
+      "peak_wheel_momentum_use": 0.48854314081553457,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 7042,
+      "passed": true,
+      "settling_time_s": 154.61,
+      "peak_terminal_error_deg": 0.6295739341442035,
+      "peak_wheel_momentum_use": 0.5116837007738794,
+      "failed_criteria": []
+    },
+    {
+      "seed": 8042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 4.877970500054676,
+      "peak_wheel_momentum_use": 0.5958962778975265,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "final_angular_rate_norm_rad_s"
+      ]
+    },
+    {
+      "seed": 9042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.1162899752124478,
+      "peak_wheel_momentum_use": 0.5566187645259528,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 10042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.075201317807825,
+      "peak_wheel_momentum_use": 0.54444906153908,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 11042,
+      "passed": false,
+      "settling_time_s": 193.97,
+      "peak_terminal_error_deg": 1.6820867550291565,
+      "peak_wheel_momentum_use": 0.4919179569719406,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 12042,
+      "passed": false,
+      "settling_time_s": 190.58,
+      "peak_terminal_error_deg": 1.5808413509401407,
+      "peak_wheel_momentum_use": 0.4921610755133938,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 13042,
+      "passed": true,
+      "settling_time_s": 129.01,
+      "peak_terminal_error_deg": 0.2924380464826868,
+      "peak_wheel_momentum_use": 0.516435642175506,
+      "failed_criteria": []
+    },
+    {
+      "seed": 14042,
+      "passed": false,
+      "settling_time_s": 185.69,
+      "peak_terminal_error_deg": 1.3377988946649444,
+      "peak_wheel_momentum_use": 0.5072454011650251,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 15042,
+      "passed": true,
+      "settling_time_s": 177.66,
+      "peak_terminal_error_deg": 1.1518675977785835,
+      "peak_wheel_momentum_use": 0.5229240854928188,
+      "failed_criteria": []
+    },
+    {
+      "seed": 16042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 4.108210384077629,
+      "peak_wheel_momentum_use": 0.5586463995249835,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "final_angular_rate_norm_rad_s"
+      ]
+    },
+    {
+      "seed": 17042,
+      "passed": true,
+      "settling_time_s": 175.07,
+      "peak_terminal_error_deg": 1.0765662802651175,
+      "peak_wheel_momentum_use": 0.5037827052464051,
+      "failed_criteria": []
+    },
+    {
+      "seed": 18042,
+      "passed": false,
+      "settling_time_s": 190.48,
+      "peak_terminal_error_deg": 1.5388681329027052,
+      "peak_wheel_momentum_use": 0.4937094728223431,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 19042,
+      "passed": false,
+      "settling_time_s": 199.3,
+      "peak_terminal_error_deg": 2.0694344019868622,
+      "peak_wheel_momentum_use": 0.4638956659177983,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "achieved_effort_fraction"
+      ]
+    },
+    {
+      "seed": 20042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.1533230753422394,
+      "peak_wheel_momentum_use": 0.4761391900846498,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 21042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.12227418950055,
+      "peak_wheel_momentum_use": 0.469584125333068,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 22042,
+      "passed": false,
+      "settling_time_s": 186.76,
+      "peak_terminal_error_deg": 1.4082990030739388,
+      "peak_wheel_momentum_use": 0.49587361561975785,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 23042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.2555518007891835,
+      "peak_wheel_momentum_use": 0.5275570648942767,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 24042,
+      "passed": false,
+      "settling_time_s": 189.82,
+      "peak_terminal_error_deg": 1.558488069474213,
+      "peak_wheel_momentum_use": 0.4893871444372972,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 25042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.171142162579505,
+      "peak_wheel_momentum_use": 0.5315978855349093,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 26042,
+      "passed": false,
+      "settling_time_s": 194.76,
+      "peak_terminal_error_deg": 1.6700982031965346,
+      "peak_wheel_momentum_use": 0.5313062258247584,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 27042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.4386378833959728,
+      "peak_wheel_momentum_use": 0.5247081319190569,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 28042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.0271336097449413,
+      "peak_wheel_momentum_use": 0.5099994393295288,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 29042,
+      "passed": false,
+      "settling_time_s": 198.95000000000002,
+      "peak_terminal_error_deg": 1.9742613281239967,
+      "peak_wheel_momentum_use": 0.4778644209045207,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 30042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.5765352045795127,
+      "peak_wheel_momentum_use": 0.5574072819898014,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 31042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 4.398166231004152,
+      "peak_wheel_momentum_use": 0.6117294302224249,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "final_angular_rate_norm_rad_s"
+      ]
+    },
+    {
+      "seed": 32042,
+      "passed": false,
+      "settling_time_s": 199.54,
+      "peak_terminal_error_deg": 2.1009584152491496,
+      "peak_wheel_momentum_use": 0.46216031094516213,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "achieved_effort_fraction"
+      ]
+    },
+    {
+      "seed": 33042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 3.6828638831145533,
+      "peak_wheel_momentum_use": 0.5689834230525612,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "final_angular_rate_norm_rad_s"
+      ]
+    },
+    {
+      "seed": 34042,
+      "passed": false,
+      "settling_time_s": 199.02,
+      "peak_terminal_error_deg": 2.05877583929931,
+      "peak_wheel_momentum_use": 0.4643594695567578,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "achieved_effort_fraction"
+      ]
+    },
+    {
+      "seed": 35042,
+      "passed": false,
+      "settling_time_s": 199.38,
+      "peak_terminal_error_deg": 1.7793898516373567,
+      "peak_wheel_momentum_use": 0.5219649207290117,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 36042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 1.9108535023671949,
+      "peak_wheel_momentum_use": 0.5438394315854429,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 37042,
+      "passed": false,
+      "settling_time_s": 193.05,
+      "peak_terminal_error_deg": 1.607195692690665,
+      "peak_wheel_momentum_use": 0.4878634043954036,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 38042,
+      "passed": false,
+      "settling_time_s": 187.62,
+      "peak_terminal_error_deg": 1.4323514164870743,
+      "peak_wheel_momentum_use": 0.4987247508116292,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 39042,
+      "passed": false,
+      "settling_time_s": 196.58,
+      "peak_terminal_error_deg": 1.8991701347150158,
+      "peak_wheel_momentum_use": 0.47336253771578934,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 40042,
+      "passed": false,
+      "settling_time_s": 197.32,
+      "peak_terminal_error_deg": 1.9616982422735199,
+      "peak_wheel_momentum_use": 0.46846077780503076,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "achieved_effort_fraction"
+      ]
+    },
+    {
+      "seed": 41042,
+      "passed": false,
+      "settling_time_s": 190.32,
+      "peak_terminal_error_deg": 1.49608976978756,
+      "peak_wheel_momentum_use": 0.5401040681985255,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 42042,
+      "passed": true,
+      "settling_time_s": 179.61,
+      "peak_terminal_error_deg": 1.1910928436937354,
+      "peak_wheel_momentum_use": 0.5136620949279769,
+      "failed_criteria": []
+    },
+    {
+      "seed": 43042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 1.9393582409274546,
+      "peak_wheel_momentum_use": 0.488917472123508,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 44042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.57391930586836,
+      "peak_wheel_momentum_use": 0.44635925356585443,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 45042,
+      "passed": false,
+      "settling_time_s": 184.27,
+      "peak_terminal_error_deg": 1.3534542317380973,
+      "peak_wheel_momentum_use": 0.4912457253019361,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 46042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.286892675090496,
+      "peak_wheel_momentum_use": 0.48495256249769614,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 47042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.440081650781896,
+      "peak_wheel_momentum_use": 0.4509401784644404,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 48042,
+      "passed": false,
+      "settling_time_s": 190.42000000000002,
+      "peak_terminal_error_deg": 1.6407381026199201,
+      "peak_wheel_momentum_use": 0.48036195864469083,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 49042,
+      "passed": false,
+      "settling_time_s": 189.45000000000002,
+      "peak_terminal_error_deg": 1.4878208178797465,
+      "peak_wheel_momentum_use": 0.5013602122152525,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 50042,
+      "passed": false,
+      "settling_time_s": 192.91,
+      "peak_terminal_error_deg": 1.7123695727109984,
+      "peak_wheel_momentum_use": 0.4811789178776357,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 51042,
+      "passed": false,
+      "settling_time_s": 190.38,
+      "peak_terminal_error_deg": 1.5955256778908278,
+      "peak_wheel_momentum_use": 0.48822990138304023,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 52042,
+      "passed": false,
+      "settling_time_s": 183.25,
+      "peak_terminal_error_deg": 1.3088363255078124,
+      "peak_wheel_momentum_use": 0.4940848874459448,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 53042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.0454158872106585,
+      "peak_wheel_momentum_use": 0.5441796509568768,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 54042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.4577455368492966,
+      "peak_wheel_momentum_use": 0.5002079467757566,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 55042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.285700188779291,
+      "peak_wheel_momentum_use": 0.48580762996575305,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 56042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 1.9735333350248458,
+      "peak_wheel_momentum_use": 0.49781683402019167,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 57042,
+      "passed": false,
+      "settling_time_s": 195.0,
+      "peak_terminal_error_deg": 1.6487037521283254,
+      "peak_wheel_momentum_use": 0.51014355002554,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 58042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.0011180947411966,
+      "peak_wheel_momentum_use": 0.5313702887259263,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 59042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.059403127095307,
+      "peak_wheel_momentum_use": 0.4953801411443509,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 60042,
+      "passed": false,
+      "settling_time_s": 187.77,
+      "peak_terminal_error_deg": 1.4857623900256707,
+      "peak_wheel_momentum_use": 0.48835790082655206,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 61042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 1.8995495844148145,
+      "peak_wheel_momentum_use": 0.4929424268527579,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 62042,
+      "passed": false,
+      "settling_time_s": 193.93,
+      "peak_terminal_error_deg": 1.749397216306048,
+      "peak_wheel_momentum_use": 0.4815440256138547,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 63042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.180900892424535,
+      "peak_wheel_momentum_use": 0.5543763225898628,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 64042,
+      "passed": false,
+      "settling_time_s": 189.79,
+      "peak_terminal_error_deg": 1.4329433220957752,
+      "peak_wheel_momentum_use": 0.5191579194875201,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 65042,
+      "passed": false,
+      "settling_time_s": 189.93,
+      "peak_terminal_error_deg": 1.6266272025282664,
+      "peak_wheel_momentum_use": 0.48146844501011216,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 66042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.638401154444099,
+      "peak_wheel_momentum_use": 0.5215742053290087,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 67042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.3175829029152157,
+      "peak_wheel_momentum_use": 0.4498748890060359,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "achieved_effort_fraction"
+      ]
+    },
+    {
+      "seed": 68042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.296880136263393,
+      "peak_wheel_momentum_use": 0.45291501556942054,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "achieved_effort_fraction"
+      ]
+    },
+    {
+      "seed": 69042,
+      "passed": true,
+      "settling_time_s": 120.15,
+      "peak_terminal_error_deg": 0.31600831760301024,
+      "peak_wheel_momentum_use": 0.5240418756454143,
+      "failed_criteria": []
+    },
+    {
+      "seed": 70042,
+      "passed": true,
+      "settling_time_s": 174.16,
+      "peak_terminal_error_deg": 1.0216035933157932,
+      "peak_wheel_momentum_use": 0.5012234005256151,
+      "failed_criteria": []
+    },
+    {
+      "seed": 71042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.1971114634918005,
+      "peak_wheel_momentum_use": 0.4564536229978612,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "achieved_effort_fraction"
+      ]
+    },
+    {
+      "seed": 72042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 4.779368845173581,
+      "peak_wheel_momentum_use": 0.5485717571817788,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "final_angular_rate_norm_rad_s"
+      ]
+    },
+    {
+      "seed": 73042,
+      "passed": false,
+      "settling_time_s": 192.5,
+      "peak_terminal_error_deg": 1.6632393728424966,
+      "peak_wheel_momentum_use": 0.48513901119294306,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 74042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.2050111108857346,
+      "peak_wheel_momentum_use": 0.458873273565595,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad",
+        "achieved_effort_fraction"
+      ]
+    },
+    {
+      "seed": 75042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.1363751962526933,
+      "peak_wheel_momentum_use": 0.4768897709790242,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 76042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.8754088484561877,
+      "peak_wheel_momentum_use": 0.5662639860145056,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 77042,
+      "passed": false,
+      "settling_time_s": 187.12,
+      "peak_terminal_error_deg": 1.4329367181508892,
+      "peak_wheel_momentum_use": 0.4940938514182392,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 78042,
+      "passed": false,
+      "settling_time_s": 196.8,
+      "peak_terminal_error_deg": 1.7791129391711091,
+      "peak_wheel_momentum_use": 0.4870511846246214,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 79042,
+      "passed": true,
+      "settling_time_s": 178.85,
+      "peak_terminal_error_deg": 1.1637638551576865,
+      "peak_wheel_momentum_use": 0.49772634566377266,
+      "failed_criteria": []
+    },
+    {
+      "seed": 80042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.67391844647561,
+      "peak_wheel_momentum_use": 0.4889851590456491,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 81042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 1.9762098134430186,
+      "peak_wheel_momentum_use": 0.4983257728270064,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 82042,
+      "passed": false,
+      "settling_time_s": 184.32,
+      "peak_terminal_error_deg": 1.3158200582220663,
+      "peak_wheel_momentum_use": 0.5058077906567506,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 83042,
+      "passed": true,
+      "settling_time_s": 167.62,
+      "peak_terminal_error_deg": 0.9117567811807544,
+      "peak_wheel_momentum_use": 0.510657139186553,
+      "failed_criteria": []
+    },
+    {
+      "seed": 84042,
+      "passed": true,
+      "settling_time_s": 158.21,
+      "peak_terminal_error_deg": 0.760913877282006,
+      "peak_wheel_momentum_use": 0.5164433610889761,
+      "failed_criteria": []
+    },
+    {
+      "seed": 85042,
+      "passed": true,
+      "settling_time_s": 174.02,
+      "peak_terminal_error_deg": 1.031292184693905,
+      "peak_wheel_momentum_use": 0.5024437178020805,
+      "failed_criteria": []
+    },
+    {
+      "seed": 86042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.5455853606146697,
+      "peak_wheel_momentum_use": 0.4870029777530499,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 87042,
+      "passed": false,
+      "settling_time_s": 191.16,
+      "peak_terminal_error_deg": 1.5190980406281223,
+      "peak_wheel_momentum_use": 0.50631688118391,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 88042,
+      "passed": false,
+      "settling_time_s": 183.5,
+      "peak_terminal_error_deg": 1.3056167122146838,
+      "peak_wheel_momentum_use": 0.5394054653806512,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 89042,
+      "passed": false,
+      "settling_time_s": 190.46,
+      "peak_terminal_error_deg": 1.6039169343239785,
+      "peak_wheel_momentum_use": 0.4831082454526835,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 90042,
+      "passed": true,
+      "settling_time_s": 174.69,
+      "peak_terminal_error_deg": 1.0372841122521088,
+      "peak_wheel_momentum_use": 0.49803817677669915,
+      "failed_criteria": []
+    },
+    {
+      "seed": 91042,
+      "passed": true,
+      "settling_time_s": 165.82,
+      "peak_terminal_error_deg": 0.8477780567178916,
+      "peak_wheel_momentum_use": 0.5079209471832609,
+      "failed_criteria": []
+    },
+    {
+      "seed": 92042,
+      "passed": false,
+      "settling_time_s": 197.36,
+      "peak_terminal_error_deg": 1.9165901624103476,
+      "peak_wheel_momentum_use": 0.4725949336578215,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 93042,
+      "passed": false,
+      "settling_time_s": 199.63,
+      "peak_terminal_error_deg": 1.8229302460713113,
+      "peak_wheel_momentum_use": 0.49699525592648197,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 94042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.1843222905422257,
+      "peak_wheel_momentum_use": 0.47213537030341407,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 95042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 2.1252456168456364,
+      "peak_wheel_momentum_use": 0.47666072096187334,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s",
+        "pointing_peak_final_20s_rad"
+      ]
+    },
+    {
+      "seed": 96042,
+      "passed": false,
+      "settling_time_s": 185.35,
+      "peak_terminal_error_deg": 1.3990770772795293,
+      "peak_wheel_momentum_use": 0.4906700769720763,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 97042,
+      "passed": true,
+      "settling_time_s": 179.47,
+      "peak_terminal_error_deg": 1.1829610934184214,
+      "peak_wheel_momentum_use": 0.49623904370073585,
+      "failed_criteria": []
+    },
+    {
+      "seed": 98042,
+      "passed": false,
+      "settling_time_s": 181.08,
+      "peak_terminal_error_deg": 1.2279297431949792,
+      "peak_wheel_momentum_use": 0.5148634864405867,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    },
+    {
+      "seed": 99042,
+      "passed": false,
+      "settling_time_s": null,
+      "peak_terminal_error_deg": 1.986420124902723,
+      "peak_wheel_momentum_use": 0.5316397924215954,
+      "failed_criteria": [
+        "settling_time_2pct_s",
+        "settling_hold_duration_s"
+      ]
+    }
+  ]
 }

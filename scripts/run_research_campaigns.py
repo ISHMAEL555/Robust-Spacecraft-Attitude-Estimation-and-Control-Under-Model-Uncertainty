@@ -19,6 +19,7 @@ from scipy import stats
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from scripts.parallel_runs import completeness
 from scripts.run_experiment import (
     compute_consistency_stats,
     load_config,
@@ -223,7 +224,10 @@ def _execute_case(case: Dict[str, Any], n_runs: int, output_dir: Path) -> Dict[s
     """Run one case, save its compressed traces, and return its summary row."""
     results = run_case(case, n_runs)
     save_results(results, str(output_dir / f"{case['campaign'].lower()}_{case['name']}.npz"))
-    return _summary_row(case, results)
+    row = _summary_row(case, results)
+    seeds_requested = [case["config"].seed + 1000 * index for index in range(n_runs)]
+    row.update(completeness(n_runs, seeds_requested, row["seeds"]))
+    return row
 
 
 def _run_mean_ci95(values: List[float]) -> tuple[float | None, float | None, float | None]:
@@ -461,11 +465,20 @@ def main() -> None:
                 pool.submit(_execute_case, case, args.runs, args.output_dir): case
                 for case in pending
             }
+            failed = []
             for future in as_completed(futures):
                 case = futures[future]
-                rows_by_key[(case["campaign"], case["name"])] = future.result()
+                try:
+                    rows_by_key[(case["campaign"], case["name"])] = future.result()
+                except BaseException as error:  # keep going so finished cases are saved
+                    failed.append(f"{case['campaign']} {case['name']}: "
+                                  f"{type(error).__name__}: {error}")
+                    continue
                 _write_summaries(list(rows_by_key.values()), args.output_dir)
                 print(f"completed {case['campaign']} {case['name']}", flush=True)
+            if failed:
+                raise SystemExit(f"{len(failed)} of {len(pending)} campaign cases failed:\n  "
+                                 + "\n  ".join(failed))
     else:
         for case in pending:
             rows_by_key[(case["campaign"], case["name"])] = _execute_case(
@@ -474,6 +487,11 @@ def main() -> None:
             _write_summaries(list(rows_by_key.values()), args.output_dir)
 
     rows = list(rows_by_key.values())
+    expected = {(c["campaign"], c["name"]) for c in cases}
+    missing = sorted(expected - set(rows_by_key))
+    wrong = sorted(k for k in expected & set(rows_by_key) if rows_by_key[k]["runs"] != args.runs)
+    if missing or wrong:
+        raise SystemExit(f"campaign incomplete: missing cases {missing}, wrong run counts {wrong}")
     _write_summaries(rows, args.output_dir)
     for campaign in sorted({row["campaign"] for row in rows}, key=CAMPAIGNS.index):
         _write_campaign_plot(rows, campaign, args.output_dir)

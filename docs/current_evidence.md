@@ -308,7 +308,7 @@ The dispersion ranges are project choices, not a mission environment, and the co
 
 **The deterministic pass does not hold under dispersions.** Only the pointing criteria fail. Settling time fails most often (199 of 200 runs; the hold-duration criterion is the same event, because a 200 s run holds ≥ 20 s exactly when it settles by 180 s). The failures are not marginal: the median run is still 16° off in the last 20 s of the run. Actuator limits are never violated.
 
-**Attribution (100 runs each, one dispersion at a time).** Files in [`e6_monte_carlo_ablation/`](e6_monte_carlo_ablation/).
+**Attribution (100 runs each, one dispersion at a time).** Files in [`e6_monte_carlo_ablation/`](e6_monte_carlo_ablation/), each with per-run records and `n_requested = n_completed = 100` (regenerated in 1.2.0 to add these; all results unchanged).
 
 | Dispersed | All-criteria pass | Median settling |
 |---|---:|---:|
@@ -348,7 +348,7 @@ The χ² approximation is liberal at this sample size, so a single p-value below
 
 ```powershell
 python -m pip install -r requirements.txt
-python -m pytest                                   # 211 tests
+python -m pytest                                   # 222 tests
 
 # Campaign (33 cases x 10 runs); --jobs parallelizes cases, results do not depend on it
 python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --jobs 8 --output-dir reports/research_campaigns/e0_e7_refresh

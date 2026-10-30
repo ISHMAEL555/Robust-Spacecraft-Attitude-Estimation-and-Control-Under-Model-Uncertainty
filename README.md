@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml/badge.svg)](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.12-blue)
-![Tests](https://img.shields.io/badge/tests-211%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-222%20passing-brightgreen)
 ![Release](https://img.shields.io/badge/release-1.1.0-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -137,7 +137,7 @@ The full equations, step timing, and metric definitions are in the [system desig
 | Pointing benchmark E6 | Analysis: deterministic run | Pass |
 | Pointing benchmark E6 under dispersions | Analysis: 200-run Monte Carlo, Clopper–Pearson intervals | **Fails**: P(pass) = 0.005 |
 
-211 automated tests run in CI on Python 3.10 and 3.12. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
+222 automated tests run in CI on Python 3.10, 3.12 and 3.13, plus a job with the newest numpy/scipy/matplotlib (3.13 and the latest-dependencies job are configured but not yet run). Regression tests against the 1.0.0 output use floating-point tolerances, not exact equality; a separate test requires identical repeat runs. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
 
 ---
 
@@ -289,7 +289,7 @@ Requires Python 3.10 or later.
 git clone https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty.git
 cd Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty
 python -m pip install -r requirements.txt
-python -m pytest                                  # 211 tests, about 1 min
+python -m pytest                                  # 222 tests, about 1 min
 ```
 
 | Task | Command | Runtime |
@@ -306,6 +306,7 @@ python -m pytest                                  # 211 tests, about 1 min
 **Reproducibility controls**
 
 - Each run seed is split with `SeedSequence` into independent streams for filter initialization, gyro, and star tracker. No global random state is used, and results do not depend on the number of parallel workers.
+- The E6 Monte Carlo and the campaign runner stop with an error if any run fails, and their JSON records `n_requested`, `n_completed` and the seeds.
 - Campaign results carry a source-code fingerprint, so `--resume` cannot reuse results from older code.
 - The [evidence manifest](docs/e0_e7_campaign_metadata.json) records SHA-256 hashes of every source file, configuration, document, and figure, plus the git commit.
 

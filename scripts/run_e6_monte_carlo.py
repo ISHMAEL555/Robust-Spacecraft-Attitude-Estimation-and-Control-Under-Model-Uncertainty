@@ -19,7 +19,6 @@ depend on ``--jobs``. Thresholds are project-defined, not mission requirements.
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import replace
 import json
 import os
@@ -40,6 +39,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 
+from scripts.parallel_runs import completeness, run_tasks
 from scripts.run_experiment import (
     compute_performance_metrics,
     evaluate_e6_project_benchmark,
@@ -320,6 +320,13 @@ def make_figure(runs: List[Dict[str, Any]], report: Dict[str, Any], path: Path) 
     plt.close(fig)
 
 
+def execute_runs(tasks: List[Dict[str, Any]], jobs: int = 1) -> List[Dict[str, Any]]:
+    """Run every task; raise if any run fails or the completed seeds differ from the request."""
+    runs = run_tasks(run_one, tasks, jobs, label="run")
+    completeness(len(tasks), [t["seed"] for t in tasks], [r["seed"] for r in runs])
+    return runs
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=int, default=200)
@@ -351,11 +358,7 @@ def main() -> None:
               "inertia_sigma": args.inertia_sigma, "duration": args.duration}
              for i in range(args.runs)]
     started = wall_clock.time()
-    if args.jobs > 1:
-        with ProcessPoolExecutor(max_workers=args.jobs) as pool:
-            runs = list(pool.map(run_one, tasks))
-    else:
-        runs = [run_one(t) for t in tasks]
+    runs = execute_runs(tasks, args.jobs)
     elapsed = wall_clock.time() - started
 
     report = aggregate(runs)
@@ -379,7 +382,7 @@ def main() -> None:
                         "note": "the E6 filter is gyro-driven and does not use inertia"},
             "sensor_noise": "new SeedSequence streams per run (seed = base + 1000 i)",
         },
-        "seeds": [t["seed"] for t in tasks],
+        **completeness(len(tasks), [t["seed"] for t in tasks], [r["seed"] for r in runs]),
         **report,
         "runs": [{"seed": r["seed"], "passed": r["passed"],
                   "settling_time_s": (r["settling_time_s"]
