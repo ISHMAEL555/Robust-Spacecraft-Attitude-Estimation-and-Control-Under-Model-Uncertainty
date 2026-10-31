@@ -19,6 +19,10 @@ All notable changes to this project are documented here. Versions follow [Semant
 - CI: Python 3.13 in the test matrix, and a `latest-dependencies` job that installs the newest numpy, scipy and matplotlib (`requirements.txt` stays unpinned). Neither has been run yet: only Python 3.11 and numpy 2.4.4 were available locally.
 - `docs/e6_monte_carlo_ablation/*.json` now include per-run records (see Notes).
 
+### Changed
+
+- README §1: the "single deterministic pass can hide a fragile design" conclusion is replaced by the B5 result (no frozen controller met the 180 s end-to-end criterion; the split detumble and acquisition requirements are met by the two-phase mode manager; the split is pending owner approval). New README §5.6 on the mode manager and GNC-DET-001 / GNC-ACQ-001; the outdated gain-redesign follow-up is removed. R-02 is Medium in both the README and the traceability register.
+
 ### Corrected findings
 
 - **The "180 s criterion is infeasible for the dispersion envelope" hypothesis is not supported by the proven bounds.** The momentum lower bound is at most 108.9 s for every one of the 200 runs (0 above 180 s), and the unsaturated linear poles of the shipped gains (slow pole −0.027 to −0.029 s⁻¹, 133.6 to 143.7 s) would also settle all 200 runs inside 180 s, so they do not explain the 199 failures either. What the analysis does show is a tight budget: stopping the initial momentum alone takes a median 81 s, and an idealised stop-then-slew plan takes a median 170 s (143 of 200 runs inside 180 s, 53 undetermined between that plan and the optimistic single-axis estimate). An untuned closed-loop `rate_profile` controller settled within 180 s in 2 of 20 runs, so reachability in the envelope is not demonstrated. The README conclusion will be rewritten after the controller comparison (B5).
