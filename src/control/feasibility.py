@@ -51,6 +51,21 @@ def momentum_lower_bound_s(inertia: np.ndarray, omega0: np.ndarray, tau_max: flo
     return float(np.linalg.norm(h0) / authority)
 
 
+def momentum_lower_bound_to_rate_s(inertia: np.ndarray, omega0: np.ndarray, end_rate: float,
+                                   tau_max: float) -> float:
+    """Proven lower bound on the time to bring the true rate down to ``end_rate``.
+
+    From ``|J w(t)| >= |J w0| - tau_max t`` and ``|J w| <= lambda_max(J) |w|``: reaching
+    ``|w| <= end_rate`` needs ``t >= (|J w0| - lambda_max end_rate) / tau_max``. Use the
+    run's own (dispersed) truth inertia and the rate actually reached, so the bound has
+    the same end condition as the event it is compared with.
+    """
+    inertia = np.asarray(inertia, dtype=float)
+    h0 = float(np.linalg.norm(inertia @ np.asarray(omega0, dtype=float)))
+    lam = float(np.linalg.eigvalsh(inertia).max())
+    return max(0.0, (h0 - lam * float(end_rate)) / tau_max)
+
+
 def slew_time_rest_to_rest_s(angle_rad: float, j_eff: float, tau_max: float) -> float:
     """Bang-bang rest-to-rest time about one axis: ``2 sqrt(theta J_eff / tau_max)``."""
     if angle_rad < 0.0 or j_eff <= 0.0 or tau_max <= 0.0:

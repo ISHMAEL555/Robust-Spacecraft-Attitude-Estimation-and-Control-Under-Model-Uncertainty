@@ -3,12 +3,19 @@
     "pd_zeta08": {
       "n_runs": 200,
       "n_not_settled": 0,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 0,
+        "median": null,
+        "p05": null,
+        "p95": null
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.0,
         "p05": 0.0,
         "p95": 0.0012541666666666686
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 200,
         "median": 1.9444633874572776,
@@ -31,12 +38,19 @@
     "rate_profile": {
       "n_runs": 200,
       "n_not_settled": 0,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 0,
+        "median": null,
+        "p05": null,
+        "p95": null
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.0,
         "p05": 0.0,
         "p95": 0.0012541666666666686
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 200,
         "median": 1.3496551278288322,
@@ -59,12 +73,19 @@
     "two_phase": {
       "n_runs": 200,
       "n_not_settled": 0,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 0,
+        "median": null,
+        "p05": null,
+        "p95": null
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.6664543524416153,
         "p05": 0.5319624999999997,
         "p95": 0.8504407713498638
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 200,
         "median": 1.466372448692573,
@@ -87,12 +108,19 @@
     "two_phase_ff": {
       "n_runs": 200,
       "n_not_settled": 0,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 0,
+        "median": null,
+        "p05": null,
+        "p95": null
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.6664543524416153,
         "p05": 0.5319624999999997,
         "p95": 0.8504407713498638
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 200,
         "median": 1.4562756520769455,
@@ -117,12 +145,19 @@
     "pd_zeta08": {
       "n_runs": 200,
       "n_not_settled": 0,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 0,
+        "median": null,
+        "p05": null,
+        "p95": null
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.0,
         "p05": 0.0,
         "p95": 5.876736687523928
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 200,
         "median": 1.3108290083601966,
@@ -145,12 +180,19 @@
     "rate_profile": {
       "n_runs": 200,
       "n_not_settled": 0,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 0,
+        "median": null,
+        "p05": null,
+        "p95": null
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.0,
         "p05": 0.0,
         "p95": 5.041749138041105
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 200,
         "median": 0.9779260405336855,
@@ -173,12 +215,19 @@
     "two_phase": {
       "n_runs": 200,
       "n_not_settled": 0,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 0,
+        "median": null,
+        "p05": null,
+        "p95": null
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.6664543524416153,
         "p05": 0.5319624999999997,
         "p95": 0.8504407713498638
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 200,
         "median": 1.3028735057566092,
@@ -201,12 +250,19 @@
     "two_phase_ff": {
       "n_runs": 200,
       "n_not_settled": 0,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 0,
+        "median": null,
+        "p05": null,
+        "p95": null
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.6664543524416153,
         "p05": 0.5319624999999997,
         "p95": 0.8504407713498638
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 200,
         "median": 1.3033941890976954,
@@ -231,12 +287,19 @@
     "pd_zeta08": {
       "n_runs": 200,
       "n_not_settled": 197,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 195,
+        "median": 1.6466240092942157,
+        "p05": 1.1058052718207707,
+        "p95": 2.8891669247864513
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 195,
         "median": 1.4315629742033886,
         "p05": 0.9308308432786169,
         "p95": 2.4314425934999777
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 3,
         "median": 1.0513329449936677,
@@ -259,12 +322,19 @@
     "rate_profile": {
       "n_runs": 200,
       "n_not_settled": 141,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 194,
+        "median": 1.681287309428152,
+        "p05": 1.1216999765031797,
+        "p95": 2.7827824965457655
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 194,
         "median": 1.4372998676539814,
         "p05": 0.9433441228680204,
         "p95": 2.3410458350007097
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 59,
         "median": 0.8954850658772722,
@@ -287,12 +357,19 @@
     "two_phase": {
       "n_runs": 200,
       "n_not_settled": 192,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 200,
+        "median": 1.153096633811547,
+        "p05": 1.0777201000822296,
+        "p95": 1.2671689367019423
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.9879465020576467,
         "p05": 0.9705122699386856,
         "p95": 1.0743751128808272
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 8,
         "median": 1.4357097192848827,
@@ -315,12 +392,19 @@
     "two_phase_ff": {
       "n_runs": 200,
       "n_not_settled": 183,
-      "detumble_phase_gap": {
+      "detumble_ratio_to_momentum_bound": {
+        "n": 200,
+        "median": 1.153096633811547,
+        "p05": 1.0777201000822296,
+        "p95": 1.2671689367019423
+      },
+      "detumble_ratio_to_plan_stop": {
         "n": 200,
         "median": 0.9879465020576467,
         "p05": 0.9705122699386856,
         "p95": 1.0743751128808272
       },
+      "detumble_runs_below_bound": 0,
       "acquisition_phase_gap": {
         "n": 17,
         "median": 1.3994671657813227,

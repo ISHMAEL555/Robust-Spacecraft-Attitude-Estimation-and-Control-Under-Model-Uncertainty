@@ -279,3 +279,27 @@ def test_demonstration_selection_is_unique_ordered_and_only_estimate_feasible():
     assert all(rows[i]["feasibility_estimate_s"] <= 180.0 for i in picks)
     assert [rows[i]["stop_then_slew_plan_s"] for i in picks] == sorted(
         rows[i]["stop_then_slew_plan_s"] for i in picks)
+
+
+def test_momentum_bound_to_a_rate_holds_in_simulation_and_reduces_to_the_full_bound():
+    from src.control.feasibility import momentum_lower_bound_to_rate_s
+    omega = np.array([0.04, -0.07, 0.05])
+    assert momentum_lower_bound_to_rate_s(J, omega, 0.0, 0.1) == pytest.approx(
+        momentum_lower_bound_s(J, omega, 0.1))
+    assert momentum_lower_bound_to_rate_s(J, omega, 1.0, 0.1) == 0.0
+    # Saturated braking (the fastest the simulation can do) never reaches a rate sooner.
+    base = load_config(str(ROOT / "config" / "closed_loop.yaml"))
+    seed = 3042
+    conditions = sample_initial_conditions(seed)
+    config = build_config(base, seed, conditions, ("attitude", "rate", "inertia"), 0.05)
+    config = replace(config, duration=90.0, controller={
+        **config.controller, "state_feedback": "truth", "K_omega": 1e6, "K_q": 1e-6})
+    results = run_simulation(config)
+    inertia = np.asarray(results["inertia_true_sampled"], dtype=float)
+    rate = np.linalg.norm(results["omega_true"], axis=1)
+    for target in (0.06, 0.03, 0.0085):
+        reached = np.nonzero(rate <= target)[0]
+        assert reached.size, target
+        time = results["time"][reached[0]]
+        bound = momentum_lower_bound_to_rate_s(inertia, conditions["rate"], rate[reached[0]], 0.1)
+        assert time >= bound - 1e-9

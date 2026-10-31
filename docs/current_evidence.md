@@ -400,18 +400,20 @@ All three axes are overdamped. The reviewer's hand estimate for x (ζ ≈ 1.4, s
 | | (iii) | **196/200** [0.950, 0.995] | – | 118.4 [84.4, 143.5] s | 0 | effort (3), terminal error (1) |
 | | (iv) | 195/200 [0.943, 0.992] | – | 118.6 [83.7, 143.1] s | 0 | effort (3), terminal error (2) |
 
-**Optimality gap per run** (achieved ÷ constructive plan; median [5th, 95th]; detumble phase = handover ÷ plan stopping time, acquisition phase = (settling − handover) ÷ plan slew time; only settled runs have an acquisition gap):
+**Detumble against the proven bound.** An earlier version of this table reported the detumble as 0.99 [0.97, 1.07] × "the bound", which would mean some runs beat a proven bound. They do not: that ratio was against the constructive plan's stopping time, which is not the bound and has a different end condition (the plan stops to 1e-4 rad/s, median 82.6 s, while the handover happens at a true rate of about 0.0085 rad/s). Against the momentum bound to zero rate the ratio is 1.027 [0.981, 1.097], still below 1 in some runs for the same reason: stopping to zero is a later event than the handover. The dispersed inertia was already used in both, so it is not the cause. The proven bound with the same end condition, (‖J ω₀‖ − λ_max(J) ‖ω_handover‖)/τ_max with the run's own truth inertia and its true rate at handover (`momentum_lower_bound_to_rate_s`, tested against saturated braking in simulation), gives the ratios below, with no run below 1.
 
-| Scenario | Controller | Detumble phase | Acquisition phase | End to end |
+**Ratios per run** (median [5th, 95th]). Detumble: handover ÷ proven momentum bound to the handover rate. Acquisition: (settling − handover) ÷ the constructive plan's slew time. End to end: settling ÷ constructive plan time. The constructive plan is **not** a lower bound; ratios below 1 occur. Only settled runs have acquisition and end-to-end ratios.
+
+| Scenario | Controller | Detumble ÷ momentum bound | Acquisition, ratio to constructive plan | End to end, ratio to constructive plan |
 |---|---|---:|---:|---:|
-| Envelope | (i) | 1.43 [0.93, 2.43] | 1.05 (n = 3) | 1.10 (n = 3) |
-| | (ii) | 1.44 [0.94, 2.34] | 0.90 [0.28, 1.39] (n = 59) | 1.11 [0.81, 1.25] (n = 59) |
-| | (iii) | **0.99 [0.97, 1.07]** | 1.44 [1.28, 1.75] (n = 8) | 1.17 [1.11, 1.32] (n = 8) |
-| | (iv) | **0.99 [0.97, 1.07]** | 1.40 [1.28, 1.65] (n = 17) | 1.19 [1.09, 1.32] (n = 17) |
+| Envelope | (i) | 1.65 [1.11, 2.89] | 1.05 (n = 3) | 1.10 (n = 3) |
+| | (ii) | 1.68 [1.12, 2.78] | 0.90 [0.28, 1.39] (n = 59) | 1.11 [0.81, 1.25] (n = 59) |
+| | (iii) | **1.15 [1.08, 1.27]** | 1.44 [1.28, 1.75] (n = 8) | 1.17 [1.11, 1.32] (n = 8) |
+| | (iv) | **1.15 [1.08, 1.27]** | 1.40 [1.28, 1.65] (n = 17) | 1.19 [1.09, 1.32] (n = 17) |
 | ACQ, 60° axis | (i) / (ii) / (iii) / (iv) | – | 1.94 / 1.35 / 1.47 / 1.46 | 1.73 / 1.20 / 1.38 / 1.37 |
 | ACQ, drifted | (i) / (ii) / (iii) / (iv) | – | 1.31 / 0.98 / 1.30 / 1.30 | 1.22 / 0.91 / 1.25 / 1.24 |
 
-Gaps below 1 are possible because the plan is not optimal: it stops the body before it turns. The envelope acquisition and end-to-end gaps describe only the runs that settled, a selected minority.
+Ratios below 1 against the constructive plan are possible because the plan is not optimal: it stops the body before it turns. The envelope acquisition and end-to-end ratios describe only the runs that settled, a selected minority.
 
 **Mode switching, wheels and saturation.** The mode manager switched exactly once in every one of the 1,200 two-phase runs (no chattering); handover in the envelope at 82.0 s median [66.1, 98.5]; in acquisition at 5.2 s (the filter falling from its 0.15 rad/s start). Peak wheel momentum use stayed below 53% everywhere (envelope median 39–41%, acquisition 8–15%), and the peak commanded torque never exceeded 0.1 N·m. Commanded-torque saturation duty (median): envelope 69% (i), 97% (ii), 90% (iii, iv); acquisition 8–14% (i), 17–29% (ii), 23–37% (iii, iv).
 
@@ -419,7 +421,7 @@ Gaps below 1 are possible because the plan is not optimal: it stops the body bef
 
 **What the evaluation shows**
 
-- **Each mode, sized on its own, is met with large margin by the mode manager.** GNC-DET-001: 200/200, with the detumble at 0.99× the stopping plan, i.e. at the proven momentum bound. GNC-ACQ-001: 200/200 (60° axis) and 196/200 (drifted); its acquisition runs at 1.3–1.5× the rest-to-rest plan.
+- **Each mode, sized on its own, is met with large margin by the mode manager.** GNC-DET-001: 200/200, with the handover at 1.15× [1.08, 1.27] the proven momentum bound to the same rate. GNC-ACQ-001: 200/200 (60° axis) and 196/200 (drifted); its acquisition runs at 1.3–1.5× the rest-to-rest plan.
 - **The end-to-end E6 criterion stays out of reach for every controller tested.** The best is the untuned `rate_profile` at 33/200 [0.116, 0.224], which turns toward the target while still braking. The mode manager does each phase near-optimally but in sequence: about 82 s of detumble plus about 1.3 × 90 s of acquisition is about 200 s, above the 180 s budget. This is the mis-sizing of §5.6 measured with real controllers, not a property of one gain set.
 - **The ζ = 0.8 PD is a good acquisition controller and a poor detumbler.** It passes acquisition in 97% and 96% of runs, with gaps of 1.3–1.9, but reaches the entry rate only at a median 124 s (1.43× the plan) and misses T_det in 20% of runs.
 - **Gyroscopic feedforward does not change any verdict.** In acquisition it is indistinguishable from (iii). In the envelope it doubles the passes (6 → 12 of 200) with overlapping intervals.
