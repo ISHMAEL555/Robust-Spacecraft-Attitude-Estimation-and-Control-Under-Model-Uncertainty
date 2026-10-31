@@ -361,7 +361,8 @@ docs/            design description, results, traceability, evidence, figures
 | ID | Risk | Severity |
 |---|---|:-:|
 | R-01 | Model-aided covariance inconsistent under inertia mismatch | High |
-| R-02 | E6 benchmark passes only for its deterministic run: P(pass) = 0.5% under dispersions | High |
+| R-02 | Single-budget E6 criterion passes only for its deterministic run (1/200 under dispersions); the cause is the criterion's sizing (R-11), and no controller tested exceeds 33/200 end to end | Medium |
+| R-11 | 180 s E6 criterion not sized against the 0.1 rad/s envelope; proposed split into GNC-DET-001 / GNC-ACQ-001 is a requirement change, pending owner approval | Medium |
 | R-06 | Model-aided rate-process noise is a tuning parameter, not identified | Medium |
 | R-07 | Large slews with stored wheel momentum exceed gyroscopic torque authority | High |
 
