@@ -406,6 +406,7 @@ Quantify how much pointing error estimation *causes*, separately from the contro
 - [ ] **Rate-feedback filtering (Task D)**: low-pass ω̂ before the K_ω term. *Rationale: `rate_profile` settles fastest in both acquisition scenarios but fails mainly on the effort criterion, which is driven by gyro noise in the command.*
 - [ ] **A tuned controller that turns toward the target while braking**, designed on design seeds. *Rationale: the untuned `rate_profile` beats the two-phase manager end to end, 30 seeds to 3 (exact McNemar p = 1.4e-6).*
 - [ ] **Absolute settling band confirmed by the requirement owner.** *Rationale: the 1.2° band in `config/e6_criteria.yaml` is a placeholder; the only pointing need in the repository is the 0.1° steady-state requirement.*
+- [ ] **Re-verify GNC-ACQ-001 from the actual handover states** (store attitude and rate at handover). *Rationale: the drifted scenario does not represent them; the per-seed sum predicts 71 envelope runs settled inside 200 s against 8 measured.*
 - [ ] **Owner decision on the E6 requirement split (R-11)**: accept GNC-DET-001 / GNC-ACQ-001, or resize the single budget from the measured end-to-end times.
 
 ---
