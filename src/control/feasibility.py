@@ -66,6 +66,28 @@ def momentum_lower_bound_to_rate_s(inertia: np.ndarray, omega0: np.ndarray, end_
     return max(0.0, (h0 - lam * float(end_rate)) / tau_max)
 
 
+def angle_reach_lower_bound_s(inertia: np.ndarray, omega0: np.ndarray, angle_to_go_rad: float,
+                              tau_max: float) -> float:
+    """Proven lower bound on the time to rotate the body through ``angle_to_go_rad``.
+
+    With wheels, ``d(w' J w)/dt = 2 w . tau`` (the gyroscopic terms are perpendicular
+    to ``w``), so ``u = sqrt(w' J w)`` grows at most at ``tau_max / sqrt(lambda_min)`` and
+    ``|w(t)| <= (u0 + tau_max t / sqrt(lambda_min)) / sqrt(lambda_min)``. The attitude
+    path length is at least the geodesic distance, so reaching an attitude
+    ``angle_to_go_rad`` away needs ``integral |w| dt >= angle_to_go_rad``. Holds for any
+    controller whose delivered body torque norm is at most ``tau_max``.
+    """
+    inertia = np.asarray(inertia, dtype=float)
+    omega0 = np.asarray(omega0, dtype=float)
+    lam_min = float(np.linalg.eigvalsh(inertia).min())
+    u0 = float(np.sqrt(omega0 @ inertia @ omega0))
+    if angle_to_go_rad <= 0.0:
+        return 0.0
+    a = tau_max / (2.0 * lam_min)
+    b = u0 / np.sqrt(lam_min)
+    return float((-b + np.sqrt(b * b + 4.0 * a * angle_to_go_rad)) / (2.0 * a))
+
+
 def slew_time_rest_to_rest_s(angle_rad: float, j_eff: float, tau_max: float) -> float:
     """Bang-bang rest-to-rest time about one axis: ``2 sqrt(theta J_eff / tau_max)``."""
     if angle_rad < 0.0 or j_eff <= 0.0 or tau_max <= 0.0:

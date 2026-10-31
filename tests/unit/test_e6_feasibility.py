@@ -303,3 +303,35 @@ def test_momentum_bound_to_a_rate_holds_in_simulation_and_reduces_to_the_full_bo
         time = results["time"][reached[0]]
         bound = momentum_lower_bound_to_rate_s(inertia, conditions["rate"], rate[reached[0]], 0.1)
         assert time >= bound - 1e-9
+
+
+def test_angle_reach_bound_closed_form_and_simulation():
+    from src.control.feasibility import angle_reach_lower_bound_s
+    # From rest about a principal axis: |w| <= tau t / lambda_min, so the swept angle is
+    # tau t^2 / (2 lambda_min): T = sqrt(2 lambda_min d / tau), below the bang-bang slew.
+    d = np.deg2rad(60.0)
+    assert angle_reach_lower_bound_s(J, np.zeros(3), d, 0.1) == pytest.approx(
+        np.sqrt(2.0 * 60.0 * d / 0.1))
+    assert angle_reach_lower_bound_s(J, np.zeros(3), d, 0.1) < slew_time_rest_to_rest_s(d, 60.0, 0.1)
+    assert angle_reach_lower_bound_s(J, np.array([0.1, 0, 0]), 0.0, 0.1) == 0.0
+    # An aggressive saturated controller with true-state feedback cannot enter the band sooner.
+    base = load_config(str(ROOT / "config" / "closed_loop.yaml"))
+    for seed in (42, 2042):
+        conditions = sample_initial_conditions(seed)
+        config = build_config(base, seed, conditions, ("attitude", "rate", "inertia"), 0.05)
+        config = replace(config, duration=60.0, controller={
+            **config.controller, "state_feedback": "truth", "K_q": 50.0, "K_omega": 5.0})
+        results = run_simulation(config)
+        inertia = np.asarray(results["inertia_true_sampled"], dtype=float)
+        error = results["pointing_error"]
+        bound = angle_reach_lower_bound_s(inertia, conditions["rate"], 0.98 * error[0], 0.1)
+        inside = np.nonzero(error <= 0.02 * error[0])[0]
+        first = results["time"][inside[0]] if inside.size else np.inf
+        assert first >= bound
+        # The body does move: the angle swept by t is within the bound's envelope.
+        swept = np.cumsum(np.linalg.norm(results["omega_true"], axis=1)) * 0.01
+        lam = np.linalg.eigvalsh(inertia).min()
+        u0 = np.sqrt(conditions["rate"] @ inertia @ conditions["rate"])
+        t = results["time"] + 0.01
+        envelope = (u0 * t + 0.1 * t**2 / (2 * np.sqrt(lam))) / np.sqrt(lam)
+        assert np.all(swept <= envelope + 1e-6)
