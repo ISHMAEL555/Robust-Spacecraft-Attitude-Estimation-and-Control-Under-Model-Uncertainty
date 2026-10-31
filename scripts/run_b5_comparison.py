@@ -79,6 +79,33 @@ def in_band_effort_fraction(tau_cmd: np.ndarray, tau_rw: np.ndarray, dt: float) 
     return float(np.sum(achieved**2) / np.sum(requested**2))
 
 
+def absolute_band_settling_s(time: np.ndarray, pointing: np.ndarray, band_rad: float) -> float:
+    """First time after which the pointing error stays within an absolute band (nan if never).
+
+    Same rule as ``compute_performance_metrics``, with ``band_rad`` in place of 2% of
+    the initial error.
+    """
+    inside = np.asarray(pointing) <= band_rad
+    remains = np.logical_and.accumulate(inside[::-1])[::-1]
+    indices = np.flatnonzero(remains)
+    return float(time[indices[0]]) if indices.size else float("nan")
+
+
+def score_absolute_band(metrics: Dict[str, Any], time: np.ndarray, pointing: np.ndarray,
+                        band_deg: float) -> Dict[str, Any]:
+    """Re-evaluate every E6 criterion with the settling band set to ``band_deg``."""
+    settle = absolute_band_settling_s(time, pointing, np.deg2rad(band_deg))
+    rescored = dict(metrics)
+    rescored["settling_time_2pct_s"] = settle
+    rescored["settling_hold_duration_s"] = (float(time[-1] - settle)
+                                            if np.isfinite(settle) else 0.0)
+    benchmark = evaluate_e6_project_benchmark(rescored)
+    return {"band_deg": float(band_deg),
+            "settling_time_s": float(settle) if np.isfinite(settle) else None,
+            "passed": bool(benchmark["passed"]),
+            "checks": {n: bool(c["passed"]) for n, c in benchmark["checks"].items()}}
+
+
 def _inertia_for_seed(seed: int, nominal: np.ndarray, sigma: float) -> np.ndarray:
     rng = np.random.default_rng(np.random.SeedSequence(seed).spawn(4)[3])
     return sample_inertia_from_prior(nominal, sigma, rng)[0]
@@ -159,6 +186,16 @@ def run_one(task: Dict[str, Any]) -> Dict[str, Any]:
         handover_true_rate = float(rate_true[below[0]]) if below.size else None
 
     plan = stop_then_slew_plan(state["inertia"], state["quaternion"], state["rate"], tau_max)
+    extra: Dict[str, Any] = {}
+    if task.get("absolute_band_deg") is not None:
+        extra["absolute_band"] = score_absolute_band(
+            metrics, time, results["pointing_error"], float(task["absolute_band_deg"]))
+        step = max(1, int(round(1.0 / dt)))  # 1 Hz histories for future re-scoring
+        extra["history_1hz"] = {
+            "time_s": [float(v) for v in time[::step]],
+            "pointing_error_deg": [float(v) for v in np.rad2deg(results["pointing_error"][::step])],
+            "rate_norm_rad_s": [float(v) for v in rate_true[::step]],
+        }
     settle = metrics["settling_time_2pct_s"]
     settled = bool(np.isfinite(settle))
     return {
@@ -183,6 +220,7 @@ def run_one(task: Dict[str, Any]) -> Dict[str, Any]:
         "plan_s": plan["total_s"], "plan_stop_s": plan["stop_s"],
         # Ratio to the constructive plan, which is NOT a lower bound (ratios below 1 occur).
         "ratio_to_constructive_plan": float(settle / plan["total_s"]) if settled else None,
+        **extra,
     }
 
 
@@ -234,7 +272,17 @@ def aggregate(runs: List[Dict[str, Any]], det_limit_s: float,
     criteria = list(runs[0]["checks"])
     det_ok = [det_passed(r, det_limit_s, entry_rate) for r in runs]
     switches = [r["mode_switches"] for r in runs if r["mode_switches"] is not None]
+    absolute = {}
+    if all("absolute_band" in r for r in runs):
+        absolute = {"absolute_band": {
+            "band_deg": runs[0]["absolute_band"]["band_deg"],
+            "e6_all_criteria": _ratio(sum(r["absolute_band"]["passed"] for r in runs), n),
+            "settling_time_s": _dist([r["absolute_band"]["settling_time_s"] for r in runs]),
+            "criteria": {c: _ratio(sum(r["absolute_band"]["checks"][c] for r in runs), n)
+                         for c in criteria},
+        }}
     return {
+        **absolute,
         "n_runs": n,
         "e6_all_criteria": _ratio(sum(r["passed"] for r in runs), n),
         "criteria": {c: _ratio(sum(r["checks"][c] for r in runs), n) for c in criteria},
@@ -278,6 +326,9 @@ def main() -> None:
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument("--duration", type=float, default=None, help="smoke tests only")
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--criteria-file", type=Path, default=None,
+                        help="also score an absolute settling band (config/e6_criteria.yaml) "
+                             "and store 1 Hz histories")
     args = parser.parse_args()
 
     spec_text = args.controllers_file.read_text(encoding="utf-8")
@@ -286,6 +337,14 @@ def main() -> None:
     det_limit = float(spec["requirements"]["detumble_time_limit_s"])
     sigma = float(spec["dispersion"]["inertia_sigma"])
     names = args.controllers or list(spec["controllers"])
+    absolute_band = None
+    criteria_record = None
+    if args.criteria_file is not None:
+        criteria_text = args.criteria_file.read_text(encoding="utf-8")
+        absolute_band = float(yaml.safe_load(criteria_text)["settling"]["absolute_band_deg"])
+        criteria_record = {"file": str(args.criteria_file),
+                           "sha256": hashlib.sha256(criteria_text.encode("utf-8")).hexdigest(),
+                           "absolute_band_deg": absolute_band}
     seeds = [args.base_seed + SEED_STRIDE * i for i in range(args.runs)]
     ranges = {"published_e6_monte_carlo": PUBLISHED_RANGE}
     if args.stage == "design":
@@ -302,7 +361,8 @@ def main() -> None:
         for name in names:
             controller = spec["controllers"][name]
             tasks = [{"index": i, "seed": s, "scenario": scenario, "controller": controller,
-                      "entry_rate": entry, "inertia_sigma": sigma, "duration": args.duration}
+                      "entry_rate": entry, "inertia_sigma": sigma, "duration": args.duration,
+                      "absolute_band_deg": absolute_band}
                      for i, s in enumerate(seeds)]
             started = wall_clock.time()
             runs = run_tasks(run_one, tasks, args.jobs, label=f"{scenario}/{name} run")
@@ -316,6 +376,7 @@ def main() -> None:
                 "controllers_file_sha256": hashlib.sha256(spec_text.encode("utf-8")).hexdigest(),
                 "requirements": spec["requirements"], "dispersion": spec["dispersion"],
                 "seed_ranges": ranges,
+                "absolute_band_criteria": criteria_record,
                 **completeness(len(tasks), seeds, [r["seed"] for r in runs]),
                 "wall_time_s": wall_clock.time() - started,
                 "summary": aggregate(runs, det_limit, entry),

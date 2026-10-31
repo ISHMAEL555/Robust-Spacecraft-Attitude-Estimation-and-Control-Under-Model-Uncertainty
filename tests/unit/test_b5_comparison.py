@@ -102,6 +102,17 @@ def test_in_band_effort_removes_noise_the_wheels_cannot_deliver():
     assert in_band_effort_fraction(command, delivered, dt) > 0.97
 
 
+def test_absolute_band_settling_follows_the_published_rule():
+    from scripts.run_b5_comparison import absolute_band_settling_s
+    time = np.arange(10.0)
+    error = np.deg2rad(np.array([60, 40, 20, 5, 1.0, 1.5, 1.1, 0.9, 0.5, 0.2]))
+    assert absolute_band_settling_s(time, error, np.deg2rad(1.2)) == 6.0
+    assert absolute_band_settling_s(time, error, np.deg2rad(2.0)) == 4.0
+    assert np.isnan(absolute_band_settling_s(time, error, np.deg2rad(0.1)))
+    # With the band equal to 2% of the initial error it reproduces the relative rule.
+    assert absolute_band_settling_s(time, error, 0.02 * error[0]) == 6.0
+
+
 def test_exact_mcnemar_matches_hand_values():
     from scripts.b5_paired_tests import exact_mcnemar
     a = [True] * 10 + [False] * 5 + [True] * 85
