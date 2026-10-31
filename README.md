@@ -400,11 +400,13 @@ Quantify how much pointing error estimation *causes*, separately from the contro
 - [x] Decomposition of pointing error into control tracking error and estimation error, including how gyro noise in the rate feedback becomes pointing error; gyro-driven vs model-aided filters. *Not done: an experiment that separates the rate path from the attitude path.*
 - [ ] Mission-level metric: time inside a stated pointing requirement for each estimation fault. *Metric implemented; evaluated for the tracker outage only. Remains: outliers (E4), noise mistuning (E2/E3) and inertia mismatch (E1), and a requirement near the achieved error, since 0.1° is met throughout in steady state.*
 
-**Follow-up**
+**Future work**
 
-- [ ] Rate-feedback filtering (Task D): low-pass ω̂ before the K_ω term and re-evaluate; expected to remove the noise-driven effort failures of `rate_profile` and to lower the 0.043° estimation cost.
-- [ ] Owner decision on the E6 requirement split (R-11): accept GNC-DET-001 / GNC-ACQ-001, or resize the single budget from the measured end-to-end times.
-- [ ] A controller that turns toward the target while braking, tuned on design seeds, to test whether E6 is reachable at all.
+- [ ] **Time-optimal feasibility check** by direct collocation (for example CasADi and IPOPT), under both the 0.1 N·m norm limit and the per-wheel box limit, with each run's truth inertia and the wheel momentum limit, and each solution replayed open loop in the simulator. *Rationale: the best valid lower bound on end-to-end time is at most 107.8 s, so E6 is not shown infeasible.*
+- [ ] **Rate-feedback filtering (Task D)**: low-pass ω̂ before the K_ω term. *Rationale: `rate_profile` settles fastest in both acquisition scenarios but fails mainly on the effort criterion, which is driven by gyro noise in the command.*
+- [ ] **A tuned controller that turns toward the target while braking**, designed on design seeds. *Rationale: the untuned `rate_profile` beats the two-phase manager end to end, 30 seeds to 3 (exact McNemar p = 1.4e-6).*
+- [ ] **Absolute settling band confirmed by the requirement owner.** *Rationale: the 1.2° band in `config/e6_criteria.yaml` is a placeholder; the only pointing need in the repository is the 0.1° steady-state requirement.*
+- [ ] **Owner decision on the E6 requirement split (R-11)**: accept GNC-DET-001 / GNC-ACQ-001, or resize the single budget from the measured end-to-end times.
 
 ---
 
