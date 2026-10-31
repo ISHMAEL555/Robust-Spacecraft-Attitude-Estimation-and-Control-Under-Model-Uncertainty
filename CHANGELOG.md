@@ -32,7 +32,8 @@ All notable changes to this project are documented here. Versions follow [Semant
 ### Notes
 
 - The four ablation files in `docs/e6_monte_carlo_ablation/` were regenerated only to add per-run records and the completeness fields (`n_requested`, `n_completed`, `runs`). Before replacing them, every published field was compared with the regenerated one: all 100 seeds, `n_runs`, passes per criterion, and the distributions (median, 5th and 95th percentiles of settling time and terminal error) are identical, as are the inertia-sampling and rate-direction blocks. No result changed. The 200-run `docs/e6_monte_carlo.json` was not regenerated and is byte-identical to the 1.1.0 file.
-- Test count 211 → 286.
+- Test count 211 → 289; all pass locally on Python 3.10, 3.11, 3.12 and 3.13.
+- The evidence manifest (`docs/e0_e7_campaign_metadata.json`) is regenerated. It now hashes every script, configuration and evidence JSON (1.1.0 and 1.2.0 studies included) and records the frozen B5 controller file's hash and the commit it was frozen in. The E0–E7 campaign summary CSV it regenerates is byte-identical to the published one.
 
 ## [1.1.0] — 2026-10-30
 

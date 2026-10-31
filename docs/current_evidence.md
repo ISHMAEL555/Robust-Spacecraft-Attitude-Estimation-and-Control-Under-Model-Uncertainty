@@ -467,7 +467,7 @@ The χ² approximation is liberal at this sample size, so a single p-value below
 
 ```powershell
 python -m pip install -r requirements.txt
-python -m pytest                                   # 286 tests
+python -m pytest                                   # 289 tests
 
 # Campaign (33 cases x 10 runs); --jobs parallelizes cases, results do not depend on it
 python scripts/run_research_campaigns.py --campaign all --runs 10 --duration 100 --jobs 8 --output-dir reports/research_campaigns/e0_e7_refresh
