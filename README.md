@@ -1,9 +1,9 @@
 ﻿# Robust Spacecraft Attitude Estimation and Control Under Model Uncertainty
 
 [![Tests](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml/badge.svg)](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml)
-![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
-![Tests](https://img.shields.io/badge/tests-289%20passing-brightgreen)
-![Release](https://img.shields.io/badge/release-1.1.0-informational)
+![Python](https://img.shields.io/badge/python-3.10%E2%80%933.13-blue)
+![Tests](https://img.shields.io/badge/tests-290%20passing-brightgreen)
+![Release](https://img.shields.io/badge/release-1.2.0-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 A closed-loop attitude GNC simulation built to answer one question: **when the navigation filter's knowledge is wrong, what happens to the pointing loop?** Two multiplicative extended Kalman filters (MEKFs) run in the loop with a quaternion-feedback controller and a constrained reaction-wheel assembly. Their knowledge is then degraded on purpose: inertia mismatch, mistuned noise models, star-tracker outliers, and outages. Each case is assessed on three questions, answered here in one line each and in detail in [Section 5](#5-results):
@@ -143,7 +143,7 @@ The full equations, step timing, and metric definitions are in the [system desig
 | E6 feasibility (bounds) | Analysis: proven momentum and angle-reach bounds per run | No run above 180 s |
 | Detumble and acquisition modes (GNC-DET-001, GNC-ACQ-001) | Analysis: frozen controllers, 200 fresh seeds per scenario, exact McNemar tests | Pass (two-phase) |
 
-289 automated tests run in CI on Python 3.10, 3.12 and 3.13, plus a job with the newest numpy/scipy/matplotlib. Locally all 289 pass on Python 3.10.20 (numpy 2.2.6), 3.11.9 (numpy 2.4.4), 3.12.13 and 3.13.13 (numpy 2.5.4). Regression tests against the 1.0.0 output use floating-point tolerances, not exact equality; a separate test requires identical repeat runs. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
+290 automated tests run in CI on Python 3.10, 3.12 and 3.13, plus a job with the newest numpy/scipy/matplotlib. Locally all 290 pass on Python 3.10.20 (numpy 2.2.6), 3.11.9 (numpy 2.4.4), 3.12.13 and 3.13.13 (numpy 2.5.4). Regression tests against the 1.0.0 output use floating-point tolerances, not exact equality; a separate test requires identical repeat runs. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
 
 ---
 
@@ -313,7 +313,7 @@ Requires Python 3.10 or later.
 git clone https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty.git
 cd Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty
 python -m pip install -r requirements.txt
-python -m pytest                                  # 289 tests, about 2 min
+python -m pytest                                  # 290 tests, about 2 min
 ```
 
 | Task | Command | Runtime |
@@ -417,7 +417,7 @@ Quantify how much pointing error estimation *causes*, separately from the contro
   author  = {Kowluri, Ishmael},
   title   = {Robust Spacecraft Attitude Estimation and Control Under Model Uncertainty},
   year    = {2026},
-  version = {1.1.0},
+  version = {1.2.0},
   url     = {https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty}
 }
 ```

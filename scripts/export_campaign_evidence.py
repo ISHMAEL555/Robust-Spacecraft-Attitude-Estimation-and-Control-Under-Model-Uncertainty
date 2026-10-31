@@ -152,7 +152,13 @@ def main() -> None:
             "sha256": _sha256(frozen) if frozen.is_file() else None,
             "last_changed_in_commit": _last_commit("config/b5_controllers.yaml"),
             "role": "B5 controller parameters, frozen before the fresh-seed evaluation",
-        }
+        },
+        "config/e6_criteria.yaml": {
+            "sha256": _sha256(ROOT / "config" / "e6_criteria.yaml")
+            if (ROOT / "config" / "e6_criteria.yaml").is_file() else None,
+            "last_changed_in_commit": _last_commit("config/e6_criteria.yaml"),
+            "role": "absolute settling band (placeholder), frozen before the drifted re-score",
+        },
     }
 
     manifest = {
