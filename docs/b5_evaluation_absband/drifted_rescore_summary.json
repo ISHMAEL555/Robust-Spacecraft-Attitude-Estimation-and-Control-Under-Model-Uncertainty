@@ -1,0 +1,348 @@
+{
+  "controllers": {
+    "pd_zeta08": {
+      "published_band": {
+        "passes": 192,
+        "ci95": [
+          0.922708031773984,
+          0.9825751910055194
+        ],
+        "settling_time_s": {
+          "median": 112.315,
+          "p05": 80.7915,
+          "p95": 143.489,
+          "n_none": 0
+        }
+      },
+      "absolute_band": {
+        "passes": 192,
+        "ci95": [
+          0.922708031773984,
+          0.9825751910055194
+        ],
+        "settling_time_s": {
+          "median": 139.73000000000002,
+          "p05": 99.52250000000001,
+          "p95": 166.136,
+          "n_none": 0
+        }
+      },
+      "verdicts_changed": 0,
+      "pass_to_fail": 0,
+      "fail_to_pass": 0,
+      "changed_runs": []
+    },
+    "rate_profile": {
+      "published_band": {
+        "passes": 24,
+        "ci95": [
+          0.07842024799636274,
+          0.17327235116412226
+        ],
+        "settling_time_s": {
+          "median": 84.86,
+          "p05": 69.423,
+          "p95": 102.058,
+          "n_none": 0
+        }
+      },
+      "absolute_band": {
+        "passes": 24,
+        "ci95": [
+          0.07842024799636274,
+          0.17327235116412226
+        ],
+        "settling_time_s": {
+          "median": 96.255,
+          "p05": 71.7705,
+          "p95": 117.466,
+          "n_none": 0
+        }
+      },
+      "verdicts_changed": 0,
+      "pass_to_fail": 0,
+      "fail_to_pass": 0,
+      "changed_runs": []
+    },
+    "two_phase": {
+      "published_band": {
+        "passes": 196,
+        "ci95": [
+          0.9495863909101037,
+          0.9945244341204436
+        ],
+        "settling_time_s": {
+          "median": 118.4,
+          "p05": 84.415,
+          "p95": 143.5015,
+          "n_none": 0
+        }
+      },
+      "absolute_band": {
+        "passes": 190,
+        "ci95": [
+          0.9099724622986487,
+          0.9757658345278915
+        ],
+        "settling_time_s": {
+          "median": 139.03000000000003,
+          "p05": 84.5685,
+          "p95": 176.87349999999998,
+          "n_none": 0
+        }
+      },
+      "verdicts_changed": 6,
+      "pass_to_fail": 6,
+      "fail_to_pass": 0,
+      "changed_runs": [
+        {
+          "seed": 20082042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 161.86682333153877,
+          "settling_published_s": 146.98,
+          "settling_absolute_s": 180.21,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20087042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 179.5510861854485,
+          "settling_published_s": 147.14000000000001,
+          "settling_absolute_s": 182.21,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20101042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 163.85989434911755,
+          "settling_published_s": 151.75,
+          "settling_absolute_s": 186.56,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20145042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 155.86961476492232,
+          "settling_published_s": 152.26,
+          "settling_absolute_s": 186.48,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20146042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 162.0044909430032,
+          "settling_published_s": 146.46,
+          "settling_absolute_s": 180.93,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20163042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 162.95596465746743,
+          "settling_published_s": 146.9,
+          "settling_absolute_s": 183.29,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        }
+      ]
+    },
+    "two_phase_ff": {
+      "published_band": {
+        "passes": 195,
+        "ci95": [
+          0.9426256488731541,
+          0.9918338338091575
+        ],
+        "settling_time_s": {
+          "median": 118.63,
+          "p05": 83.7,
+          "p95": 143.12499999999997,
+          "n_none": 0
+        }
+      },
+      "absolute_band": {
+        "passes": 189,
+        "ci95": [
+          0.903722355566087,
+          0.9722277454479935
+        ],
+        "settling_time_s": {
+          "median": 141.615,
+          "p05": 83.844,
+          "p95": 176.55549999999997,
+          "n_none": 0
+        }
+      },
+      "verdicts_changed": 6,
+      "pass_to_fail": 6,
+      "fail_to_pass": 0,
+      "changed_runs": [
+        {
+          "seed": 20043042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 171.15390033521783,
+          "settling_published_s": 147.34,
+          "settling_absolute_s": 180.14000000000001,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20082042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 161.86682333153877,
+          "settling_published_s": 146.87,
+          "settling_absolute_s": 180.02,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20087042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 179.5510861854485,
+          "settling_published_s": 146.93,
+          "settling_absolute_s": 182.05,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20145042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 155.86961476492232,
+          "settling_published_s": 152.16,
+          "settling_absolute_s": 186.43,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20146042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 162.0044909430032,
+          "settling_published_s": 147.97,
+          "settling_absolute_s": 183.20000000000002,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        },
+        {
+          "seed": 20163042,
+          "published": true,
+          "absolute": false,
+          "initial_error_deg": 162.95596465746743,
+          "settling_published_s": 146.28,
+          "settling_absolute_s": 182.59,
+          "absolute_failed_criteria": [
+            "settling_time_2pct_s",
+            "settling_hold_duration_s"
+          ]
+        }
+      ]
+    }
+  },
+  "mcnemar_absolute_band": [
+    {
+      "a": "pd_zeta08",
+      "b": "two_phase",
+      "a_only": 7,
+      "b_only": 5,
+      "discordant": 12,
+      "p_value": 0.7744140625,
+      "a_passes": 192,
+      "b_passes": 190,
+      "n": 200
+    },
+    {
+      "a": "two_phase",
+      "b": "two_phase_ff",
+      "a_only": 1,
+      "b_only": 0,
+      "discordant": 1,
+      "p_value": 1.0,
+      "a_passes": 190,
+      "b_passes": 189,
+      "n": 200
+    },
+    {
+      "a": "rate_profile",
+      "b": "two_phase",
+      "a_only": 7,
+      "b_only": 173,
+      "discordant": 180,
+      "p_value": 1.4673730133749156e-42,
+      "a_passes": 24,
+      "b_passes": 190,
+      "n": 200
+    }
+  ],
+  "mcnemar_published_band": [
+    {
+      "a": "pd_zeta08",
+      "b": "two_phase",
+      "a_only": 1,
+      "b_only": 5,
+      "discordant": 6,
+      "p_value": 0.21875,
+      "a_passes": 192,
+      "b_passes": 196,
+      "n": 200
+    },
+    {
+      "a": "two_phase",
+      "b": "two_phase_ff",
+      "a_only": 1,
+      "b_only": 0,
+      "discordant": 1,
+      "p_value": 1.0,
+      "a_passes": 196,
+      "b_passes": 195,
+      "n": 200
+    },
+    {
+      "a": "rate_profile",
+      "b": "two_phase",
+      "a_only": 1,
+      "b_only": 173,
+      "discordant": 174,
+      "p_value": 1.4616682008316695e-50,
+      "a_passes": 24,
+      "b_passes": 196,
+      "n": 200
+    }
+  ]
+}
