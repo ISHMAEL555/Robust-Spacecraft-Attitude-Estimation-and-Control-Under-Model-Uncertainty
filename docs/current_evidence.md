@@ -416,6 +416,19 @@ All three axes are overdamped. The reviewer's hand estimate for x (ζ ≈ 1.4, s
 
 Ratios below 1 against the constructive plan are possible because the plan is not optimal: it stops the body before it turns. The envelope acquisition and end-to-end ratios describe only the runs that settled, a selected minority.
 
+**Paired comparisons.** Within each scenario all four controllers ran the same 200 seeds in the same order (checked in code), so the pass/fail outcomes are paired. Exact two-sided McNemar tests on the E6 all-criteria outcome ([`b5_paired_tests.py`](../scripts/b5_paired_tests.py), [paired_tests.json](b5_evaluation/paired_tests.json)); "A only / B only" are the discordant seeds. Six tests, so a Bonferroni threshold of 0.0083 applies to any claim of a difference.
+
+| Scenario | A vs B | Passes A / B | A only / B only | p (exact) |
+|---|---|---:|---:|---:|
+| Envelope | (iii) two_phase vs (iv) two_phase_ff | 6 / 12 | 0 / 6 | 0.031 |
+| Envelope | (ii) rate_profile vs (iii) two_phase | 33 / 6 | 30 / 3 | 1.4e-6 |
+| ACQ, 60° axis | (i) PD ζ 0.8 vs (iii) two_phase | 194 / 200 | 0 / 6 | 0.031 |
+| ACQ, drifted | (i) PD ζ 0.8 vs (iii) two_phase | 192 / 196 | 1 / 5 | 0.22 |
+| ACQ, 60° axis | (iii) vs (iv) | 200 / 200 | 0 / 0 | 1 |
+| ACQ, drifted | (iii) vs (iv) | 196 / 195 | 1 / 0 | 1 |
+
+Only (ii) beating (iii) end to end is significant after correction. All 33 of (ii)'s envelope passes also pass GNC-DET-001.
+
 **Implied end-to-end timeline, and why it is optimistic.** The three scenarios share seeds, so for each seed the two-phase handover time in the envelope can be added to the same seed's settling time in `acq_drifted`. That sum is a median 199.6 s, 95th percentile 226.4 s (5th 172.1 s), and ≤ 180 s for 27 of 200 seeds (two_phase; two_phase_ff: 199.8 s, 226.9 s, 26 seeds). It rests on the assumption that the `acq_drifted` start represents the state at handover. Checked against what the stored outputs contain: the detumble time agrees (handover 82.0 s median against the plan's stopping time 82.6 s, with the same braking direction while saturated); the rate at handover is lower than the scenario assumes (0.0085 rad/s against 0.01 rad/s, conservative); the extra drift while the plan brakes from 0.0085 rad/s to rest is at most about 2°. The attitude at handover itself is not stored, so it could not be compared directly without new simulation. The consistency check exposes a real mismatch: the sum puts 103 of 200 seeds inside 200 s, but only 8 envelope runs actually settled within 200 s. For those 8 the sum is accurate (mean difference +0.9 s, correlation 0.64). The cause is the settling band: the E6 settling criterion is 2% of the *initial* error, which is 1.2° in the envelope (60°) but a median 2.7° in `acq_drifted` (2% of a median 136.7°, range 61.9°–177.3°). Settling to the looser band is earlier, so the sum underestimates end-to-end time, and the `acq_drifted` settling results of GNC-ACQ-001 use a looser band than the envelope does. The direct measurement is the envelope itself: 192 of 200 two-phase runs had not settled at 200 s, so the end-to-end median is **above 200 s**; its 95th percentile is not measurable from 200 s runs.
 
 **Mode switching, wheels and saturation.** The mode manager switched exactly once in every one of the 1,200 two-phase runs (no chattering); handover in the envelope at 82.0 s median [66.1, 98.5]; in acquisition at 5.2 s (the filter falling from its 0.15 rad/s start). Peak wheel momentum use stayed below 53% everywhere (envelope median 39–41%, acquisition 8–15%), and the peak commanded torque never exceeded 0.1 N·m. Commanded-torque saturation duty (median): envelope 69% (i), 97% (ii), 90% (iii, iv); acquisition 8–14% (i), 17–29% (ii), 23–37% (iii, iv).
@@ -427,7 +440,7 @@ Ratios below 1 against the constructive plan are possible because the plan is no
 - **Each mode, sized on its own, is met with large margin by the mode manager.** GNC-DET-001: 200/200, with the handover at 1.15× [1.08, 1.27] the proven momentum bound to the same rate. GNC-ACQ-001: 200/200 (60° axis) and 196/200 (drifted); its acquisition runs at 1.3–1.5× the rest-to-rest plan.
 - **The end-to-end E6 criterion stays out of reach for every controller tested.** The best is the untuned `rate_profile` at 33/200 [0.116, 0.224], which turns toward the target while still braking. The mode manager does each phase near-optimally but in sequence: about 82 s of detumble plus about 1.3 × 90 s of acquisition is about 200 s, above the 180 s budget. This is the mis-sizing of §5.6 measured with real controllers, not a property of one gain set.
 - **The ζ = 0.8 PD is a good acquisition controller and a poor detumbler.** It passes acquisition in 97% and 96% of runs, at 1.3–1.9× the constructive plan, but reaches the entry rate only at a median 124 s (1.65× the proven momentum bound to the same rate) and misses T_det in 20% of runs.
-- **Gyroscopic feedforward does not change any verdict.** In acquisition it is indistinguishable from (iii). In the envelope it doubles the passes (6 → 12 of 200) with overlapping intervals.
+- **Gyroscopic feedforward helps only end to end, and only weakly.** In acquisition it is indistinguishable from (iii) (discordant pairs 0/0 and 1/0). In the envelope every one of its 6 extra passes is a seed (iii) failed and none goes the other way (exact McNemar p = 0.031), which does not survive a Bonferroni correction over the six tests below (threshold 0.0083), and 12/200 is still far from the criterion.
 
 ## 6. Innovation whiteness
 

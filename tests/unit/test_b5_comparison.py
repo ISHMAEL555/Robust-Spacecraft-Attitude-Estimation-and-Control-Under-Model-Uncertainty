@@ -100,3 +100,16 @@ def test_in_band_effort_removes_noise_the_wheels_cannot_deliver():
     raw = float(np.sum(delivered**2) / np.sum(command**2))
     assert raw < 0.85                                    # the published metric fails
     assert in_band_effort_fraction(command, delivered, dt) > 0.97
+
+
+def test_exact_mcnemar_matches_hand_values():
+    from scripts.b5_paired_tests import exact_mcnemar
+    a = [True] * 10 + [False] * 5 + [True] * 85
+    b = [False] * 10 + [True] * 5 + [True] * 85
+    r = exact_mcnemar(a, b)
+    assert (r["a_only"], r["b_only"], r["discordant"]) == (10, 5, 15)
+    # 2 * P(X <= 5), X ~ Bin(15, 0.5) = 2 * 4944 / 32768
+    assert r["p_value"] == pytest.approx(2 * 4944 / 32768)
+    assert exact_mcnemar([True, False], [True, False])["p_value"] == 1.0
+    with pytest.raises(ValueError):
+        exact_mcnemar([True], [True, False])

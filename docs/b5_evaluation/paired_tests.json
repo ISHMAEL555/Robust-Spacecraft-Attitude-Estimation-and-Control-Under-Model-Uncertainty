@@ -1,0 +1,92 @@
+{
+  "comparisons": [
+    {
+      "scenario": "envelope",
+      "a": "two_phase",
+      "b": "two_phase_ff",
+      "outcome": "E6 all criteria",
+      "seeds_identical": true,
+      "a_only": 0,
+      "b_only": 6,
+      "discordant": 6,
+      "p_value": 0.03125,
+      "a_passes": 6,
+      "b_passes": 12,
+      "n": 200
+    },
+    {
+      "scenario": "envelope",
+      "a": "rate_profile",
+      "b": "two_phase",
+      "outcome": "E6 all criteria",
+      "seeds_identical": true,
+      "a_only": 30,
+      "b_only": 3,
+      "discordant": 33,
+      "p_value": 1.4011748135089874e-06,
+      "a_passes": 33,
+      "b_passes": 6,
+      "n": 200
+    },
+    {
+      "scenario": "acq_axis60",
+      "a": "pd_zeta08",
+      "b": "two_phase",
+      "outcome": "E6 all criteria",
+      "seeds_identical": true,
+      "a_only": 0,
+      "b_only": 6,
+      "discordant": 6,
+      "p_value": 0.03125,
+      "a_passes": 194,
+      "b_passes": 200,
+      "n": 200
+    },
+    {
+      "scenario": "acq_drifted",
+      "a": "pd_zeta08",
+      "b": "two_phase",
+      "outcome": "E6 all criteria",
+      "seeds_identical": true,
+      "a_only": 1,
+      "b_only": 5,
+      "discordant": 6,
+      "p_value": 0.21875,
+      "a_passes": 192,
+      "b_passes": 196,
+      "n": 200
+    },
+    {
+      "scenario": "acq_axis60",
+      "a": "two_phase",
+      "b": "two_phase_ff",
+      "outcome": "E6 all criteria",
+      "seeds_identical": true,
+      "a_only": 0,
+      "b_only": 0,
+      "discordant": 0,
+      "p_value": 1.0,
+      "a_passes": 200,
+      "b_passes": 200,
+      "n": 200
+    },
+    {
+      "scenario": "acq_drifted",
+      "a": "two_phase",
+      "b": "two_phase_ff",
+      "outcome": "E6 all criteria",
+      "seeds_identical": true,
+      "a_only": 1,
+      "b_only": 0,
+      "discordant": 1,
+      "p_value": 1.0,
+      "a_passes": 196,
+      "b_passes": 195,
+      "n": 200
+    }
+  ],
+  "rate_profile_overlap": {
+    "rate_profile_envelope_e6_passes": 33,
+    "of_which_also_pass_gnc_det_001": 33
+  }
+}
