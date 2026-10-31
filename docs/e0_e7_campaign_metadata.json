@@ -1,7 +1,7 @@
 {
   "title": "Robust spacecraft attitude estimation and control: refreshed E0-E7 campaign",
-  "completed_at_utc": "2026-10-31T07:13:21+00:00",
-  "git_head_at_export": "b23bb993008b436b2075c2b258dbb54adc9f0353",
+  "completed_at_utc": "2026-10-31T07:42:32+00:00",
+  "git_head_at_export": "438aac58de7dbf9885213cf6eb054cdf5532084c",
   "git_head_note": "The commit checked out when this manifest was generated; the manifest itself is committed in the following commit.",
   "frozen_configs": {
     "config/b5_controllers.yaml": {
@@ -777,7 +777,7 @@
     }
   ],
   "sha256": {
-    "README.md": "8ba6c010f4d77e8f0503ccc31e36d49cd1256633225fd24db5ffd775383c4d66",
+    "README.md": "31a5c11f0a1b8d7d7bb70494611f007ee0b1d4f4d98f80c29340ea2a9a139f14",
     "CHANGELOG.md": "dac5e2a2b4f223344f7d5399d357366d0a422bc8be8d9b49117cb397d06a827a",
     "scripts/run_research_campaigns.py": "7437b3f283029671e8a9d33a445b3e35a07b0e48455c64fba6623e87ea89f119",
     "scripts/run_experiment.py": "4e873d1987a3adb12860d1c4e67d1c5d2bb9ffe17a090debaab2251387de787a",
