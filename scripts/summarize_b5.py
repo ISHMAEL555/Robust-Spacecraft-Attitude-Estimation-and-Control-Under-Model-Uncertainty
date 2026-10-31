@@ -1,4 +1,4 @@
-"""Per-phase optimality gaps for the B5 evaluation (post-processing only; no simulation).
+"""Per-phase ratios for the B5 evaluation (post-processing only; no simulation).
 
 For each run of each ``{scenario}__{controller}.json`` in the evaluation directory:
 
@@ -6,12 +6,17 @@ For each run of each ``{scenario}__{controller}.json`` in the evaluation directo
   at handover, with the run's own dispersed inertia (``momentum_lower_bound_to_rate_s``;
   must be >= 1), and handover time / the constructive plan's stopping time (the plan
   stops to 1e-4 rad/s, a different end condition, so this ratio can be below 1);
-* acquisition-phase gap = (settling time - handover time) / plan slew time, for
-  runs that settled;
-* end-to-end gap       = settling time / plan time, for runs that settled.
+* acquisition phase, ratio to constructive plan = (settling time - handover time) /
+  plan slew time, for runs that settled;
+* end to end, ratio to constructive plan = settling time / plan time, for runs that
+  settled.
+
+The constructive plan is NOT a lower bound (ratios below 1 occur). Evaluation files
+written before the rename store the per-run end-to-end ratio under the old key
+``optimality_gap_ratio``; this script recomputes every ratio from the stored times.
 
 Runs that did not settle within the 200 s horizon have no acquisition or
-end-to-end gap; they are counted, not dropped.
+end-to-end ratio; they are counted, not dropped.
 """
 
 from __future__ import annotations
@@ -65,8 +70,8 @@ def phase_gaps(runs: List[Dict[str, Any]], scenario: str = "envelope",
             "detumble_ratio_to_momentum_bound": _pct(detumble_bound),
             "detumble_ratio_to_plan_stop": _pct(detumble),
             "detumble_runs_below_bound": int(sum(x < 1.0 for x in detumble_bound)),
-            "acquisition_phase_gap": _pct(acquisition),
-            "end_to_end_gap": _pct(end_to_end),
+            "acquisition_ratio_to_constructive_plan": _pct(acquisition),
+            "end_to_end_ratio_to_constructive_plan": _pct(end_to_end),
             "settling_time_settled_runs_s": _pct(
                 [r["settling_time_s"] for r in runs if r["settling_time_s"] is not None])}
 
@@ -84,15 +89,15 @@ def main() -> None:
         out.setdefault(scenario, {})[controller] = phase_gaps(
             data["runs"], scenario, float(data["dispersion"]["inertia_sigma"]),
             float(data["requirements"]["detumble_entry_rate"]))
-    output = args.output or args.evaluation_dir / "phase_gaps.json"
+    output = args.output or args.evaluation_dir / "phase_ratios.json"
     output.write_text(json.dumps(out, indent=2) + "\n")
     fmt = lambda d: "-" if d["median"] is None else f"{d['median']:.2f} [{d['p05']:.2f}, {d['p95']:.2f}] n={d['n']}"
     for scenario, rows in out.items():
         for controller, g in rows.items():
             print(f"{scenario:11s} {controller:13s} not settled {g['n_not_settled']:3d} | "
                   f"detumble/bound {fmt(g['detumble_ratio_to_momentum_bound'])} below {g['detumble_runs_below_bound']} | "
-                  f"detumble/plan-stop {fmt(g['detumble_ratio_to_plan_stop'])} | acquisition {fmt(g['acquisition_phase_gap'])} | "
-                  f"end-to-end {fmt(g['end_to_end_gap'])}")
+                  f"detumble/plan-stop {fmt(g['detumble_ratio_to_plan_stop'])} | acquisition/plan {fmt(g['acquisition_ratio_to_constructive_plan'])} | "
+                  f"end-to-end/plan {fmt(g['end_to_end_ratio_to_constructive_plan'])}")
 
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ def _run(passed, det, settle, switches=1):
             "handover_time_s": det, "handover_true_rate_rad_s": None if det is None else 0.009,
             "switch_signal_error_mean_rad_s": 1e-4, "switch_signal_error_std_rad_s": 1e-4,
             "achieved_effort_fraction": 0.9, "in_band_effort_fraction": 0.99,
-            "optimality_gap_ratio": None if settle is None else settle / 150.0,
+            "ratio_to_constructive_plan": None if settle is None else settle / 150.0,
             "plan_s": 150.0, "peak_wheel_momentum_use": 0.4, "peak_commanded_torque_nm": 0.1,
             "saturation_duty": 0.5, "peak_terminal_error_deg": 1.0}
 
@@ -65,7 +65,7 @@ def test_aggregate_counts_detumble_and_e6_passes_separately():
     assert s["detumble_within_limit"]["passes"] == 4
     assert s["mode_switches"] == {"max": 1, "runs_with_more_than_one": 0, "runs_with_none": 1}
     assert s["settling_time_s"]["n_none"] == 2
-    assert s["optimality_gap_ratio"]["median"] == pytest.approx(160.0 / 150.0)
+    assert s["ratio_to_constructive_plan"]["median"] == pytest.approx(160.0 / 150.0)
 
 
 def test_seed_ranges_are_checked_for_overlap():

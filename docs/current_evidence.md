@@ -383,7 +383,7 @@ All three axes are overdamped. The reviewer's hand estimate for x (ζ ≈ 1.4, s
 
 **Frozen parameters** (`config/b5_controllers.yaml`, `c397596`). (i) `pd_zeta08`: quaternion feedback, K_q = 0.4938, K_ω = 7.1111 (ζ = 0.8, 2% target 90 s, mean inertia). (ii) `rate_profile`: K_ω = 20, k_p = 0.05 s⁻¹, f = 0.7 (the original parameters, not tuned). (iii) `two_phase`: detumble T_d = 20 s; switch at low-passed ‖ω̂‖ ≤ 0.009 rad/s (T_f = 1 s), exit at > 0.15 rad/s; acquisition `rate_profile` with K_ω = 10, k_p = 0.08 s⁻¹, f = 0.9. (iv) `two_phase_ff`: (iii) with gyroscopic feedforward in acquisition only.
 
-**Evaluation.** Fresh seeds 20000042 to 20199042 (200 runs); design 10000042 to 10099042; published 42 to 199042; disjointness asserted in code and recorded in every file. Every campaign completed 200/200. Files in [`b5_evaluation/`](b5_evaluation/); per-phase gaps in [`b5_evaluation/phase_gaps.json`](b5_evaluation/phase_gaps.json) (`summarize_b5.py`). Probabilities are Clopper–Pearson 95%.
+**Evaluation.** Fresh seeds 20000042 to 20199042 (200 runs); design 10000042 to 10099042; published 42 to 199042; disjointness asserted in code and recorded in every file. Every campaign completed 200/200. Files in [`b5_evaluation/`](b5_evaluation/); per-phase ratios in [`b5_evaluation/phase_ratios.json`](b5_evaluation/phase_ratios.json) (`summarize_b5.py`). Probabilities are Clopper–Pearson 95%.
 
 | Scenario | Controller | E6 all criteria | GNC-DET-001 | Settling median [5th, 95th] | Not settled | Main failure |
 |---|---|---:|---:|---:|---:|---|
@@ -423,7 +423,7 @@ Ratios below 1 against the constructive plan are possible because the plan is no
 
 - **Each mode, sized on its own, is met with large margin by the mode manager.** GNC-DET-001: 200/200, with the handover at 1.15× [1.08, 1.27] the proven momentum bound to the same rate. GNC-ACQ-001: 200/200 (60° axis) and 196/200 (drifted); its acquisition runs at 1.3–1.5× the rest-to-rest plan.
 - **The end-to-end E6 criterion stays out of reach for every controller tested.** The best is the untuned `rate_profile` at 33/200 [0.116, 0.224], which turns toward the target while still braking. The mode manager does each phase near-optimally but in sequence: about 82 s of detumble plus about 1.3 × 90 s of acquisition is about 200 s, above the 180 s budget. This is the mis-sizing of §5.6 measured with real controllers, not a property of one gain set.
-- **The ζ = 0.8 PD is a good acquisition controller and a poor detumbler.** It passes acquisition in 97% and 96% of runs, with gaps of 1.3–1.9, but reaches the entry rate only at a median 124 s (1.43× the plan) and misses T_det in 20% of runs.
+- **The ζ = 0.8 PD is a good acquisition controller and a poor detumbler.** It passes acquisition in 97% and 96% of runs, at 1.3–1.9× the constructive plan, but reaches the entry rate only at a median 124 s (1.65× the proven momentum bound to the same rate) and misses T_det in 20% of runs.
 - **Gyroscopic feedforward does not change any verdict.** In acquisition it is indistinguishable from (iii). In the envelope it doubles the passes (6 → 12 of 200) with overlapping intervals.
 
 ## 6. Innovation whiteness
@@ -469,7 +469,7 @@ python scripts/verify_innovation_whiteness.py
 python scripts/verify_wheel_coupling.py
 python scripts/analyze_e6_feasibility.py --demonstrate 20 --jobs 6   # feasibility of the 200 stored runs, about 2 min
 python scripts/run_b5_comparison.py --controllers-file config/b5_controllers.yaml --stage evaluation --base-seed 20000042 --runs 200 --design-base-seed 10000042 --design-runs 100 --jobs 10 --output-dir docs/b5_evaluation   # about 65 min
-python scripts/summarize_b5.py   # per-phase optimality gaps
+python scripts/summarize_b5.py   # per-phase ratios (to the momentum bound and to the constructive plan)
 python scripts/run_e6_monte_carlo.py --jobs 14   # 200 runs, about 5 min on 16 cores; ablations: --dispersions rate --output ...
 python scripts/verify_estimation_cost.py --jobs 14   # 80 paired-mode tasks, about 9 min on 16 cores
 

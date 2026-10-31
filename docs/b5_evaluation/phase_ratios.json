@@ -16,13 +16,13 @@
         "p95": 0.0012541666666666686
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.9444633874572776,
         "p05": 1.3279527576728427,
         "p95": 2.1558628209649835
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.7263857385699124,
         "p05": 1.2135317665508887,
@@ -51,13 +51,13 @@
         "p95": 0.0012541666666666686
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.3496551278288322,
         "p05": 0.9710882091082618,
         "p95": 1.5912434366936432
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.196727212172266,
         "p05": 1.0237143500027635,
@@ -86,13 +86,13 @@
         "p95": 0.8504407713498638
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.466372448692573,
         "p05": 1.3607786062671314,
         "p95": 1.5806418824841233
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.3770937650414696,
         "p05": 1.2523170559167818,
@@ -121,13 +121,13 @@
         "p95": 0.8504407713498638
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.4562756520769455,
         "p05": 1.3509542024985013,
         "p95": 1.5771546794841318
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.3692460990803943,
         "p05": 1.2510558199893151,
@@ -158,13 +158,13 @@
         "p95": 5.876736687523928
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.3108290083601966,
         "p05": 0.9047798928470779,
         "p95": 1.7007123932220205
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.2212858357382441,
         "p05": 0.9065055254789235,
@@ -193,13 +193,13 @@
         "p95": 5.041749138041105
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 200,
         "median": 0.9779260405336855,
         "p05": 0.37343337531728643,
         "p95": 1.2231719419370382
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 200,
         "median": 0.9122623369433054,
         "p05": 0.783086094765365,
@@ -228,13 +228,13 @@
         "p95": 0.8504407713498638
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.3028735057566092,
         "p05": 1.2257235174455232,
         "p95": 1.4008576263820176
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.2453565463919696,
         "p05": 1.183521898174701,
@@ -263,13 +263,13 @@
         "p95": 0.8504407713498638
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.3033941890976954,
         "p05": 1.224555251173005,
         "p95": 1.406197619134276
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 200,
         "median": 1.2432143414620438,
         "p05": 1.1905813211823626,
@@ -300,13 +300,13 @@
         "p95": 2.4314425934999777
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 3,
         "median": 1.0513329449936677,
         "p05": 0.40663396710069566,
         "p95": 1.4906452762387954
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 3,
         "median": 1.1013909693462756,
         "p05": 0.9037852220967393,
@@ -335,13 +335,13 @@
         "p95": 2.3410458350007097
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 59,
         "median": 0.8954850658772722,
         "p05": 0.2761109325255949,
         "p95": 1.38798341894125
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 59,
         "median": 1.110581352538413,
         "p05": 0.8117217845200149,
@@ -370,13 +370,13 @@
         "p95": 1.0743751128808272
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 8,
         "median": 1.4357097192848827,
         "p05": 1.2783930137630655,
         "p95": 1.7494368417570096
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 8,
         "median": 1.1719722678271718,
         "p05": 1.1097493575867807,
@@ -405,13 +405,13 @@
         "p95": 1.0743751128808272
       },
       "detumble_runs_below_bound": 0,
-      "acquisition_phase_gap": {
+      "acquisition_ratio_to_constructive_plan": {
         "n": 17,
         "median": 1.3994671657813227,
         "p05": 1.2847713634015527,
         "p95": 1.6540011832912829
       },
-      "end_to_end_gap": {
+      "end_to_end_ratio_to_constructive_plan": {
         "n": 17,
         "median": 1.1868177654876215,
         "p05": 1.0942345273799554,

@@ -181,7 +181,8 @@ def run_one(task: Dict[str, Any]) -> Dict[str, Any]:
         "mode_switch_time_s": switch_time, "mode_switches": n_switches,
         "switch_rate_hat_rad_s": switch_rate_hat, "switch_rate_true_rad_s": switch_rate_true,
         "plan_s": plan["total_s"], "plan_stop_s": plan["stop_s"],
-        "optimality_gap_ratio": float(settle / plan["total_s"]) if settled else None,
+        # Ratio to the constructive plan, which is NOT a lower bound (ratios below 1 occur).
+        "ratio_to_constructive_plan": float(settle / plan["total_s"]) if settled else None,
     }
 
 
@@ -239,7 +240,7 @@ def aggregate(runs: List[Dict[str, Any]], det_limit_s: float,
         "criteria": {c: _ratio(sum(r["checks"][c] for r in runs), n) for c in criteria},
         "detumble_within_limit": _ratio(int(sum(det_ok)), n),
         "settling_time_s": _dist([r["settling_time_s"] for r in runs]),
-        "optimality_gap_ratio": _dist([r["optimality_gap_ratio"] for r in runs]),
+        "ratio_to_constructive_plan": _dist([r["ratio_to_constructive_plan"] for r in runs]),
         "plan_s": _dist([r["plan_s"] for r in runs]),
         "detumble_time_s": _dist([r["detumble_time_s"] for r in runs]),
         "handover_time_s": _dist([r["handover_time_s"] for r in runs]),
@@ -327,7 +328,7 @@ def main() -> None:
             print(f"{scenario:12s} {name:16s} E6 {e6['passes']:3d}/{e6['n']} "
                   f"[{e6['ci95_clopper_pearson'][0]:.3f},{e6['ci95_clopper_pearson'][1]:.3f}]  "
                   f"DET {det['passes']:3d}/{det['n']}  settle med {s['settling_time_s']['median']}  "
-                  f"gap med {s['optimality_gap_ratio']['median']}  "
+                  f"ratio-to-plan med {s['ratio_to_constructive_plan']['median']}  "
                   f"({report['wall_time_s']:.0f} s)", flush=True)
 
 

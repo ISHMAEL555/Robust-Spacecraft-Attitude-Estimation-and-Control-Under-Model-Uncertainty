@@ -249,7 +249,7 @@ def main() -> None:
                 "stop_then_slew_plan_s": rows[i]["stop_then_slew_plan_s"],
                 "settling_time_s": float(settle) if settled else None,
                 "settled_within_limit": bool(settled and settle <= SETTLING_LIMIT_S),
-                "optimality_gap_ratio": (float(settle / rows[i]["feasibility_estimate_s"])
+                "ratio_to_feasibility_estimate": (float(settle / rows[i]["feasibility_estimate_s"])
                                          if settled else None),
                 "passed_all_criteria": bool(res["passed"]),
                 "failed_criteria": [n for n, ok in res["checks"].items() if not ok],
