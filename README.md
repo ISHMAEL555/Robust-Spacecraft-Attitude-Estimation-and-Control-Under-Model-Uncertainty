@@ -82,7 +82,7 @@ flowchart LR
     G["Gyro · 100 Hz<br/>bias walk + ARW"]
     S["Star tracker · 1 Hz<br/>noise · outliers · outages"]
     F["MEKF<br/>gyro-driven (6 states)<br/>model-aided (15 states)"]
-    C["Quaternion-feedback<br/>controller"]
+    C["Controller<br/>quaternion-feedback PD · rate_profile<br/>two-phase mode manager"]
     W["Reaction wheels<br/>lag · torque & momentum limits"]
     T --> G --> F
     T --> S --> F
@@ -98,7 +98,7 @@ flowchart LR
 | Filter numerics | Right-multiplicative body-frame error; exact quaternion exponential; Van Loan discretization; Joseph update; exact SO(3) reset Jacobian; χ² NIS gate | `src/estimation/mekf.py` |
 | Gyro | Bias random walk plus angle random walk (continuous spectral densities) | `src/sensors/gyro.py` |
 | Star tracker | Right-multiplicative noise; fractional-phase sampling; injected outliers; scheduled and random outages | `src/sensors/star_tracker.py` |
-| Controller | Body-frame quaternion feedback; norm-limited, direction-preserving saturation | `src/control/` |
+| Controller | Body-frame quaternion-feedback PD; rate-limited eigenaxis slew (`rate_profile`); two-phase mode manager (detumble, then `rate_profile`); norm-limited, direction-preserving saturation | `src/control/` |
 | Reaction wheels | Pseudo-inverse allocation; first-order motor lag; per-wheel torque limit; predictive hard momentum limit | `src/actuators/` |
 
 The full equations, step timing, and metric definitions are in the [system design description](docs/system_description.md).
@@ -149,7 +149,7 @@ The full equations, step timing, and metric definitions are in the [system desig
 
 ## 5. Results
 
-All results come from 33 campaign scenarios × 10 independent seeds (4.2 million propagation steps) plus targeted studies. Intervals are 95% Student-t over independent run means; correlated time samples are never counted as independent trials.
+E0–E7 results come from 33 campaign scenarios × 10 independent seeds (95% Student-t intervals over run means); the targeted studies state their own seed counts (5 to 30 seeds). The E6 Monte Carlo and the B5 controller comparison use 200 runs per scenario (100 per E6 ablation) with Clopper–Pearson intervals, and B5 adds exact McNemar tests on paired seeds. Correlated time samples are never counted as independent trials.
 
 ### 5.1 Estimator consistency across the campaign
 
@@ -347,7 +347,7 @@ src/
   dynamics/      quaternion algebra; rigid-body truth model with wheel coupling
   estimation/    gyro-driven and model-aided MEKF; NEES/NIS
   sensors/       gyro and star-tracker models
-  control/       quaternion-feedback controller and gain design
+  control/       quaternion-feedback PD, rate_profile slew, two-phase mode manager, gain design, feasibility bounds
   actuators/     reaction-wheel assembly
 config/          scenario definitions (YAML)
 scripts/         simulation runner, campaigns, verification, plotting
@@ -386,7 +386,7 @@ docs/            design description, results, traceability, evidence, figures
 | ID | Risk | Severity |
 |---|---|:-:|
 | R-01 | Model-aided covariance inconsistent under inertia mismatch | High |
-| R-02 | Single-budget E6 criterion passes only for its deterministic run (1/200 under dispersions); the cause is the criterion's sizing (R-11), and no controller tested exceeds 33/200 end to end | Medium |
+| R-02 | Single-budget E6 criterion passes only for its deterministic run (1/200 under dispersions); cause unresolved: criterion sizing (R-11) or controller structure; E6 not shown infeasible; no controller tested exceeds 33/200 end to end | Medium |
 | R-11 | 180 s E6 criterion not sized against the 0.1 rad/s envelope; proposed split into GNC-DET-001 / GNC-ACQ-001 is a requirement change, pending owner approval | Medium |
 | R-06 | Model-aided rate-process noise is a tuning parameter, not identified | Medium |
 | R-07 | Large slews with stored wheel momentum exceed gyroscopic torque authority | High |

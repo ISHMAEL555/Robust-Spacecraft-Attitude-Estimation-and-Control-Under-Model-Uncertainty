@@ -1,7 +1,7 @@
 {
   "title": "Robust spacecraft attitude estimation and control: refreshed E0-E7 campaign",
-  "completed_at_utc": "2026-10-31T08:19:41+00:00",
-  "git_head_at_export": "fc68bec7bef192bd2206be997b06dd29f929f2c5",
+  "completed_at_utc": "2026-10-31T08:34:20+00:00",
+  "git_head_at_export": "08491b8a3dcd8340e5bfbac2368764b4c23d9d24",
   "git_head_note": "The commit checked out when this manifest was generated; the manifest itself is committed in the following commit.",
   "frozen_configs": {
     "config/b5_controllers.yaml": {
@@ -777,7 +777,7 @@
     }
   ],
   "sha256": {
-    "README.md": "fad6bc0c863bb825dd1efb4c0380ddf100b8356bb66d5e60e6eb06e556b2b669",
+    "README.md": "03e429e0d37a7eb335084c18595e80e7fbc8ab026d2d47890d3c35e35b2cabcd",
     "CHANGELOG.md": "474e91912ae15f689c54c2babb28c570298494155b4388202eddc52e1d9c886d",
     "scripts/run_research_campaigns.py": "7437b3f283029671e8a9d33a445b3e35a07b0e48455c64fba6623e87ea89f119",
     "scripts/run_experiment.py": "4e873d1987a3adb12860d1c4e67d1c5d2bb9ffe17a090debaab2251387de787a",
@@ -798,7 +798,7 @@
     "docs/conventions.md": "e15ec2ac6d445c652401af0f8abdf8db2a034a6778db2035dfd671ec029dc99a",
     "docs/e0_e7_campaign.md": "b015dc533da7ef2a92d128fe4c1eb4642ce7b35aacb617c36fe36291a2ad4e50",
     "docs/current_evidence.md": "bf6398682d8205f34fd9fd564ba8f2b71bccb0348f7f053c3d8699b7e7163aa8",
-    "docs/requirements_traceability.md": "9883e3f4ee5bca1a06776326d00e553e588ddbb09cb824a64e3938b436186742",
+    "docs/requirements_traceability.md": "67cab2e3d5ae095c81a2bd475331fe10efa482181670c0b808d83cbe344967c5",
     "docs/e6_project_benchmark.json": "2c0dd211d655f5df0ba89b7a96377c42a6286a46d50c6db51cfc16cfa03c06ad",
     "docs/model_aided_consistency.json": "daa918b6f9efc5d2424d44de831fb87432358964995b5b494b99e6a465c5ffbe",
     "docs/robustness_slices.json": "523dbd13ec1418abc6b6f6c511db532a39c18cb7c4519ea05ac43e317a8240cb",
