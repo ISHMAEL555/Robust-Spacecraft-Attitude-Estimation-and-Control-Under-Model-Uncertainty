@@ -187,9 +187,22 @@ def run_simulation(config: SimulationConfig,
         K_q=config.controller['K_q'],
         K_omega=config.controller['K_omega'],
         max_torque=config.controller['max_torque'],
-        control_type=config.controller['control_type']
+        control_type=config.controller['control_type'],
+        inertia=np.array(config.spacecraft['inertia'], dtype=float),
+        profile_accel_fraction=config.controller.get('profile_accel_fraction', 0.7),
+        profile_rate_gain=config.controller.get('profile_rate_gain', 0.05),
+        profile_max_rate=config.controller.get('profile_max_rate'),
+        detumble_entry_rate=config.controller.get('detumble_entry_rate', 0.01),
+        detumble_exit_rate=config.controller.get('detumble_exit_rate', 0.15),
+        detumble_time_constant_s=config.controller.get('detumble_time_constant_s', 20.0),
+        switch_filter_time_constant_s=config.controller.get('switch_filter_time_constant_s'),
+        control_dt_s=config.dt,
     )
     controller = AttitudeController(ctrl_params)
+    # Optional gyroscopic feedforward omega x (J_nominal omega + h_w), from the
+    # nominal inertia and the measured wheel momentum (off by default).
+    gyroscopic_feedforward = bool(config.controller.get('gyroscopic_feedforward', False))
+    nominal_inertia = np.array(config.spacecraft['inertia'], dtype=float)
     controller.set_desired(np.array([0.0, 0.0, 0.0, 1.0]))  # Regulate to identity
     # "estimated" (default) feeds the controller q_hat, omega_hat. "truth" feeds
     # it the true state; the filter and all random streams still run unchanged.
@@ -259,6 +272,10 @@ def run_simulation(config: SimulationConfig,
     if config.filter['variant'] == 'model_aided':
         results['inertia_true'] = true_inertia.copy()
         results['inertia_hat'] = np.zeros((n_steps, 3, 3))
+    if controller.phase is not None:
+        # two_phase mode log: 0 detumble, 1 acquisition, after each step's command.
+        results['control_phase'] = np.zeros(n_steps, dtype=np.int8)
+        results['switch_signal'] = np.zeros(n_steps)
     
     # Star tracker update tracking
     for i in range(n_steps):
@@ -330,11 +347,21 @@ def run_simulation(config: SimulationConfig,
                 results['NEES_components'][i, column] = components[name]
         
         # Controller
-        if state_feedback == 'truth':
-            tau_cmd = controller.compute_control(q_true, omega_true)
+        q_control, omega_control = (
+            (q_true, omega_true) if state_feedback == 'truth'
+            else (q_hat, results['omega_hat'][i])
+        )
+        if gyroscopic_feedforward:
+            tau_cmd = controller.compute_control_with_feedforward(
+                q_control, omega_control, nominal_inertia,
+                wheel_momentum=rwa.get_body_momentum() if wheel_coupling else None,
+            )
         else:
-            tau_cmd = controller.compute_control(q_hat, results['omega_hat'][i])
+            tau_cmd = controller.compute_control(q_control, omega_control)
         results['tau_cmd'][i] = tau_cmd
+        if controller.phase is not None:
+            results['control_phase'][i] = controller.phase == 'acquisition'
+            results['switch_signal'][i] = controller.switch_signal
         
         # Reaction wheels: the wheel torque is held over [t, t + dt], so the
         # body-axis wheel momentum changes linearly from h_start to h_end.

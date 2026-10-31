@@ -1,0 +1,55 @@
+{
+  "families": [
+    {
+      "terms": [
+        "envelope:det",
+        "envelope:e6",
+        "acq_drifted:e6"
+      ],
+      "tie_scenario": "acq_drifted",
+      "candidates": [
+        {
+          "name": "tp2_e007_kw10_kp08",
+          "parts": {
+            "envelope:det": 57,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 60
+          },
+          "score": 117,
+          "tie_break_median_settling_s": 118.80000000000001
+        },
+        {
+          "name": "tp3_lp1_t009",
+          "parts": {
+            "envelope:det": 60,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 60
+          },
+          "score": 120,
+          "tie_break_median_settling_s": 120.79500000000002
+        },
+        {
+          "name": "tp3_lp1_t008",
+          "parts": {
+            "envelope:det": 60,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 60
+          },
+          "score": 120,
+          "tie_break_median_settling_s": 124.025
+        },
+        {
+          "name": "tp3_lp2_t009",
+          "parts": {
+            "envelope:det": 60,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 60
+          },
+          "score": 120,
+          "tie_break_median_settling_s": 121.36500000000001
+        }
+      ],
+      "selected": "tp3_lp1_t009"
+    }
+  ]
+}

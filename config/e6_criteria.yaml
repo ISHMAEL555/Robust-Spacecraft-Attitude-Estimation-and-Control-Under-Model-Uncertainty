@@ -1,0 +1,24 @@
+# E6 / GNC-ACQ-001 settling criterion with an ABSOLUTE band.
+# Frozen before any re-scoring. Project-defined; not a mission requirement.
+#
+# The published E6 criterion (evaluate_e6_project_benchmark, GNC-PB-001) settles to
+# 2% of the initial pointing error. In the B5 evaluation that works out to:
+#   envelope     1.200 deg (median, min and max: every run starts 60 deg off)
+#   acq_axis60   1.200 deg (median, min and max)
+#   acq_drifted  2.733 deg median, 0.363 deg min, 3.592 deg max
+#                (2% of the drifted initial error, 18 deg to 180 deg)
+# so the drifted acquisition is scored against a band that differs run to run.
+#
+# Pointing needs found in the repository: only analysis.pointing_requirement_deg =
+# 0.1 deg, a project-defined STEADY-STATE fine-pointing requirement used for the
+# estimation-cost study (docs/system_description.md section 7.1), and the E6
+# terminal criterion (final-20 s peak <= 2 deg). Neither sets an acquisition
+# settling band. The value below is therefore a PLACEHOLDER equal to the current
+# envelope value, pending the requirement owner.
+
+settling:
+  absolute_band_deg: 1.2          # PLACEHOLDER pending the requirement owner
+  band_basis: absolute            # replaces "2% of the initial error" for re-scoring
+  limit_s: 180.0                  # unchanged from GNC-PB-001
+  hold_s: 20.0                    # unchanged from GNC-PB-001
+other_criteria: unchanged         # terminal peak, final rate, wheel momentum, effort, torque

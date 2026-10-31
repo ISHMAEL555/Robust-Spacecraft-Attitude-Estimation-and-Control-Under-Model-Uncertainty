@@ -1,0 +1,53 @@
+# ROUND 3b NOTE (added before the round-3b runs): round 3 (results in
+# docs/b5_design/round3/, selection_round3.json, which picked tp3_lp1_t009) exposed
+# a defect: the switching filter started at the first raw sample, so in one
+# acq_drifted run (seed 10058042) a first estimated sample of 0.0085 rad/s
+# switched at t = 0, defeating the persistence. Fix: the filter now starts at
+# w_exit. Round 3b re-runs the three low-pass candidates below with the fix, on
+# the same design seeds, into docs/b5_design/round3b/, and applies the same rule
+# (the round-2 winner's round-3 result is reused as the comparison; it has no
+# filter, so the fix does not affect it).
+#
+# B5 design round 3 (two-phase family only), design seeds base 10000042, 60 runs.
+#
+# Why a third round: round 2 (docs/b5_design/selection_round2.json) selected
+# tp2_e007_kw10_kp08. Its switch still fires on a single estimated-rate sample:
+# even at 0.007 rad/s, the true rate at the switch exceeded 0.01 rad/s in 3/60
+# envelope runs. Round 3 adds persistence: the switch (entry and exit) acts on a
+# first-order low-pass of |w_hat| with time constant T_f.
+#
+# Threshold sizing (docs/current_evidence.md section 5.7): per-sample rate noise
+# sigma = sigma_v / sqrt(dt) = 1e-3 rad/s per axis; filtered
+# sigma_f = sigma sqrt(a / (2 - a)), a = dt / (T_f + dt): 7.0e-5 rad/s (T_f = 1 s),
+# 5.0e-5 rad/s (T_f = 2 s). Threshold + 3 sigma_f <= 0.01 allows up to 0.0098; the
+# norm bias (+1e-4) and filter lag (about +5e-4 at T_f = 1 s) both make the switch
+# later, the safe direction. 0.009 and 0.008 leave room for the bias-estimate
+# error, which is measured per run (switch_signal_error_*).
+#
+# The GNC-DET-001 metric is now judged at the handover instant: pass if the TRUE
+# |w| <= 0.01 rad/s at the mode switch and the switch is within 150 s.
+#
+# Selection rule, fixed before these runs: among the four candidates below (the
+# first is the round-2 winner, re-run under the handover metric as the
+# comparison), pick the highest envelope:det + envelope:e6 + acq_drifted:e6 pass
+# count; break ties by the lower median settling time in acq_drifted.
+
+requirements:
+  detumble_entry_rate: 0.01      # rad/s, GNC-DET-001 (true rate at handover) / GNC-ACQ-001 entry
+  detumble_time_limit_s: 150.0
+
+dispersion:
+  inertia_sigma: 0.05
+
+controllers:
+  tp2_e007_kw10_kp08: {control_type: two_phase, K_omega: 10.0, profile_rate_gain: 0.08, profile_accel_fraction: 0.9,
+                       detumble_entry_rate: 0.007, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp3_lp1_t009:       {control_type: two_phase, K_omega: 10.0, profile_rate_gain: 0.08, profile_accel_fraction: 0.9,
+                       detumble_entry_rate: 0.009, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0,
+                       switch_filter_time_constant_s: 1.0}
+  tp3_lp1_t008:       {control_type: two_phase, K_omega: 10.0, profile_rate_gain: 0.08, profile_accel_fraction: 0.9,
+                       detumble_entry_rate: 0.008, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0,
+                       switch_filter_time_constant_s: 1.0}
+  tp3_lp2_t009:       {control_type: two_phase, K_omega: 10.0, profile_rate_gain: 0.08, profile_accel_fraction: 0.9,
+                       detumble_entry_rate: 0.009, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0,
+                       switch_filter_time_constant_s: 2.0}

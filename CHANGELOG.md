@@ -2,7 +2,17 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [1.2.0] — Unreleased
+## [1.2.0] — 2026-10-31
+
+Feasibility and controller-comparison release. It asks why the E6 benchmark fails under dispersions. Proven lower bounds do not show the 180 s criterion infeasible, but they show it was mis-sized: it puts a detumble and an acquisition into one budget. A two-phase mode manager, three other controllers and a requirement split into detumble and acquisition are evaluated on fresh seeds with a committed design history. It also makes the regression tests portable, fixes a settling-band defect in the drifted acquisition scoring, and corrects several earlier claims.
+
+### Summary
+
+- **Mode manager.** `controller.control_type: "two_phase"` detumbles at the torque limit and hands over to a rate-limited eigenaxis slew (`rate_profile`, after Wie and Lu 1995) on a 1 s low-pass of the estimated rate (entry 0.009 rad/s, exit 0.15 rad/s). It switched exactly once in every evaluation run.
+- **B5 controller comparison.** Four frozen controllers (ζ = 0.8 PD, untuned `rate_profile`, two-phase, two-phase with gyroscopic feedforward) on 200 fresh seeds per scenario, after four committed design rounds on separate design seeds. End to end, none meets the 180 s E6 criterion: the best is 33/200 (`rate_profile`), and the two-phase manager 6/200. Exact McNemar tests on the shared seeds are reported.
+- **Requirement split (pending owner approval).** GNC-DET-001 (true rate ≤ 0.01 rad/s at handover within 150 s) passes 200/200 and GNC-ACQ-001 (acquisition from the handover condition) 200/200 from 60° and 190/200 from the drifted attitude, with the two-phase manager. Together they imply an end-to-end time well above 180 s (R-11).
+- **Lower bounds.** A proven momentum bound (to rest, and to the rate actually reached), and an angle-reach bound from `d(ωᵀJω)/dt = 2ω·τ`. The best valid end-to-end bound is at most 107.8 s and exceeds 180 s for none of the 200 runs, so E6 is not shown infeasible.
+- **Band defect and re-score.** The E6 settling band is 2% of the initial error. That made the drifted acquisition scored against a band of 0.36°–3.59° (median 2.73°) instead of 1.2°. An absolute 1.2° band (`config/e6_criteria.yaml`, a placeholder pending the requirement owner) was frozen before re-scoring. The drifted runs were re-run on identical seeds and controllers; the trajectories are identical and only the scoring changed. Two-phase drops from 196 to 190/200 and two-phase with feedforward from 195 to 189/200; the PD and `rate_profile` are unchanged.
 
 ### Fixed
 
@@ -12,13 +22,33 @@ All notable changes to this project are documented here. Versions follow [Semant
 
 ### Added
 
-- CI: Python 3.13 in the test matrix, and a `latest-dependencies` job that installs the newest numpy, scipy and matplotlib (`requirements.txt` stays unpinned). Neither has been run yet: only Python 3.11 and numpy 2.4.4 were available locally.
+- **E6 feasibility analysis (B1–B4).** `src/control/feasibility.py` and `scripts/analyze_e6_feasibility.py` apply a proven momentum lower bound (two versions), a rest-to-rest slew time, a single-axis feasibility estimate, a constructive stop-then-slew plan and a linearised closed-loop analysis to each of the 200 stored E6 Monte Carlo runs: `docs/e6_feasibility.json`, `docs/figures/e6_feasibility.png`, system description §6.1, results §5.6, requirements GNC-FEAS-001/002/003, risk R-11. The 200-run result is unchanged.
+- `controller.control_type: "rate_profile"` (deceleration-limited eigenaxis approach rate, after Wie and Lu 1995), `controller.gyroscopic_feedforward`, and `--controller KEY=VALUE` overrides in `run_e6_monte_carlo.py`. Defaults are unchanged. Not yet evaluated in a campaign.
+- **B5 controller comparison.** Two-phase mode manager (`controller.control_type: "two_phase"`): torque-limited momentum damping, then the `rate_profile` slew, switching on a 1 s low-pass of the estimated rate with hysteresis (entry 0.009 rad/s, exit 0.15 rad/s). New requirements GNC-DET-001 (detumble) and GNC-ACQ-001 (acquisition). `scripts/run_b5_comparison.py`, `scripts/select_b5_candidates.py`, `scripts/summarize_b5.py`; design rounds in `docs/b5_design/` with their committed candidate files `config/b5_design_candidates.yaml`, `config/b5_design_round2.yaml`, `config/b5_design_round3.yaml`; frozen parameters `config/b5_controllers.yaml`; fresh-seed evaluation `docs/b5_evaluation/`. Results in `docs/current_evidence.md` §5.7.
+- `test_rate_feedback_noise.py`: the gyro-driven rate-estimate error RMS equals σ_v·√(3/dt) within its sampling uncertainty and is white.
+- CI: Python 3.13 in the test matrix, and a `latest-dependencies` job that installs the newest numpy, scipy and matplotlib (`requirements.txt` stays unpinned). Both were green on PR #4 and on `main` after the merge.
 - `docs/e6_monte_carlo_ablation/*.json` now include per-run records (see Notes).
+
+### Changed
+
+- README §1: the "single deterministic pass can hide a fragile design" conclusion is replaced by the B5 result (no frozen controller met the 180 s end-to-end criterion; the split detumble and acquisition requirements are met by the two-phase mode manager; the split is pending owner approval). New README §5.6 on the mode manager and GNC-DET-001 / GNC-ACQ-001; the outdated gain-redesign follow-up is removed. R-02 is Medium in both the README and the traceability register.
+
+### Corrected findings
+
+- **Drifted GNC-ACQ-001 results superseded.** The published drifted results (two-phase 196/200, feedforward 195/200) used the relative settling band, a median 2.7°. Re-scored with the absolute 1.2° band they are 190/200 and 189/200. All 12 changed verdicts are pass → fail on settling time. The claim that the two-phase manager acquires more often than the PD from the drifted attitude no longer holds: 190 vs 192, p = 0.77.
+- **The detumble was not 0.99× a proven bound.** That ratio was against the constructive plan's stopping time, which stops to 1e-4 rad/s while the handover happens at about 0.0085 rad/s. Against the proven momentum bound with the same end condition and the run's own inertia, the two-phase handover is at 1.15× [1.08, 1.27] the bound, with no run below 1.
+- **"Optimality gap" renamed to "ratio to constructive plan".** The plan is not a lower bound; ratios below 1 occur.
+- **Implied end-to-end timeline.** Adding each seed's handover time to its drifted-acquisition settling time gives a median of 217.8 s and a 95th percentile of 259.5 s with the absolute band (199.6 s and 226.4 s with the superseded band). It still overstates how many runs settle within 200 s (71 against 8 measured), so the drifted start does not fully represent the real handover state. Directly, 192/200 two-phase envelope runs had not settled at 200 s.
+- **The "180 s criterion is infeasible for the dispersion envelope" hypothesis is not supported by the proven bounds.** The momentum lower bound is at most 108.9 s for every one of the 200 runs (0 above 180 s), and the unsaturated linear poles of the shipped gains (slow pole −0.027 to −0.029 s⁻¹, 133.6 to 143.7 s) would also settle all 200 runs inside 180 s, so they do not explain the 199 failures either. What the analysis does show is a tight budget: stopping the initial momentum alone takes a median 81 s, and an idealised stop-then-slew plan takes a median 170 s (143 of 200 runs inside 180 s, 53 undetermined between that plan and the optimistic single-axis estimate). An untuned closed-loop `rate_profile` controller settled within 180 s in 2 of 20 runs, so reachability in the envelope was not demonstrated at that stage; B5 then evaluated four controllers (above).
+- **"The overdamped linear PD is the limiting factor, not the requirement or actuator authority" is not supported.** The unsaturated linear model of the shipped gains settles all 200 runs within 180 s, so the poles do not explain the failures, and in B5 no controller tested (a ζ = 0.8 PD, the rate-profile law, a two-phase mode manager with and without feedforward) passes the end-to-end criterion in more than 33 of 200 fresh runs. The 180 s criterion was mis-sized for the 0.1 rad/s envelope: it combines a detumble that the proven momentum bound puts at a median 81 s with an acquisition from a median 137° error. The detumble and acquisition modes, specified separately (GNC-DET-001, GNC-ACQ-001), are each met by the mode manager in 190–200 of 200 runs.
+- A hand estimate of the E6 linear closed loop (ζ ≈ 1.4, slow pole ≈ −0.029 s⁻¹, about 133 s) was recomputed and confirmed (133.6 s from the slow pole; 140.0 s exact).
 
 ### Notes
 
 - The four ablation files in `docs/e6_monte_carlo_ablation/` were regenerated only to add per-run records and the completeness fields (`n_requested`, `n_completed`, `runs`). Before replacing them, every published field was compared with the regenerated one: all 100 seeds, `n_runs`, passes per criterion, and the distributions (median, 5th and 95th percentiles of settling time and terminal error) are identical, as are the inertia-sampling and rate-direction blocks. No result changed. The 200-run `docs/e6_monte_carlo.json` was not regenerated and is byte-identical to the 1.1.0 file.
-- Test count 211 → 222.
+- Test count 211 → 290; all pass locally on Python 3.10, 3.11, 3.12 and 3.13.
+- `pyproject.toml` and the citation are at 1.2.0.
+- The evidence manifest (`docs/e0_e7_campaign_metadata.json`) is regenerated. It now hashes every script, configuration and evidence JSON (1.1.0 and 1.2.0 studies included) and records the frozen B5 controller file's hash and the commit it was frozen in. The E0–E7 campaign summary CSV it regenerates is byte-identical to the published one.
 
 ## [1.1.0] — 2026-10-30
 

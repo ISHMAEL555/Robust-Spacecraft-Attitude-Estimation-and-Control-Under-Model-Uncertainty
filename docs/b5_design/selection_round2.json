@@ -1,0 +1,65 @@
+{
+  "families": [
+    {
+      "terms": [
+        "envelope:det",
+        "envelope:e6",
+        "acq_drifted:e6"
+      ],
+      "tie_scenario": "acq_drifted",
+      "candidates": [
+        {
+          "name": "tp_f09",
+          "parts": {
+            "envelope:det": 26,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 36
+          },
+          "score": 62,
+          "tie_break_median_settling_s": 97.905
+        },
+        {
+          "name": "tp2_e007",
+          "parts": {
+            "envelope:det": 59,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 37
+          },
+          "score": 96,
+          "tie_break_median_settling_s": 99.125
+        },
+        {
+          "name": "tp2_e007_kw10",
+          "parts": {
+            "envelope:det": 59,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 60
+          },
+          "score": 119,
+          "tie_break_median_settling_s": 118.95
+        },
+        {
+          "name": "tp2_e007_kw14",
+          "parts": {
+            "envelope:det": 59,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 57
+          },
+          "score": 116,
+          "tie_break_median_settling_s": 112.16
+        },
+        {
+          "name": "tp2_e007_kw10_kp08",
+          "parts": {
+            "envelope:det": 59,
+            "envelope:e6": 0,
+            "acq_drifted:e6": 60
+          },
+          "score": 119,
+          "tie_break_median_settling_s": 118.80000000000001
+        }
+      ],
+      "selected": "tp2_e007_kw10_kp08"
+    }
+  ]
+}

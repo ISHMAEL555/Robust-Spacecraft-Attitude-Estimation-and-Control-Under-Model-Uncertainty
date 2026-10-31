@@ -1,0 +1,35 @@
+# B5 design-stage candidates, evaluated only on the design seeds (base 10000042).
+# Selection rule, fixed before the design runs: within each family, pick the
+# candidate with the most E6 all-criteria passes summed over the `envelope` and
+# `acq_drifted` scenarios; break ties by the lower median settling time in
+# `acq_drifted`. The chosen parameters are then frozen in config/b5_controllers.yaml
+# and committed before the evaluation run on fresh seeds.
+
+requirements:
+  # Project-defined, not mission requirements. See docs/requirements_traceability.md.
+  detumble_entry_rate: 0.01      # rad/s, GNC-DET-001 exit / GNC-ACQ-001 entry condition
+  detumble_time_limit_s: 150.0   # GNC-DET-001
+
+dispersion:
+  inertia_sigma: 0.05
+
+controllers:
+  # (i) linear PD, zeta = 0.8, gains from compute_control_gains(T, 0.8, J_nominal)
+  pd_z08_T60:  {control_type: quaternion_feedback, K_q: 1.1111, K_omega: 10.6667}
+  pd_z08_T90:  {control_type: quaternion_feedback, K_q: 0.4938, K_omega: 7.1111}
+  pd_z08_T120: {control_type: quaternion_feedback, K_q: 0.2778, K_omega: 5.3333}
+  # (iii) two-phase mode manager
+  tp_base:   {control_type: two_phase, K_omega: 20.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.7,
+              detumble_entry_rate: 0.01, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp_f05:    {control_type: two_phase, K_omega: 20.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.5,
+              detumble_entry_rate: 0.01, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp_f09:    {control_type: two_phase, K_omega: 20.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.9,
+              detumble_entry_rate: 0.01, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp_kp03:   {control_type: two_phase, K_omega: 20.0, profile_rate_gain: 0.03, profile_accel_fraction: 0.7,
+              detumble_entry_rate: 0.01, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp_kp08:   {control_type: two_phase, K_omega: 20.0, profile_rate_gain: 0.08, profile_accel_fraction: 0.7,
+              detumble_entry_rate: 0.01, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp_kw40:   {control_type: two_phase, K_omega: 40.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.7,
+              detumble_entry_rate: 0.01, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0}
+  tp_td10:   {control_type: two_phase, K_omega: 20.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.7,
+              detumble_entry_rate: 0.01, detumble_exit_rate: 0.15, detumble_time_constant_s: 10.0}

@@ -118,6 +118,12 @@ def main() -> None:
     source_paths = [ROOT / item for item in SOURCE_PATHS] + sorted(
         (ROOT / "src").rglob("*.py")
     )
+    # Every script, configuration and machine-readable evidence file, so each README
+    # number traces to a hashed file (1.1.0 and 1.2.0 studies included).
+    extra = (sorted((ROOT / "scripts").glob("*.py")) + sorted((ROOT / "config").glob("*.yaml"))
+             + sorted(p for p in (ROOT / "docs").rglob("*.json")
+                      if p.resolve() != args.manifest_output.resolve()))
+    source_paths += [p for p in extra if p not in source_paths]
     # Hash every published figure, including the README summary figures.
     figure_paths = sorted(
         path for path in (ROOT / "docs" / "figures").rglob("*.png") if path.is_file()
@@ -133,10 +139,35 @@ def main() -> None:
     except (OSError, subprocess.CalledProcessError):
         git_head = None
 
+    def _last_commit(path: str) -> str | None:
+        try:
+            return subprocess.run(["git", "log", "-1", "--format=%H", "--", path], cwd=ROOT,
+                                  check=True, capture_output=True, text=True).stdout.strip() or None
+        except (OSError, subprocess.CalledProcessError):
+            return None
+
+    frozen = ROOT / "config" / "b5_controllers.yaml"
+    frozen_configs = {
+        "config/b5_controllers.yaml": {
+            "sha256": _sha256(frozen) if frozen.is_file() else None,
+            "last_changed_in_commit": _last_commit("config/b5_controllers.yaml"),
+            "role": "B5 controller parameters, frozen before the fresh-seed evaluation",
+        },
+        "config/e6_criteria.yaml": {
+            "sha256": _sha256(ROOT / "config" / "e6_criteria.yaml")
+            if (ROOT / "config" / "e6_criteria.yaml").is_file() else None,
+            "last_changed_in_commit": _last_commit("config/e6_criteria.yaml"),
+            "role": "absolute settling band (placeholder), frozen before the drifted re-score",
+        },
+    }
+
     manifest = {
         "title": "Robust spacecraft attitude estimation and control: refreshed E0-E7 campaign",
         "completed_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_head_at_export": git_head,
+        "git_head_note": ("The commit checked out when this manifest was generated; the "
+                          "manifest itself is committed in the following commit."),
+        "frozen_configs": frozen_configs,
         "scope": "Simulation characterization; not hardware, mission acceptance, qualification, or flight-readiness evidence.",
         "campaign_design": {
             "cases": len(rows),

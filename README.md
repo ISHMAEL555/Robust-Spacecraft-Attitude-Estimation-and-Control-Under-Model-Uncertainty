@@ -1,9 +1,9 @@
 ﻿# Robust Spacecraft Attitude Estimation and Control Under Model Uncertainty
 
 [![Tests](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml/badge.svg)](https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty/actions/workflows/tests.yml)
-![Python](https://img.shields.io/badge/python-3.10%20%7C%203.12-blue)
-![Tests](https://img.shields.io/badge/tests-222%20passing-brightgreen)
-![Release](https://img.shields.io/badge/release-1.1.0-informational)
+![Python](https://img.shields.io/badge/python-3.10%E2%80%933.13-blue)
+![Tests](https://img.shields.io/badge/tests-290%20passing-brightgreen)
+![Release](https://img.shields.io/badge/release-1.2.0-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 A closed-loop attitude GNC simulation built to answer one question: **when the navigation filter's knowledge is wrong, what happens to the pointing loop?** Two multiplicative extended Kalman filters (MEKFs) run in the loop with a quaternion-feedback controller and a constrained reaction-wheel assembly. Their knowledge is then degraded on purpose: inertia mismatch, mistuned noise models, star-tracker outliers, and outages. Each case is assessed on three questions, answered here in one line each and in detail in [Section 5](#5-results):
@@ -12,7 +12,7 @@ A closed-loop attitude GNC simulation built to answer one question: **when the n
 |:-:|---|---|
 | 1 | **Is the estimator consistent?** Does the covariance describe the real error? | Yes when the filter model matches the truth (nominal NEES/DOF 1.02). The model-aided filter is not consistent once its inertia prior reaches 10%, and attitude RMSE does not show it. |
 | 2 | **How does estimation error reach the controller?** | Mainly through the rate path. The gyro-driven filter adds 0.043° of steady-state pointing error over true-state feedback; the model-aided filter adds 0.0004°. |
-| 3 | **Is the mission still achievable** with finite wheel torque and momentum? | The deterministic E6 benchmark passes with a 3% settling margin. Under randomized attitude, rate, inertia and sensor noise, 1 of 200 runs passes every criterion. Actuator limits are never the cause. |
+| 3 | **Is the mission still achievable** with finite wheel torque and momentum? | Not within the 180 s E6 budget as specified: on fresh seeds the best controller passes 33 of 200 dispersed runs, and the shipped gains 1 of 200. Split into a detumble and an acquisition requirement, both are met by a two-phase mode manager (200/200 and 190–200/200). Actuator limits are never violated; the evidence points to the 180 s budget rather than a gain set, but E6 has not been shown infeasible. |
 
 > **Scope.** Simulation evidence for this repository's models. Not hardware validation, qualification, mission acceptance, or flight-readiness evidence. Benchmark thresholds are project-defined, not mission requirements.
 
@@ -50,7 +50,9 @@ A closed-loop attitude GNC simulation built to answer one question: **when the n
 
 **Mission performance and model fidelity**
 
-- **A single deterministic pass can hide a fragile design.** The E6 benchmark passes in the one run where the initial rate is aligned with the slew axis. With the same criteria and 200 randomized runs, 1 passes. Sensor noise alone does not break it; a random slew axis, a random rate direction, or a 5% inertia dispersion each does, and 2% settling moves from 174.5 s to 193.6 s at 0.95× inertia and to 133.4 s at 1.05×. The gains were not redesigned here; that is a separate follow-up.
+- **The E6 end-to-end criterion (180 s) was not met by any frozen controller on fresh seeds.** The deterministic benchmark passes, but under dispersions the shipped gains pass 1/200, and the best of four controllers evaluated on 200 fresh seeds passes 33/200 [0.116, 0.224] (the untuned `rate_profile` law; it beats the two-phase manager on the same seeds, exact McNemar p = 1.4e-6). The torque command is saturated for a median 90–97% of each envelope run for the three saturation-aware controllers (69% for the ζ = 0.8 PD), and the two-phase design detumbles at 1.15× [1.08, 1.27] the proven momentum bound, so the shortfall is consistent with torque authority rather than gain choice. It is not proven: the best proven lower bound on end-to-end time is at most 107.8 s and exceeds 180 s for none of the 200 runs, and a tuned controller that turns while braking was not evaluated. E6 has therefore not been shown infeasible.
+- **Split into modes, the requirement is met.** GNC-DET-001 (hand over at ≤ 0.01 rad/s true rate within 150 s) passes 200/200 and GNC-ACQ-001 (acquire from the handover condition) 190–200/200 with the two-phase mode manager (the drifted case re-scored with an absolute 1.2° settling band, a placeholder pending the requirement owner). Together they imply an end-to-end time well above 180 s: adding each seed's handover and drifted-acquisition times gives a median of 217.8 s and a 95th percentile of 259.5 s, and even that sum is optimistic against the envelope runs; directly, 192 of 200 two-phase envelope runs had not settled at 200 s. The split is a requirement change that needs sign-off against the mission need behind the 180 s figure (R-11).
+- **Notes on the controllers.** Filtering ω̂ in the rate loop (Task D, not done) could make `rate_profile` the best controller overall: it settles fastest in both acquisition scenarios (78.9 s and 84.9 s median) and fails there mainly on the effort criterion, which here measures gyro noise in the command (in-band effort 0.98–0.99). The two-phase manager and the PD acquire about equally well: 200 vs 194 from 60° (p = 0.031, not significant after a Bonferroni correction) and 190 vs 192 from the drifted attitude (p = 0.77), settling at the same median time in the drifted case (139.0 s vs 139.7 s). Gyroscopic feedforward shows no measurable benefit in acquisition (0 and 1 discordant runs).
 - **Model fidelity can create false passes.** Omitting the wheel gyroscopic term `ω × h_w` violated angular-momentum conservation by 197% and made a 170° slew appear to settle in 235 s. With correct physics it does not. The earlier result is withdrawn.
 
 ### 1.2 Status at a glance
@@ -65,6 +67,8 @@ A closed-loop attitude GNC simulation built to answer one question: **when the n
 | Innovation whiteness | 12-seed ensemble vs calibrated white-noise null: KS p = 0.457 | Pass |
 | Pointing benchmark (E6), one deterministic run | 2% settling **174.5 s** (≤ 180 s); terminal peak 1.01° (≤ 2°); wheel use 49.9% (≤ 80%) | Pass (3% margin) |
 | Pointing benchmark (E6), 200-run Monte Carlo | **P(pass all criteria) = 0.005 [0.000, 0.028]**: 1 of 200 runs passes under random attitude axis, rate direction, inertia and sensor noise. Sensor noise alone: 100/100 pass. Actuator limits never violated | **Fails under dispersions (R-02)** |
+| E6 end to end, four controllers, 200 fresh seeds | Best 33/200 [0.116, 0.224] (`rate_profile`); two-phase 6/200, with feedforward 12/200; PD ζ = 0.8 2/200. Proven lower bound ≤ 107.8 s, above 180 s in 0/200 runs | Not met; not shown infeasible (R-11) |
+| GNC-DET-001 / GNC-ACQ-001 (two-phase mode manager) | Detumble 200/200 [0.982, 1.000], handover 82.0 s median at 1.15× the proven bound; acquisition 200/200 (60° axis) and 190/200 (drifted, absolute 1.2° band) | Pass; requirement change pending approval |
 | Estimation cost on pointing (E6, 400–600 s) | Gyro-driven filter adds **+0.043°** [0.036, 0.049] APE over true-state feedback (0.0005°); model-aided adds +0.0004°. 0.1° project-defined requirement met throughout in both | Characterized (R-10) |
 | 170° slew with stored momentum | Needs 0.152 N·m of gyroscopic torque against 0.1 N·m available; not settled at 400 s | Authority-limited (R-07) |
 
@@ -136,8 +140,10 @@ The full equations, step timing, and metric definitions are in the [system desig
 | Fault response (outliers, outages) | Analysis: 10-run Monte Carlo | Pass |
 | Pointing benchmark E6 | Analysis: deterministic run | Pass |
 | Pointing benchmark E6 under dispersions | Analysis: 200-run Monte Carlo, Clopper–Pearson intervals | **Fails**: P(pass) = 0.005 |
+| E6 feasibility (bounds) | Analysis: proven momentum and angle-reach bounds per run | No run above 180 s |
+| Detumble and acquisition modes (GNC-DET-001, GNC-ACQ-001) | Analysis: frozen controllers, 200 fresh seeds per scenario, exact McNemar tests | Pass (two-phase) |
 
-222 automated tests run in CI on Python 3.10, 3.12 and 3.13, plus a job with the newest numpy/scipy/matplotlib (3.13 and the latest-dependencies job are configured but not yet run). Regression tests against the 1.0.0 output use floating-point tolerances, not exact equality; a separate test requires identical repeat runs. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
+290 automated tests run in CI on Python 3.10, 3.12 and 3.13, plus a job with the newest numpy/scipy/matplotlib. Locally all 290 pass on Python 3.10.20 (numpy 2.2.6), 3.11.9 (numpy 2.4.4), 3.12.13 and 3.13.13 (numpy 2.5.4). Regression tests against the 1.0.0 output use floating-point tolerances, not exact equality; a separate test requires identical repeat runs. The full verification matrix with requirement IDs, artifacts, and verdicts is in [requirements and traceability](docs/requirements_traceability.md).
 
 ---
 
@@ -242,7 +248,23 @@ The median run is still 16° off in the last 20 s (5th–95th percentile 4.0°�
 
 ![E6 Monte Carlo](docs/figures/e6_monte_carlo.png)
 
-### 5.6 Large-angle slew with stored wheel momentum
+### 5.6 Mode manager, GNC-DET-001 and GNC-ACQ-001
+
+The 180 s E6 budget combines two flight modes: a detumble from 0.1 rad/s, whose proven momentum bound is a median 81 s (maximum 109 s), and an acquisition from wherever the attitude drifted meanwhile (median 137° away). Version 1.2.0 proposes splitting it into two project-defined requirements, pending owner approval:
+
+- **GNC-DET-001**: hand over to acquisition with the true ‖ω‖ ≤ 0.01 rad/s within 150 s (1.3× the momentum bound for the largest principal moment at +3σ), inside the actuator limits.
+- **GNC-ACQ-001**: from ‖ω‖ = 0.01 rad/s, meet every E6 criterion; tested from a 60° random-axis error and from the attitude reached after the detumble.
+
+The **two-phase mode manager** (`controller.control_type: "two_phase"`) damps the body momentum at the torque limit, then hands over to a rate-limited eigenaxis slew (`rate_profile`, after Wie and Lu 1995). The switch uses a 1 s low-pass of the estimated rate at 0.009 rad/s, sized so that threshold + 3σ of the filtered noise stays below 0.01 rad/s, with a return to detumble only above 0.15 rad/s. It switched exactly once in all 1,200 runs. Parameters were chosen on design seeds over four committed rounds and frozen before the evaluation on 200 fresh seeds per scenario ([results §5.7](docs/current_evidence.md#57-b5-controller-comparison-detumble-acquisition-and-the-end-to-end-envelope)).
+
+| Controller (frozen) | E6 end to end | GNC-DET-001 | GNC-ACQ-001, 60° | GNC-ACQ-001, drifted |
+|---|---:|---:|---:|---:|
+| PD, ζ = 0.8 | 2/200 | 160/200 | 194/200 | 192/200 |
+| `rate_profile` (untuned) | **33/200** | 167/200 | 0/200 | 24/200 |
+| two-phase | 6/200 | **200/200** | **200/200** | **190/200** |
+| two-phase + gyroscopic feedforward | 12/200 | **200/200** | **200/200** | 189/200 |
+
+### 5.7 Large-angle slew with stored wheel momentum
 
 A 170° slew about z while 10 N·m·s of the initial x-axis spin sits in the wheels. Rotating that stored momentum through the body frame needs gyroscopic torque beyond the controller's authority.
 
@@ -253,7 +275,7 @@ A 170° slew about z while 10 N·m·s of the initial x-axis spin sits in the whe
 
 ![Wheel gyroscopic coupling](docs/figures/summary/wheel_coupling.png)
 
-### 5.7 Estimation cost
+### 5.8 Estimation cost
 
 E0, E5 and E6, 10 paired seeds: the same seed is run with the controller fed the filter estimate and the true state. Increment = estimated minus truth feedback, with a 95% t interval over the per-seed differences. The 0.1° requirement is project-defined.
 
@@ -265,11 +287,13 @@ E0, E5 and E6, 10 paired seeds: the same seed is run with the controller fed the
 | E0 (100–300 s) | Gyro-driven | 0.0351° | 0.0134° | +0.0217° [0.0180, 0.0253] | 99.6% / 100% |
 | E6 (from 2% settling, 600 s) | Gyro-driven | 0.2294° | 0.2411° | −0.0117° [−0.0178, −0.0057] | 80.8% / 79.9% |
 
+The gyro-driven filter's 1.73 mrad/s rate error is the raw per-sample gyro noise, σ_v/√dt = 1e-4/√0.01 = 1e-3 rad/s per axis times √3; nothing filters ω̂ before the K_ω term, so the 0.043° cost is gyro noise passed through the damping gain.
+
 Over the 2%-settling window the error is dominated by the acquisition tail, and estimated feedback with the gyro-driven filter scores slightly *better* than truth feedback. That is unexplained and is not an estimation benefit ([details](docs/current_evidence.md#54-estimation-cost-estimated-versus-true-state-feedback)).
 
 ![Estimation cost](docs/figures/estimation_cost.png)
 
-### 5.8 Innovation whiteness
+### 5.9 Innovation whiteness
 
 | Quantity | Value |
 |---|---:|
@@ -289,7 +313,7 @@ Requires Python 3.10 or later.
 git clone https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty.git
 cd Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty
 python -m pip install -r requirements.txt
-python -m pytest                                  # 222 tests, about 1 min
+python -m pytest                                  # 290 tests, about 2 min
 ```
 
 | Task | Command | Runtime |
@@ -300,6 +324,8 @@ python -m pytest                                  # 222 tests, about 1 min
 | Estimation cost (estimated vs true-state feedback) | `python scripts/verify_estimation_cost.py --jobs 14` | ~10 min (16 cores) |
 | Inertia sampling study (deterministic vs sampled truth) | `python scripts/verify_inertia_sampling_study.py --jobs 6` | ~5 min (6 workers) |
 | E6 Monte Carlo (200 runs) | `python scripts/run_e6_monte_carlo.py --jobs 14` | ~5 min (16 cores) |
+| E6 feasibility and end-to-end bounds | `python scripts/analyze_e6_feasibility.py --demonstrate 20 --jobs 6`<br/>`python scripts/end_to_end_bounds.py` | ~3 min |
+| B5 controller evaluation (frozen controllers, fresh seeds) | `python scripts/run_b5_comparison.py --controllers-file config/b5_controllers.yaml --stage evaluation --base-seed 20000042 --runs 200 --design-base-seed 10000042 --design-runs 100 --jobs 10 --output-dir docs/b5_evaluation`<br/>`python scripts/summarize_b5.py`; `python scripts/b5_paired_tests.py` | ~65 min (16 cores) |
 | Targeted studies | `verify_model_aided_consistency.py`, `verify_robustness_slices.py`, `verify_innovation_whiteness.py`, `verify_wheel_coupling.py` | ~15 min |
 | README figures | `python scripts/plot_readme_figures.py` | ~2 min |
 
@@ -353,13 +379,15 @@ docs/            design description, results, traceability, evidence, figures
 - **Inertia truth is fixed across seeds by default**, so in the matched-inertia case the inertia states start with zero error against a 5% prior and the 15-state NEES is biased low by construction. This is now quantified: `spacecraft.inertia_truth_mode: "sampled_from_prior"` draws the truth per seed, and the fixed-offset cases are kept as a separately labelled deterministic study ([Section 5.2](#52-inertia-mismatch-accuracy-versus-consistency)). The E0–E7 campaign tables in 5.1 still use the fixed truth, so their run-level intervals reflect sensor-noise variation only.
 - **The model-aided filter knows the applied wheel torque exactly**, and all campaigns use zero disturbance torque. Its rate model is therefore optimistic compared with hardware, where wheel friction, torque noise, and gravity-gradient or solar-pressure torques would enter as unmodelled rate process noise (see R-06).
 - **The deterministic E6 run is not a probability of success.** Its 3% settling margin says nothing about robustness; the 200-run Monte Carlo over attitude axis, rate direction, inertia and sensor noise is what measures it (P(pass) = 0.005, [Section 5.5](#55-pointing-benchmark-e6)). Disturbance torques are not in that Monte Carlo.
+- **The settling band is a placeholder.** The published E6 band is 2% of the initial error, which made the drifted acquisition looser (median 2.7°) than the 60° cases (1.2°). The drifted results are re-scored with an absolute 1.2° band on identical trajectories (two-phase 196 → 190/200; PD and `rate_profile` unchanged). No acquisition pointing need exists in the repository, so 1.2° is a placeholder pending the requirement owner.
 
 **Open risks** (full register in [traceability](docs/requirements_traceability.md#3-risk-register))
 
 | ID | Risk | Severity |
 |---|---|:-:|
 | R-01 | Model-aided covariance inconsistent under inertia mismatch | High |
-| R-02 | E6 benchmark passes only for its deterministic run: P(pass) = 0.5% under dispersions | High |
+| R-02 | Single-budget E6 criterion passes only for its deterministic run (1/200 under dispersions); the cause is the criterion's sizing (R-11), and no controller tested exceeds 33/200 end to end | Medium |
+| R-11 | 180 s E6 criterion not sized against the 0.1 rad/s envelope; proposed split into GNC-DET-001 / GNC-ACQ-001 is a requirement change, pending owner approval | Medium |
 | R-06 | Model-aided rate-process noise is a tuning parameter, not identified | Medium |
 | R-07 | Large slews with stored wheel momentum exceed gyroscopic torque authority | High |
 
@@ -372,9 +400,14 @@ Quantify how much pointing error estimation *causes*, separately from the contro
 - [x] Decomposition of pointing error into control tracking error and estimation error, including how gyro noise in the rate feedback becomes pointing error; gyro-driven vs model-aided filters. *Not done: an experiment that separates the rate path from the attitude path.*
 - [ ] Mission-level metric: time inside a stated pointing requirement for each estimation fault. *Metric implemented; evaluated for the tracker outage only. Remains: outliers (E4), noise mistuning (E2/E3) and inertia mismatch (E1), and a requirement near the achieved error, since 0.1° is met throughout in steady state.*
 
-**Follow-up (not started)**
+**Future work**
 
-- [ ] Control gain redesign so the E6 benchmark holds under the Monte Carlo dispersions: design with `compute_control_gains` from a settling-time and damping target (the current gains give a linearised slow pole of about −0.027 s⁻¹), add gyroscopic feedforward, and re-run the 200-run campaign and ablations. Not started; gains were deliberately unchanged in 1.1.0.
+- [ ] **Time-optimal feasibility check** by direct collocation (for example CasADi and IPOPT), under both the 0.1 N·m norm limit and the per-wheel box limit, with each run's truth inertia and the wheel momentum limit, and each solution replayed open loop in the simulator. *Rationale: the best valid lower bound on end-to-end time is at most 107.8 s, so E6 is not shown infeasible.*
+- [ ] **Rate-feedback filtering (Task D)**: low-pass ω̂ before the K_ω term. *Rationale: `rate_profile` settles fastest in both acquisition scenarios but fails mainly on the effort criterion, which is driven by gyro noise in the command.*
+- [ ] **A tuned controller that turns toward the target while braking**, designed on design seeds. *Rationale: the untuned `rate_profile` beats the two-phase manager end to end, 30 seeds to 3 (exact McNemar p = 1.4e-6).*
+- [ ] **Absolute settling band confirmed by the requirement owner.** *Rationale: the 1.2° band in `config/e6_criteria.yaml` is a placeholder; the only pointing need in the repository is the 0.1° steady-state requirement.*
+- [ ] **Re-verify GNC-ACQ-001 from the actual handover states** (store attitude and rate at handover). *Rationale: the drifted scenario does not represent them; the per-seed sum predicts 71 envelope runs settled inside 200 s against 8 measured.*
+- [ ] **Owner decision on the E6 requirement split (R-11)**: accept GNC-DET-001 / GNC-ACQ-001, or resize the single budget from the measured end-to-end times.
 
 ---
 
@@ -385,7 +418,7 @@ Quantify how much pointing error estimation *causes*, separately from the contro
   author  = {Kowluri, Ishmael},
   title   = {Robust Spacecraft Attitude Estimation and Control Under Model Uncertainty},
   year    = {2026},
-  version = {1.1.0},
+  version = {1.2.0},
   url     = {https://github.com/ISHMAEL555/Robust-Spacecraft-Attitude-Estimation-and-Control-Under-Model-Uncertainty}
 }
 ```

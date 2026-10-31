@@ -1,0 +1,29 @@
+# B5 FROZEN controller parameters for the fresh-seed evaluation.
+# Frozen and committed before the evaluation run; evaluation seeds base 20000042,
+# 200 runs (disjoint from the design seeds, base 10000042, and from the published
+# 200-run E6 Monte Carlo, base 42; checked in code).
+#
+# Design history (docs/current_evidence.md section 5.7):
+#   round 1  -> pd_z08_T90 (PD family), tp_f09 (two-phase)   docs/b5_design/selection_round1.json
+#   round 2  -> tp2_e007_kw10_kp08                            docs/b5_design/selection_round2.json
+#   round 3  -> tp3_lp1_t009 (exposed a filter-start defect)  docs/b5_design/selection_round3.json
+#   round 3b -> tp3_lp1_t009 after the fix                    docs/b5_design/selection_round3b.json
+# (ii) rate_profile is the existing controller with its original, untuned
+# parameters. (iv) is (iii) with gyroscopic feedforward and no other change.
+
+requirements:
+  detumble_entry_rate: 0.01      # rad/s, GNC-DET-001 (true rate at handover) / GNC-ACQ-001 entry
+  detumble_time_limit_s: 150.0   # GNC-DET-001
+
+dispersion:
+  inertia_sigma: 0.05
+
+controllers:
+  pd_zeta08:     {control_type: quaternion_feedback, K_q: 0.4938, K_omega: 7.1111}
+  rate_profile:  {control_type: rate_profile, K_omega: 20.0, profile_rate_gain: 0.05, profile_accel_fraction: 0.7}
+  two_phase:     {control_type: two_phase, K_omega: 10.0, profile_rate_gain: 0.08, profile_accel_fraction: 0.9,
+                  detumble_entry_rate: 0.009, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0,
+                  switch_filter_time_constant_s: 1.0}
+  two_phase_ff:  {control_type: two_phase, K_omega: 10.0, profile_rate_gain: 0.08, profile_accel_fraction: 0.9,
+                  detumble_entry_rate: 0.009, detumble_exit_rate: 0.15, detumble_time_constant_s: 20.0,
+                  switch_filter_time_constant_s: 1.0, gyroscopic_feedforward: true}
